@@ -1,0 +1,73 @@
+
+extern crate glutin;
+
+use glutin::event::{Event, WindowEvent};
+use glutin::event_loop::{ControlFlow, EventLoop};
+use glutin::window::WindowBuilder;
+use glutin::ContextBuilder;
+use glutin::{ PossiblyCurrent, };
+use std::ffi::CStr;
+
+pub mod gl {
+    pub use self::Gl as GL;
+    include!(concat!(env!("OUT_DIR"), "/gl_bindings.rs"));
+}
+
+pub struct GL {
+    pub gl: gl::GL,
+}
+
+fn load(context: &glutin::Context<PossiblyCurrent>) -> GL {
+    let gl = gl::GL::load_with(|ptr| context.get_proc_address(ptr) as *const _);
+
+    let version = unsafe {
+        let data = CStr::from_ptr(gl.GetString(gl::VERSION) as *const _)
+            .to_bytes()
+            .to_vec();
+        String::from_utf8(data).unwrap()
+    };
+
+    println!("Opengl Version: {}", version);
+
+    GL { gl: gl }
+}
+
+fn main() {
+    let event_loop = EventLoop::new();
+    let window_builder = WindowBuilder::new().with_title("FlatLand");
+
+    let context = ContextBuilder::new().build_windowed(window_builder, &event_loop).unwrap();
+
+    let context = unsafe { context.make_current().unwrap() };
+
+    let gl = load(context.context());
+
+    event_loop.run(move |event, _, control_flow| {
+        dbg!(&event);
+        *control_flow = ControlFlow::Wait;
+
+        match event {
+            Event::LoopDestroyed => return,
+            Event::WindowEvent { ref event, .. } => {
+                match event {
+                    WindowEvent::Resized(logical_size) => {
+                        let dpi_factor = context.window().hidpi_factor();
+                        context.resize(logical_size.to_physical(dpi_factor));
+                    },
+                    WindowEvent::RedrawRequested => {
+                        unsafe {
+                            gl.gl.ClearColor(1.0, 0.5, 0.7, 1.0);
+                            gl.gl.Clear(gl::COLOR_BUFFER_BIT);
+                        }
+                        context.swap_buffers().unwrap();
+
+                    },
+                    WindowEvent::CloseRequested => *control_flow = ControlFlow::Exit,
+                    _ => {},
+                }
+            },
+            _ => { },
+        }
+    });
+
+}
