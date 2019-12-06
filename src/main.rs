@@ -19,6 +19,14 @@ fn load(context: &glutin::Context<PossiblyCurrent>) {
     println!("Opengl Version: {}", version);
 }
 
+fn render(context: &glutin::ContextWrapper<PossiblyCurrent, glutin::window::Window>) {
+    unsafe {
+        gl::ClearColor(1.0, 0.5, 0.7, 1.0);
+        gl::Clear(gl::COLOR_BUFFER_BIT);
+    }
+    context.swap_buffers().unwrap();
+}
+
 fn main() {
     let event_loop = EventLoop::new();
     let window_builder = WindowBuilder::new().with_title("Cim");
@@ -31,6 +39,7 @@ fn main() {
 
     load(context.context());
 
+    let mut frame = 0;
     event_loop.run(move |event, _, control_flow| {
         *control_flow = ControlFlow::Wait;
 
@@ -43,12 +52,7 @@ fn main() {
                         context.resize(logical_size.to_physical(dpi_factor));
                     },
                     WindowEvent::RedrawRequested => {
-                        unsafe {
-                            gl::ClearColor(1.0, 0.5, 0.7, 1.0);
-                            gl::Clear(gl::COLOR_BUFFER_BIT);
-                        }
-                        context.swap_buffers().unwrap();
-
+                        render(&context);
                     },
                     WindowEvent::CloseRequested => *control_flow = ControlFlow::Exit,
                     _ => {},
@@ -56,6 +60,9 @@ fn main() {
             },
             _ => { },
         }
+
+        frame += 1;
+        println!("frame: {}", frame);
     });
 
 }
