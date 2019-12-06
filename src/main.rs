@@ -7,43 +7,31 @@ use glutin::window::WindowBuilder;
 use glutin::ContextBuilder;
 use glutin::{ PossiblyCurrent, };
 use std::ffi::CStr;
+use gl::types::*;
 
-pub mod gl {
-    pub use self::Gl as GL;
-    include!(concat!(env!("OUT_DIR"), "/gl_bindings.rs"));
-}
-
-pub struct GL {
-    pub gl: gl::GL,
-}
-
-fn load(context: &glutin::Context<PossiblyCurrent>) -> GL {
-    let gl = gl::GL::load_with(|ptr| context.get_proc_address(ptr) as *const _);
+fn load(context: &glutin::Context<PossiblyCurrent>) {
+    gl::load_with(|ptr| context.get_proc_address(ptr) as *const _);
 
     let version = unsafe {
-        let data = CStr::from_ptr(gl.GetString(gl::VERSION) as *const _)
-            .to_bytes()
-            .to_vec();
-        String::from_utf8(data).unwrap()
+        CStr::from_ptr(gl::GetString(gl::VERSION) as *const _).to_str().unwrap()
     };
 
     println!("Opengl Version: {}", version);
-
-    GL { gl: gl }
 }
 
 fn main() {
     let event_loop = EventLoop::new();
-    let window_builder = WindowBuilder::new().with_title("FlatLand");
+    let window_builder = WindowBuilder::new().with_title("Cim");
 
-    let context = ContextBuilder::new().build_windowed(window_builder, &event_loop).unwrap();
+    let context = ContextBuilder::new()
+        .build_windowed(window_builder, &event_loop)
+        .unwrap();
 
     let context = unsafe { context.make_current().unwrap() };
 
-    let gl = load(context.context());
+    load(context.context());
 
     event_loop.run(move |event, _, control_flow| {
-        dbg!(&event);
         *control_flow = ControlFlow::Wait;
 
         match event {
@@ -56,8 +44,8 @@ fn main() {
                     },
                     WindowEvent::RedrawRequested => {
                         unsafe {
-                            gl.gl.ClearColor(1.0, 0.5, 0.7, 1.0);
-                            gl.gl.Clear(gl::COLOR_BUFFER_BIT);
+                            gl::ClearColor(1.0, 0.5, 0.7, 1.0);
+                            gl::Clear(gl::COLOR_BUFFER_BIT);
                         }
                         context.swap_buffers().unwrap();
 
