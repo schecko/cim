@@ -49,7 +49,7 @@ struct Shader(u32);
 unsafe fn compile_shader(source: &str, shader_type: u32) -> Result<Shader, String> {
     let vertex_shader = gl::CreateShader(shader_type);
     let shaders = [
-        source,
+        source
     ];
     let counts = [
         source.len() as i32,
@@ -136,9 +136,10 @@ fn main() -> Result<(), String> {
         let mut vbo: u32 = 0;
         gl::GenBuffers(1, &mut vbo as *mut _);
 
+        gl::EnableVertexAttribArray(vao);
         gl::BindVertexArray(vao);
         gl::BindBuffer(gl::ARRAY_BUFFER, vbo);
-        gl::BufferData(gl::ARRAY_BUFFER, mem::size_of_val(&vbo) as isize, VERTICES.as_ptr() as *mut _, gl::STATIC_DRAW);
+        gl::BufferData(gl::ARRAY_BUFFER, mem::size_of_val(&VERTICES) as isize, VERTICES.as_ptr() as *mut _, gl::STATIC_DRAW);
 
         gl::VertexAttribPointer(0, 3, gl::FLOAT, gl::FALSE, 3 * mem::size_of::<f32>() as i32, std::ptr::null());
 
@@ -154,7 +155,7 @@ fn main() -> Result<(), String> {
     };
 
     event_loop.run(move |event, _, control_flow| {
-        *control_flow = ControlFlow::Wait;
+        *control_flow = ControlFlow::Poll;
 
         match event {
             Event::LoopDestroyed => return,
