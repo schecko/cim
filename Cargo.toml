@@ -1,5 +1,5 @@
 [package]
-name = "flatland"
+name = "cim"
 version = "0.1.0"
 authors = ["Scott Checko <schecko@sfu.ca>"]
 edition = "2018"
