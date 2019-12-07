@@ -1,17 +1,36 @@
 
 extern crate glutin;
+extern crate cgmath;
 
 mod pipeline;
-use pipeline::*;
 
+use cgmath::prelude::*;
+use gl::types::*;
+use glutin::ContextBuilder;
 use glutin::event::{Event, WindowEvent};
 use glutin::event_loop::{ControlFlow, EventLoop};
 use glutin::window::WindowBuilder;
-use glutin::ContextBuilder;
 use glutin::{ PossiblyCurrent, };
+use pipeline::*;
 use std::ffi::CStr;
-use gl::types::*;
 use std::mem;
+
+enum Biome {
+    Desert,
+    Grassland,
+    Hill,
+    Mountain,
+    Ocean,
+    Snow,
+}
+
+struct GridCell {
+    biome: Biome,
+}
+
+struct GameState {
+    grid: Vec<Vec<GridCell>>,
+}
 
 fn load(context: &glutin::Context<PossiblyCurrent>) {
     gl::load_with(|ptr| context.get_proc_address(ptr) as *const _);
@@ -78,6 +97,7 @@ fn main() -> Result<(), String> {
 
     load(context.context());
     let pipeline = Pipeline::new(VERTEX, FRAGMENT)?;
+
     let (vao, vbo) = unsafe {
         let mut vao: u32 = 0;
         gl::GenVertexArrays(1, &mut vao as *mut _);
