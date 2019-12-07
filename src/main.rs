@@ -1,6 +1,9 @@
 
 extern crate glutin;
 
+mod pipeline;
+use pipeline::*;
+
 use glutin::event::{Event, WindowEvent};
 use glutin::event_loop::{ControlFlow, EventLoop};
 use glutin::window::WindowBuilder;
@@ -40,64 +43,9 @@ static FRAGMENT: &str = r#"
     out vec4 FragColor;
 
     void main() {
-        FragColor = vec4(1.0, 1.0, 1.0, 1.0);
+        FragColor = vec4(1.0, 0.5, 1.0, 1.0);
     }
 "#;
-
-struct Shader(u32);
-
-unsafe fn compile_shader(source: &str, shader_type: u32) -> Result<Shader, String> {
-    let vertex_shader = gl::CreateShader(shader_type);
-    let shaders = [
-        source
-    ];
-    let counts = [
-        source.len() as i32,
-    ];
-    gl::ShaderSource(vertex_shader, 1, shaders.as_ptr() as *const *const i8, counts.as_ptr() as *const _);
-    gl::CompileShader(vertex_shader);
-
-    let mut success = 0;
-    let mut info_log = [0u8; 512];
-    gl::GetShaderiv(vertex_shader, gl::COMPILE_STATUS, &mut success as *mut _);
-    if success == 0 {
-        gl::GetShaderInfoLog(vertex_shader, info_log.len() as _, std::ptr::null_mut(), info_log.as_mut_ptr() as *mut i8);
-        return Err(String::from_utf8_lossy(&info_log[..]).to_string())
-    }
-
-    Ok(Shader(vertex_shader))
-}
-
-struct Pipeline(u32);
-
-impl Pipeline {
-    fn new(vert: &str, frag: &str) -> Result<Pipeline, String> {
-        let pipeline = unsafe {
-            let vertex_shader = compile_shader(vert, gl::VERTEX_SHADER)?;
-            let fragment_shader = compile_shader(frag, gl::FRAGMENT_SHADER)?;
-
-            let pipeline = gl::CreateProgram();
-            gl::AttachShader(pipeline, vertex_shader.0);
-            gl::AttachShader(pipeline, fragment_shader.0);
-            gl::LinkProgram(pipeline);
-
-            let mut success = 0;
-            let mut info_log = [0u8; 512];
-            gl::GetProgramiv(pipeline, gl::LINK_STATUS, &mut success as *mut _);
-            if success == 0 {
-                gl::GetProgramInfoLog(pipeline, info_log.len() as _, std::ptr::null_mut(), info_log.as_mut_ptr() as *mut i8);
-                return Err(String::from_utf8_lossy(&info_log[..]).to_string())
-            }
-
-            gl::DeleteShader(vertex_shader.0);
-            gl::DeleteShader(fragment_shader.0);
-
-            pipeline
-        };
-
-        Ok(Pipeline(pipeline))
-    }
-}
 
 struct Renderer {
     pipeline: Pipeline,
@@ -105,13 +53,13 @@ struct Renderer {
     vbo: u32,
 }
 
-
 fn render(renderer: &Renderer) {
     unsafe {
         gl::ClearColor(1.0, 0.5, 0.7, 1.0);
         gl::Clear(gl::COLOR_BUFFER_BIT);
 
-        gl::UseProgram(renderer.pipeline.0);
+        renderer.pipeline.set_use();
+
         gl::BindVertexArray(renderer.vao);
 
         gl::DrawArrays(gl::TRIANGLES, 0, 3);
