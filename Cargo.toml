@@ -8,4 +8,5 @@ edition = "2018"
 glutin = "0.22.0-alpha5"
 gl = "0.14.0"
 cgmath = "0.17.0"
+ndarray = "0.13.0"
 

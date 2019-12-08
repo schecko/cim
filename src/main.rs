@@ -1,9 +1,11 @@
 
 extern crate glutin;
 extern crate cgmath;
+extern crate ndarray;
 
 mod pipeline;
 
+use ndarray::*;
 use cgmath::prelude::*;
 use cgmath::*;
 use gl::types::*;
@@ -18,6 +20,7 @@ use std::ffi::{ CString, CStr, };
 
 static DEFAULT_GRID_LENGTH: usize = 4;
 
+#[derive(Debug, Clone)]
 enum Biome {
     Desert,
     Grassland,
@@ -27,38 +30,19 @@ enum Biome {
     Snow,
 }
 
+#[derive(Debug, Clone)]
 struct GridCell {
-    biome: Biome,
-}
-
-struct Grid {
-    data: Vec<GridCell>,
-    width: usize,
-    height: usize,
-}
-
-impl Grid {
-    fn new(width: usize, height: usize) -> Grid {
-        Grid {
-            data: Vec::with_capacity(width * height),
-            width,
-            height,
-        }
-    }
-
-    fn get(&self, x: usize, y: usize) -> &GridCell {
-        &self.data[y * self.width + x]
-    }
+    pub biome: Biome,
 }
 
 struct GameState {
-    grid: Grid,
+    grid: Array2<GridCell>,
 }
 
 impl GameState {
     fn new() -> GameState {
         GameState {
-            grid: Grid::new(DEFAULT_GRID_LENGTH, DEFAULT_GRID_LENGTH),
+            grid: Array2::from_elem((4, 4), GridCell { biome: Biome::Desert }),
         }
     }
 }
@@ -73,10 +57,14 @@ fn load(context: &glutin::Context<PossiblyCurrent>) {
     println!("Opengl Version: {}", version);
 }
 
-static VERTICES: [f32; 9] = [
-     -0.5, -0.5, 0.0,
-     0.5, -0.5, 0.0,
-     0.0,  0.5, 0.0
+static RECT: [[f32; 3]; 6] = [
+    [1.0, 1.0, 0.0],
+    [-1.0, 1.0, 0.0],
+    [1.0, -1.0, 0.0],
+
+    [-1.0, -1.0, 0.0],
+    [1.0, -1.0, 0.0],
+    [-1.0, 1.0, 0.0],
 ];
 
 static VERTEX: &str = r#"
@@ -106,7 +94,8 @@ struct Renderer {
     vbo: u32,
 }
 
-fn render(renderer: &Renderer) {
+fn render(gamestate: &GameState, renderer: &Renderer) {
+
     unsafe {
         gl::ClearColor(1.0, 0.5, 0.7, 1.0);
         gl::Clear(gl::COLOR_BUFFER_BIT);
@@ -123,7 +112,7 @@ fn render(renderer: &Renderer) {
         let view: Matrix4<f32> = Decomposed {
             scale: 1.0,
             rot: Quaternion::new(0.0f32, 0.0, 0.0, 0.0),
-            disp: Vector3::new(0.0f32, 0.0, -10.0),
+            disp: Vector3::new(0.0f32, 0.0, -100.0),
         }.into();
 
         let model: Matrix4<f32> = decomp.into();
@@ -138,7 +127,7 @@ fn render(renderer: &Renderer) {
 
         gl::BindVertexArray(renderer.vao);
 
-        gl::DrawArrays(gl::TRIANGLES, 0, 3);
+        gl::DrawArrays(gl::TRIANGLES, 0, (gamestate.grid.len() * 6) as i32);
     }
 }
 
@@ -166,7 +155,8 @@ fn main() -> Result<(), String> {
         gl::EnableVertexAttribArray(vao);
         gl::BindVertexArray(vao);
         gl::BindBuffer(gl::ARRAY_BUFFER, vbo);
-        gl::BufferData(gl::ARRAY_BUFFER, mem::size_of_val(&VERTICES) as isize, VERTICES.as_ptr() as *mut _, gl::STATIC_DRAW);
+        gl::BufferData(gl::ARRAY_BUFFER, (draw_buffer.len() * mem::size_of_val(&RECT)) as isize, draw_buffer.as_ptr() as *mut _, gl::STATIC_DRAW);
+
 
         gl::VertexAttribPointer(0, 3, gl::FLOAT, gl::FALSE, 3 * mem::size_of::<f32>() as i32, std::ptr::null());
 
@@ -192,16 +182,15 @@ fn main() -> Result<(), String> {
                         let dpi_factor = context.window().hidpi_factor();
                         context.resize(logical_size.to_physical(dpi_factor));
                     },
-                    WindowEvent::RedrawRequested => {
-                        render(&renderer);
-                        context.swap_buffers().unwrap();
-                    },
                     WindowEvent::CloseRequested => *control_flow = ControlFlow::Exit,
                     _ => {},
                 }
             },
             _ => { },
-        }
+        };
+
+        render(&gamestate, &renderer);
+        context.swap_buffers().unwrap();
     });
 
 }
