@@ -5,6 +5,7 @@ extern crate cgmath;
 mod pipeline;
 
 use cgmath::prelude::*;
+use cgmath::*;
 use gl::types::*;
 use glutin::ContextBuilder;
 use glutin::event::{Event, WindowEvent};
@@ -14,6 +15,8 @@ use glutin::{ PossiblyCurrent, };
 use pipeline::*;
 use std::ffi::CStr;
 use std::mem;
+
+static DEFAULT_GRID_LENGTH: usize = 4;
 
 enum Biome {
     Desert,
@@ -28,8 +31,36 @@ struct GridCell {
     biome: Biome,
 }
 
+struct Grid {
+    data: Vec<GridCell>,
+    width: usize,
+    height: usize,
+}
+
+impl Grid {
+    fn new(width: usize, height: usize) -> Grid {
+        Grid {
+            data: Vec::with_capacity(width * height),
+            width,
+            height,
+        }
+    }
+
+    fn get(&self, x: usize, y: usize) -> &GridCell {
+        &self.data[y * self.width + x]
+    }
+}
+
 struct GameState {
-    grid: Vec<Vec<GridCell>>,
+    grid: Grid,
+}
+
+impl GameState {
+    fn new() -> GameState {
+        GameState {
+            grid: Grid::new(DEFAULT_GRID_LENGTH, DEFAULT_GRID_LENGTH),
+        }
+    }
 }
 
 fn load(context: &glutin::Context<PossiblyCurrent>) {
@@ -67,7 +98,7 @@ static FRAGMENT: &str = r#"
 "#;
 
 struct Renderer {
-    pipeline: Pipeline,
+    solid: Pipeline,
     vao: u32,
     vbo: u32,
 }
@@ -77,7 +108,19 @@ fn render(renderer: &Renderer) {
         gl::ClearColor(1.0, 0.5, 0.7, 1.0);
         gl::Clear(gl::COLOR_BUFFER_BIT);
 
-        renderer.pipeline.set_use();
+        renderer.solid.set_use();
+
+        let decomp = Decomposed {
+            scale: 1.0,
+            rot: Quaternion::new(0.0f32, 0.0, 0.0, 0.0),
+            disp: Vector3::new(0.5, -0.5, 0.0),
+        };
+
+        let transform: Matrix4<f32> = decomp.into();
+
+        let transform_loc = gl::GetUniformLocation(renderer.solid.0, "transform".as_ptr() as *const i8);
+        gl::UniformMatrix4fv(transform_loc, 1, gl::FALSE, transform.as_ptr());
+
 
         gl::BindVertexArray(renderer.vao);
 
@@ -96,7 +139,9 @@ fn main() -> Result<(), String> {
     let context = unsafe { context.make_current().unwrap() };
 
     load(context.context());
-    let pipeline = Pipeline::new(VERTEX, FRAGMENT)?;
+    let solid = Pipeline::new(VERTEX, FRAGMENT)?;
+
+    let gamestate = GameState::new();
 
     let (vao, vbo) = unsafe {
         let mut vao: u32 = 0;
@@ -117,7 +162,7 @@ fn main() -> Result<(), String> {
     };
 
     let renderer = Renderer {
-        pipeline,
+        solid,
         vao,
         vbo,
     };

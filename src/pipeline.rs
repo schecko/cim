@@ -18,7 +18,7 @@ unsafe fn compile_shader(sources: Vec<&str>, shader_type: u32) -> Result<Shader,
     Ok(Shader(vertex_shader))
 }
 
-pub struct Pipeline(u32);
+pub struct Pipeline(pub u32);
 
 impl Pipeline {
     pub fn new(vert: &str, frag: &str) -> Result<Pipeline, String> {
