@@ -1,4 +1,5 @@
 
+use std::ffi::CString;
 struct Shader(u32);
 
 unsafe fn compile_shader(sources: Vec<&str>, shader_type: u32) -> Result<Shader, String> {
@@ -51,6 +52,13 @@ impl Pipeline {
     pub fn set_use(&self) {
         unsafe {
             gl::UseProgram(self.0);
+        }
+    }
+
+    pub fn get_uniform_location(&self, uniform: &str) -> i32 {
+        let transform_str = CString::new(uniform).unwrap();
+        unsafe {
+            gl::GetUniformLocation(self.0, transform_str.as_ptr())
         }
     }
 }

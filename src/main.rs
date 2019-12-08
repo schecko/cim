@@ -13,8 +13,8 @@ use glutin::event_loop::{ControlFlow, EventLoop};
 use glutin::window::WindowBuilder;
 use glutin::{ PossiblyCurrent, };
 use pipeline::*;
-use std::ffi::CStr;
 use std::mem;
+use std::ffi::{ CString, CStr, };
 
 static DEFAULT_GRID_LENGTH: usize = 4;
 
@@ -82,9 +82,12 @@ static VERTICES: [f32; 9] = [
 static VERTEX: &str = r#"
     #version 330 core
     layout (location = 0) in vec3 aPos;
+    uniform mat4 model;
+    uniform mat4 view;
+    uniform mat4 proj;
 
     void main() {
-        gl_Position = vec4(aPos.xyz, 1.0);
+        gl_Position = proj * view * model * vec4(aPos, 1.0);
     }
 "#;
 
@@ -93,7 +96,7 @@ static FRAGMENT: &str = r#"
     out vec4 FragColor;
 
     void main() {
-        FragColor = vec4(1.0, 0.5, 1.0, 1.0);
+        FragColor = vec4(1.0, 1.0, 1.0, 1.0);
     }
 "#;
 
@@ -113,14 +116,25 @@ fn render(renderer: &Renderer) {
         let decomp = Decomposed {
             scale: 1.0,
             rot: Quaternion::new(0.0f32, 0.0, 0.0, 0.0),
-            disp: Vector3::new(0.5, -0.5, 0.0),
+            disp: Vector3::new(0.0, 0.0, 0.0),
         };
 
-        let transform: Matrix4<f32> = decomp.into();
+        let proj: Matrix4<f32> = perspective(Deg(45.0), 1.0, 0.1, 1000.0);
+        let view: Matrix4<f32> = Decomposed {
+            scale: 1.0,
+            rot: Quaternion::new(0.0f32, 0.0, 0.0, 0.0),
+            disp: Vector3::new(0.0f32, 0.0, -10.0),
+        }.into();
 
-        let transform_loc = gl::GetUniformLocation(renderer.solid.0, "transform".as_ptr() as *const i8);
-        gl::UniformMatrix4fv(transform_loc, 1, gl::FALSE, transform.as_ptr());
+        let model: Matrix4<f32> = decomp.into();
 
+        let model_loc = renderer.solid.get_uniform_location("model");
+        let view_loc = renderer.solid.get_uniform_location("view");
+        let proj_loc = renderer.solid.get_uniform_location("proj");
+
+        gl::UniformMatrix4fv(model_loc, 1, gl::FALSE, model.as_ptr());
+        gl::UniformMatrix4fv(view_loc, 1, gl::FALSE, view.as_ptr());
+        gl::UniformMatrix4fv(proj_loc, 1, gl::FALSE, proj.as_ptr());
 
         gl::BindVertexArray(renderer.vao);
 
