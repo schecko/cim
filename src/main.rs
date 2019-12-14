@@ -42,7 +42,7 @@ struct GameState {
 impl GameState {
     fn new() -> GameState {
         GameState {
-            grid: Array2::from_elem((4, 4), GridCell { biome: Biome::Desert }),
+            grid: Array2::from_elem((20, 4), GridCell { biome: Biome::Desert }),
         }
     }
 }
@@ -113,19 +113,19 @@ fn main() -> Result<(), String> {
         let mut instance_vbo: u32 = 0;
         gl::GenBuffers(1, &mut instance_vbo as *mut _);
 
+        gl::BindVertexArray(vao);
+
         gl::BindBuffer(gl::ARRAY_BUFFER, quad_vbo);
         gl::BufferData(gl::ARRAY_BUFFER, mem::size_of_val(&RECT) as isize, RECT.as_ptr() as *mut _, gl::STATIC_DRAW);
         assert!(gl::GetError() == 0);
 
-        gl::BindVertexArray(vao);
-
         gl::EnableVertexAttribArray(0);
-        gl::VertexAttribPointer(0, 3, gl::FLOAT, gl::FALSE, 6 * mem::size_of::<f32>() as i32, std::ptr::null());
-        gl::EnableVertexAttribArray(1);
-        gl::VertexAttribPointer(1, 3, gl::FLOAT, gl::FALSE, 6 * mem::size_of::<f32>() as i32, (3 * mem::size_of::<f32>()) as *const _);
+        gl::VertexAttribPointer(0, 3, gl::FLOAT, gl::FALSE, 3 * mem::size_of::<f32>() as i32, std::ptr::null());
+        //gl::EnableVertexAttribArray(1);
+        //gl::VertexAttribPointer(1, 3, gl::FLOAT, gl::FALSE, 6 * mem::size_of::<f32>() as i32, (3 * mem::size_of::<f32>()) as *const _);
 
-        gl::EnableVertexAttribArray(2);
         gl::BindBuffer(gl::ARRAY_BUFFER, instance_vbo);
+        gl::EnableVertexAttribArray(2);
         gl::VertexAttribPointer(2, 3, gl::FLOAT, gl::FALSE, 3 * mem::size_of::<f32>() as i32, std::ptr::null());
         gl::VertexAttribDivisor(2, 1);
         assert!(gl::GetError() == 0);
@@ -155,13 +155,13 @@ fn main() -> Result<(), String> {
         };
 
         let mut rect_positions: Vec<_> = game_state.grid.indexed_iter().map(|((x, y), grid)| {
-            Vector3::new(x as f32, y as f32, 0.0)
+            Vector3::new(5.0 * x as f32, 5.0 * y as f32, 0.0)
         }).collect();
 
         unsafe {
-            gl::BindBuffer(gl::ARRAY_BUFFER, quad_vbo);
+            gl::BindBuffer(gl::ARRAY_BUFFER, instance_vbo);
             gl::BufferData(gl::ARRAY_BUFFER, (rect_positions.len() * mem::size_of_val(&rect_positions[0])) as isize, rect_positions.as_mut_ptr() as *mut _, gl::STATIC_DRAW);
-            assert!(gl::GetError() == 0);
+            gl::BindBuffer(gl::ARRAY_BUFFER, 0);
 
             gl::ClearColor(1.0, 0.5, 0.7, 1.0);
             gl::Clear(gl::COLOR_BUFFER_BIT);
@@ -191,8 +191,8 @@ fn main() -> Result<(), String> {
             gl::UniformMatrix4fv(view_loc, 1, gl::FALSE, view.as_ptr());
             gl::UniformMatrix4fv(proj_loc, 1, gl::FALSE, proj.as_ptr());
 
-            gl::BindVertexArray(vao);
             assert!(gl::GetError() == 0);
+            gl::BindVertexArray(vao);
             gl::DrawArraysInstanced(gl::TRIANGLES, 0, RECT.len() as i32, rect_positions.len() as i32);
             assert!(gl::GetError() == 0);
         }
