@@ -42,7 +42,7 @@ struct GameState {
 impl GameState {
     fn new() -> GameState {
         GameState {
-            grid: Array2::from_elem((20, 4), GridCell { biome: Biome::Desert }),
+            grid: Array2::from_elem((20, 20), GridCell { biome: Biome::Desert }),
         }
     }
 }
@@ -69,24 +69,31 @@ static RECT: [[f32; 3]; 6] = [
 
 static VERTEX: &str = r#"
     #version 330 core
-    layout (location = 0) in vec3 aPos;
-    layout (location = 1) in vec3 aColor;
-    layout (location = 2) in vec3 aOffset;
+
+    layout (location = 0) in vec3 aVertOffset;
+    layout (location = 1) in vec3 aWorldPos;
+    layout (location = 2) in vec3 aColor;
+
+    out vec3 fColor;
+
     uniform mat4 model;
     uniform mat4 view;
     uniform mat4 proj;
 
     void main() {
-        gl_Position = proj * view * model * vec4(aPos + aOffset, 1.0);
+        gl_Position = proj * view * model * vec4(aWorldPos + aVertOffset, 1.0);
+        fColor = aColor;
     }
 "#;
 
 static FRAGMENT: &str = r#"
     #version 330 core
+
     out vec4 FragColor;
+    in vec3 fColor;
 
     void main() {
-        FragColor = vec4(1.0, 1.0, 1.0, 1.0);
+        FragColor = vec4(fColor, 1.0);
     }
 "#;
 
@@ -105,6 +112,16 @@ fn main() -> Result<(), String> {
 
     let game_state = GameState::new();
 
+    let (grid_width, grid_height) = game_state.grid.dim();
+    let mut rect_positions: Vec<_> = game_state.grid.indexed_iter().map(|((x, y), grid)| {
+        let loc_x = (grid_width as isize / 2 - x as isize) as f32;
+        let loc_y = (grid_height as isize/ 2 - y as isize) as f32;
+        [
+            Vector3::new(2.2 * loc_x, 2.2 * loc_y, 0.0),
+            Vector3::new(1.0, 1.0, 0.0),
+        ]
+    }).collect();
+
     let (vao, quad_vbo, instance_vbo) = unsafe {
         let mut vao: u32 = 0;
         gl::GenVertexArrays(1, &mut vao as *mut _);
@@ -113,20 +130,27 @@ fn main() -> Result<(), String> {
         let mut instance_vbo: u32 = 0;
         gl::GenBuffers(1, &mut instance_vbo as *mut _);
 
+        gl::BindBuffer(gl::ARRAY_BUFFER, instance_vbo);
+        gl::BufferData(gl::ARRAY_BUFFER, (rect_positions.len() * mem::size_of_val(&rect_positions[0])) as isize, rect_positions.as_mut_ptr() as *mut _, gl::STATIC_DRAW);
+
         gl::BindVertexArray(vao);
+        assert!(mem::size_of::<f32>() * 3 == mem::size_of::<Vector3<f32>>());
+        assert!(mem::size_of::<f32>() * 4 == mem::size_of::<Vector4<f32>>());
 
         gl::BindBuffer(gl::ARRAY_BUFFER, quad_vbo);
         gl::BufferData(gl::ARRAY_BUFFER, mem::size_of_val(&RECT) as isize, RECT.as_ptr() as *mut _, gl::STATIC_DRAW);
         assert!(gl::GetError() == 0);
 
+
         gl::EnableVertexAttribArray(0);
         gl::VertexAttribPointer(0, 3, gl::FLOAT, gl::FALSE, 3 * mem::size_of::<f32>() as i32, std::ptr::null());
-        //gl::EnableVertexAttribArray(1);
-        //gl::VertexAttribPointer(1, 3, gl::FLOAT, gl::FALSE, 6 * mem::size_of::<f32>() as i32, (3 * mem::size_of::<f32>()) as *const _);
 
         gl::BindBuffer(gl::ARRAY_BUFFER, instance_vbo);
+        gl::EnableVertexAttribArray(1);
+        gl::VertexAttribPointer(1, 3, gl::FLOAT, gl::FALSE, 6 * mem::size_of::<f32>() as i32, std::ptr::null());
+        gl::VertexAttribDivisor(1, 1);
         gl::EnableVertexAttribArray(2);
-        gl::VertexAttribPointer(2, 3, gl::FLOAT, gl::FALSE, 3 * mem::size_of::<f32>() as i32, std::ptr::null());
+        gl::VertexAttribPointer(2, 3, gl::FLOAT, gl::FALSE, 6 * mem::size_of::<f32>() as i32, (3 * mem::size_of::<f32>()) as *const _);
         gl::VertexAttribDivisor(2, 1);
         assert!(gl::GetError() == 0);
 
@@ -154,13 +178,9 @@ fn main() -> Result<(), String> {
             _ => { },
         };
 
-        let mut rect_positions: Vec<_> = game_state.grid.indexed_iter().map(|((x, y), grid)| {
-            Vector3::new(5.0 * x as f32, 5.0 * y as f32, 0.0)
-        }).collect();
-
         unsafe {
             gl::BindBuffer(gl::ARRAY_BUFFER, instance_vbo);
-            gl::BufferData(gl::ARRAY_BUFFER, (rect_positions.len() * mem::size_of_val(&rect_positions[0])) as isize, rect_positions.as_mut_ptr() as *mut _, gl::STATIC_DRAW);
+            gl::BufferSubData(gl::ARRAY_BUFFER, 0, (rect_positions.len() * mem::size_of_val(&rect_positions[0])) as isize, rect_positions.as_mut_ptr() as *mut _);
             gl::BindBuffer(gl::ARRAY_BUFFER, 0);
 
             gl::ClearColor(1.0, 0.5, 0.7, 1.0);
@@ -170,7 +190,7 @@ fn main() -> Result<(), String> {
 
             let decomp = Decomposed {
                 scale: 1.0,
-                rot: Quaternion::new(0.0f32, 0.0, 0.0, 0.0),
+                rot: Quaternion::new(1.0, -0.5, 0.0, 0.0),
                 disp: Vector3::new(0.0, 0.0, 0.0),
             };
 
@@ -178,7 +198,7 @@ fn main() -> Result<(), String> {
             let view: Matrix4<f32> = Decomposed {
                 scale: 1.0,
                 rot: Quaternion::new(0.0f32, 0.0, 0.0, 0.0),
-                disp: Vector3::new(0.0f32, 0.0, -100.0),
+                disp: Vector3::new(0.0f32, 0.0, -60.0),
             }.into();
 
             let model: Matrix4<f32> = decomp.into();
