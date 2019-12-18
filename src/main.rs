@@ -185,14 +185,16 @@ fn main() -> Result<(), String> {
                 match event {
                     WindowEvent::Resized(logical_size) => {
                         let dpi_factor = context.window().hidpi_factor();
-                        context.resize(logical_size.to_physical(dpi_factor));
+                        let physical = logical_size.to_physical(dpi_factor);
+                        context.resize(physical);
+                        unsafe { gl::Viewport(0, 0, physical.width as _, physical.height as _); }
                     },
                     WindowEvent::CloseRequested => *control_flow = ControlFlow::Exit,
                     WindowEvent::KeyboardInput { input: glutin::event::KeyboardInput { state, scancode, virtual_keycode, modifiers }, ..} if *state == ElementState::Pressed => {
                         let (grid_dim_x, grid_dim_y) = game_state.grid.dim();
                         match virtual_keycode {
                             Some(VirtualKeyCode::H) => {
-                                if game_state.cursor.x < grid_dim_x - 1{
+                                if game_state.cursor.x < grid_dim_x - 1 {
                                     game_state.cursor.x += 1;
                                 }
                             },
