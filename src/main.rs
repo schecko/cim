@@ -233,7 +233,7 @@ fn main() -> Result<(), String> {
             let loc_y = (grid_height as isize/ 2 - y as isize) as f32;
             // TODO: game grid lines rather than spacers.
             [
-                Vector3::new(2.2 * loc_x, 2.2 * loc_y, loc_z),
+                Vector3::new(2.0 * loc_x, 2.0 * loc_y, loc_z),
                 grid.biome.color(),
             ]
         }).collect();
