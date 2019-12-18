@@ -5,21 +5,23 @@ extern crate cgmath;
 extern crate glutin;
 extern crate ndarray;
 extern crate rand;
+#[macro_use] extern crate specs;
 
 mod pipeline;
 
-use ndarray::*;
-use cgmath::prelude::*;
 use cgmath::*;
+use cgmath::prelude::*;
 use gl::types::*;
 use glutin::ContextBuilder;
 use glutin::event::{Event, WindowEvent, VirtualKeyCode, ElementState, };
 use glutin::event_loop::{ControlFlow, EventLoop};
 use glutin::window::WindowBuilder;
 use glutin::{ PossiblyCurrent, };
+use ndarray::*;
 use pipeline::*;
-use std::mem;
+use specs::prelude::*;
 use std::ffi::{ CString, CStr, };
+use std::mem;
 
 static DEFAULT_GRID_LENGTH: usize = 4;
 
@@ -51,6 +53,14 @@ struct GridCell {
     pub biome: Biome,
 }
 
+#[derive(Debug, Component)]
+#[storage(VecStorage)]
+struct GridPosition {
+    x: usize,
+    y: usize,
+}
+
+#[derive(Component)]
 struct GameState {
     grid: Array2<GridCell>,
     cursor: Vector2<usize>,
@@ -61,6 +71,21 @@ impl GameState {
         GameState {
             grid: Array2::from_shape_fn((20, 20), |(x, y)| GridCell { biome: rand::random() }),
             cursor: Vector2::new(0, 0),
+        }
+    }
+}
+
+struct TestSystem;
+
+impl<'a> System<'a> for TestSystem {
+    type SystemData = (ReadStorage<'a, GridPosition>, ReadExpect<'a, GameState>);
+
+    fn run(&mut self, (grid_pos, state): Self::SystemData) {
+        use specs::Join;
+
+        dbg!(state.cursor);
+        for pos in grid_pos.join() {
+            dbg!(pos);
         }
     }
 }
@@ -176,9 +201,16 @@ fn main() -> Result<(), String> {
         (vao, quad_vbo, instance_vbo)
     };
 
+    let mut world = World::new();
+    world.register::<GridPosition>();
+    world.insert(game_state);
+    world.create_entity().with(GridPosition { x: 0, y: 0 }).build();
+
+    let mut system = TestSystem;
+
     event_loop.run(move |event, _, control_flow| {
         *control_flow = ControlFlow::Poll;
-
+        let mut game_state = world.fetch_mut::<GameState>();
         match event {
             Event::LoopDestroyed => return,
             Event::WindowEvent { ref event, .. } => {
@@ -223,7 +255,6 @@ fn main() -> Result<(), String> {
             _ => { },
         };
 
-
         rect_positions = game_state.grid.indexed_iter().map(|((x, y), grid)| {
             let loc_z = match game_state.cursor == Vector2::new(x, y) {
                 true => 1.0,
@@ -237,6 +268,9 @@ fn main() -> Result<(), String> {
                 grid.biome.color(),
             ]
         }).collect();
+
+        drop(game_state);
+        system.run_now(&world);
 
         unsafe {
             gl::BindBuffer(gl::ARRAY_BUFFER, instance_vbo);
