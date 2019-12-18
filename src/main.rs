@@ -189,12 +189,17 @@ fn main() -> Result<(), String> {
                     },
                     WindowEvent::CloseRequested => *control_flow = ControlFlow::Exit,
                     WindowEvent::KeyboardInput { input: glutin::event::KeyboardInput { state, scancode, virtual_keycode, modifiers }, ..} if *state == ElementState::Pressed => {
+                        let (grid_dim_x, grid_dim_y) = game_state.grid.dim();
                         match virtual_keycode {
                             Some(VirtualKeyCode::H) => {
-                                game_state.cursor.x += 1;
+                                if game_state.cursor.x < grid_dim_x - 1{
+                                    game_state.cursor.x += 1;
+                                }
                             },
                             Some(VirtualKeyCode::J) => {
-                                game_state.cursor.y += 1;
+                                if game_state.cursor.y < grid_dim_y - 1 {
+                                    game_state.cursor.y += 1;
+                                }
                             },
                             Some(VirtualKeyCode::K) => {
                                 if game_state.cursor.y > 0 {
