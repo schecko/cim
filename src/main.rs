@@ -6,8 +6,11 @@ extern crate glutin;
 extern crate ndarray;
 extern crate rand;
 #[macro_use] extern crate specs;
+#[macro_use] extern crate lazy_static;
 
 mod pipeline;
+mod renderer;
+mod ogl;
 
 use cgmath::*;
 use cgmath::prelude::*;
@@ -22,6 +25,8 @@ use pipeline::*;
 use specs::prelude::*;
 use std::ffi::{ CString, CStr, };
 use std::mem;
+use crate::renderer::*;
+use crate::ogl::*;
 
 static DEFAULT_GRID_LENGTH: usize = 4;
 
@@ -55,40 +60,51 @@ struct GridCell {
 
 #[derive(Debug, Component)]
 #[storage(VecStorage)]
-struct GridPosition {
+pub struct GridPosition {
     x: usize,
     y: usize,
 }
 
 #[derive(Component)]
-struct GameState {
+pub struct GameState {
     grid: Array2<GridCell>,
     cursor: Vector2<usize>,
+    solid: Pipeline,
+    quad_data: Buffer,
+    instance_data: Buffer,
+    quad_vao: Vao,
 }
 
 impl GameState {
-    fn new() -> GameState {
-        GameState {
-            grid: Array2::from_shape_fn((20, 20), |(x, y)| GridCell { biome: rand::random() }),
+    fn new() -> Result<GameState, String> {
+        let quad_data = Buffer::new();
+        let instance_data = Buffer::new();
+        let vao = Vao::new(quad_data, instance_data);
+        quad_data.data(&mut RECT.to_vec(), gl::STATIC_DRAW);
+        let grid = Array2::from_shape_fn(
+            (20, 20),
+            |(x, y)| GridCell { biome: rand::random() }
+        );
+
+        let mut rect_positions: Vec<_> = grid.indexed_iter().map(|((x, y), grid)| {
+            [
+                Vector3::new(0.0, 0.0, 0.0),
+                Vector3::new(0.0, 0.0, 0.0),
+            ]
+        }).collect();
+        instance_data.data(&mut rect_positions, gl::DYNAMIC_DRAW);
+
+        Ok(GameState {
             cursor: Vector2::new(0, 0),
-        }
+            grid,
+            solid: Pipeline::new(VERTEX, FRAGMENT)?,
+            quad_data,
+            instance_data,
+            quad_vao: vao,
+        })
     }
 }
 
-struct TestSystem;
-
-impl<'a> System<'a> for TestSystem {
-    type SystemData = (ReadStorage<'a, GridPosition>, ReadExpect<'a, GameState>);
-
-    fn run(&mut self, (grid_pos, state): Self::SystemData) {
-        use specs::Join;
-
-        dbg!(state.cursor);
-        for pos in grid_pos.join() {
-            dbg!(pos);
-        }
-    }
-}
 
 fn load(context: &glutin::Context<PossiblyCurrent>) {
     gl::load_with(|ptr| context.get_proc_address(ptr) as *const _);
@@ -100,7 +116,7 @@ fn load(context: &glutin::Context<PossiblyCurrent>) {
     println!("Opengl Version: {}", version);
 }
 
-static RECT: [[f32; 3]; 6] = [
+pub static RECT: [[f32; 3]; 6] = [
     [1.0, 1.0, 0.0],
     [-1.0, 1.0, 0.0],
     [1.0, -1.0, 0.0],
@@ -151,62 +167,15 @@ fn main() -> Result<(), String> {
     let context = unsafe { context.make_current().unwrap() };
 
     load(context.context());
-    let solid = Pipeline::new(VERTEX, FRAGMENT)?;
 
-    let mut game_state = GameState::new();
-
-    let (grid_width, grid_height) = game_state.grid.dim();
-    let mut rect_positions: Vec<_> = game_state.grid.indexed_iter().map(|((x, y), grid)| {
-        [
-            Vector3::new(0.0, 0.0, 0.0),
-            Vector3::new(0.0, 0.0, 0.0),
-        ]
-    }).collect();
-
-    let (vao, quad_vbo, instance_vbo) = unsafe {
-        let mut vao: u32 = 0;
-        gl::GenVertexArrays(1, &mut vao as *mut _);
-        let mut quad_vbo: u32 = 0;
-        gl::GenBuffers(1, &mut quad_vbo as *mut _);
-        let mut instance_vbo: u32 = 0;
-        gl::GenBuffers(1, &mut instance_vbo as *mut _);
-
-        gl::BindBuffer(gl::ARRAY_BUFFER, instance_vbo);
-        gl::BufferData(gl::ARRAY_BUFFER, (rect_positions.len() * mem::size_of_val(&rect_positions[0])) as isize, rect_positions.as_mut_ptr() as *mut _, gl::STATIC_DRAW);
-
-        gl::BindVertexArray(vao);
-        assert!(mem::size_of::<f32>() * 3 == mem::size_of::<Vector3<f32>>());
-        assert!(mem::size_of::<f32>() * 4 == mem::size_of::<Vector4<f32>>());
-
-        gl::BindBuffer(gl::ARRAY_BUFFER, quad_vbo);
-        gl::BufferData(gl::ARRAY_BUFFER, mem::size_of_val(&RECT) as isize, RECT.as_ptr() as *mut _, gl::STATIC_DRAW);
-        assert!(gl::GetError() == 0);
-
-
-        gl::EnableVertexAttribArray(0);
-        gl::VertexAttribPointer(0, 3, gl::FLOAT, gl::FALSE, 3 * mem::size_of::<f32>() as i32, std::ptr::null());
-
-        gl::BindBuffer(gl::ARRAY_BUFFER, instance_vbo);
-        gl::EnableVertexAttribArray(1);
-        gl::VertexAttribPointer(1, 3, gl::FLOAT, gl::FALSE, 6 * mem::size_of::<f32>() as i32, std::ptr::null());
-        gl::VertexAttribDivisor(1, 1);
-        gl::EnableVertexAttribArray(2);
-        gl::VertexAttribPointer(2, 3, gl::FLOAT, gl::FALSE, 6 * mem::size_of::<f32>() as i32, (3 * mem::size_of::<f32>()) as *const _);
-        gl::VertexAttribDivisor(2, 1);
-        assert!(gl::GetError() == 0);
-
-        // reset opengl state
-        gl::BindVertexArray(0);
-        gl::BindBuffer(gl::ARRAY_BUFFER, 0);
-        (vao, quad_vbo, instance_vbo)
-    };
+    let mut game_state = GameState::new()?;
 
     let mut world = World::new();
     world.register::<GridPosition>();
     world.insert(game_state);
     world.create_entity().with(GridPosition { x: 0, y: 0 }).build();
 
-    let mut system = TestSystem;
+    let mut render_system = RenderSystem;
 
     event_loop.run(move |event, _, control_flow| {
         *control_flow = ControlFlow::Poll;
@@ -255,66 +224,10 @@ fn main() -> Result<(), String> {
             _ => { },
         };
 
-        rect_positions = game_state.grid.indexed_iter().map(|((x, y), grid)| {
-            let loc_z = match game_state.cursor == Vector2::new(x, y) {
-                true => 1.0,
-                false => 0.0,
-            };
-            let loc_x = (grid_width as isize / 2 - x as isize) as f32;
-            let loc_y = (grid_height as isize/ 2 - y as isize) as f32;
-            // TODO: game grid lines rather than spacers.
-            [
-                Vector3::new(2.0 * loc_x, 2.0 * loc_y, loc_z),
-                grid.biome.color(),
-            ]
-        }).collect();
-
         drop(game_state);
-        system.run_now(&world);
 
-        unsafe {
-            gl::BindBuffer(gl::ARRAY_BUFFER, instance_vbo);
-            gl::BufferSubData(gl::ARRAY_BUFFER, 0, (rect_positions.len() * mem::size_of_val(&rect_positions[0])) as isize, rect_positions.as_mut_ptr() as *mut _);
-            gl::BindBuffer(gl::ARRAY_BUFFER, 0);
+        render_system.run_now(&world);
 
-            gl::ClearColor(1.0, 0.5, 0.7, 1.0);
-            gl::Clear(gl::COLOR_BUFFER_BIT);
-
-            solid.set_use();
-
-            let decomp = Decomposed {
-                scale: 1.0,
-                rot: Quaternion::new(1.0, -0.5, 0.0, 0.0),
-                disp: Vector3::new(0.0, 0.0, 0.0),
-            };
-
-            // TODO: proper screen ratio
-            let proj: Matrix4<f32> = perspective(Deg(45.0), 1.0, 0.1, 1000.0);
-            let view: Matrix4<f32> = Decomposed {
-                scale: 1.0,
-                rot: Quaternion::new(0.0f32, 0.0, 0.0, 0.0),
-                disp: Vector3::new(0.0f32, 0.0, -60.0),
-            }.into();
-
-            let model: Matrix4<f32> = decomp.into();
-
-            let model_loc = solid.get_uniform_location("model");
-            let view_loc = solid.get_uniform_location("view");
-            let proj_loc = solid.get_uniform_location("proj");
-
-            gl::UniformMatrix4fv(model_loc, 1, gl::FALSE, model.as_ptr());
-            gl::UniformMatrix4fv(view_loc, 1, gl::FALSE, view.as_ptr());
-            gl::UniformMatrix4fv(proj_loc, 1, gl::FALSE, proj.as_ptr());
-
-            assert!(gl::GetError() == 0);
-            gl::BindVertexArray(vao);
-            gl::PolygonMode(gl::FRONT_AND_BACK, gl::FILL);
-            gl::DrawArraysInstanced(gl::TRIANGLES, 0, RECT.len() as i32, rect_positions.len() as i32);
-
-            //gl::PolygonMode(gl::FRONT_AND_BACK, gl::LINE);
-            //gl::DrawArraysInstanced(gl::TRIANGLES, 0, RECT.len() as i32, rect_positions.len() as i32);
-            assert!(gl::GetError() == 0);
-        }
         context.swap_buffers().unwrap();
     });
 

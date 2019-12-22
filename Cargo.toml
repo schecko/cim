@@ -12,4 +12,4 @@ ndarray = "0.13.0"
 rand = "0.5"
 rand_derive = "0.5"
 specs = { version = "0.15.0", features = ["specs-derive"] }
-
+lazy_static = "1.4.0"
