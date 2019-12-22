@@ -70,37 +70,51 @@ pub struct GameState {
     grid: Array2<GridCell>,
     cursor: Vector2<usize>,
     solid: Pipeline,
+
     quad_data: Buffer,
-    instance_data: Buffer,
+    quad_instance_data: Buffer,
     quad_vao: Vao,
+
+    cube_data: Buffer,
+    cube_instance_data: Buffer,
+    cube_vao: Vao,
 }
 
 impl GameState {
     fn new() -> Result<GameState, String> {
         let quad_data = Buffer::new();
-        let instance_data = Buffer::new();
-        let vao = Vao::new(quad_data, instance_data);
+        let quad_instance_data = Buffer::new();
+        let quad_vao = Vao::new(quad_data, quad_instance_data);
         quad_data.data(&mut RECT.to_vec(), gl::STATIC_DRAW);
         let grid = Array2::from_shape_fn(
             (20, 20),
             |(x, y)| GridCell { biome: rand::random() }
         );
-
         let mut rect_positions: Vec<_> = grid.indexed_iter().map(|((x, y), grid)| {
             [
                 Vector3::new(0.0, 0.0, 0.0),
                 Vector3::new(0.0, 0.0, 0.0),
             ]
         }).collect();
-        instance_data.data(&mut rect_positions, gl::DYNAMIC_DRAW);
+        quad_instance_data.data(&mut rect_positions, gl::DYNAMIC_DRAW);
+
+        let cube_data = Buffer::new();
+        cube_data.data(&mut CUBE.to_vec(), gl::STATIC_DRAW);
+        let cube_instance_data = Buffer::new();
+        let cube_vao = Vao::new(cube_data, cube_instance_data);
 
         Ok(GameState {
             cursor: Vector2::new(0, 0),
             grid,
             solid: Pipeline::new(VERTEX, FRAGMENT)?,
+
             quad_data,
-            instance_data,
-            quad_vao: vao,
+            quad_instance_data,
+            quad_vao,
+
+            cube_data,
+            cube_instance_data,
+            cube_vao,
         })
     }
 }
@@ -124,6 +138,45 @@ pub static RECT: [[f32; 3]; 6] = [
     [-1.0, -1.0, 0.0],
     [1.0, -1.0, 0.0],
     [-1.0, 1.0, 0.0],
+];
+
+pub static CUBE: [[f32; 3]; 36] = [
+    [-1.0, -1.0, -1.0],
+    [-1.0, -1.0,  1.0],
+    [-1.0,  1.0,  1.0],
+    [1.0,  1.0, -1.0 ],
+    [-1.0, -1.0, -1.0],
+    [-1.0,  1.0, -1.0],
+    [1.0, -1.0,  1.0 ],
+    [-1.0, -1.0, -1.0],
+    [1.0, -1.0, -1.0 ],
+    [1.0,  1.0, -1.0 ],
+    [1.0, -1.0, -1.0 ],
+    [-1.0, -1.0, -1.0],
+    [-1.0, -1.0, -1.0],
+    [-1.0,  1.0,  1.0],
+    [-1.0,  1.0, -1.0],
+    [1.0, -1.0,  1.0 ],
+    [-1.0, -1.0,  1.0],
+    [-1.0, -1.0, -1.0],
+    [-1.0,  1.0,  1.0],
+    [-1.0, -1.0,  1.0],
+    [1.0, -1.0,  1.0 ],
+    [1.0,  1.0,  1.0 ],
+    [1.0, -1.0, -1.0 ],
+    [1.0,  1.0, -1.0 ],
+    [1.0, -1.0, -1.0 ],
+    [1.0,  1.0,  1.0 ],
+    [1.0, -1.0,  1.0 ],
+    [1.0,  1.0,  1.0 ],
+    [1.0,  1.0, -1.0 ],
+    [-1.0,  1.0, -1.0],
+    [1.0,  1.0,  1.0 ],
+    [-1.0,  1.0, -1.0],
+    [-1.0,  1.0,  1.0],
+    [1.0,  1.0,  1.0 ],
+    [-1.0,  1.0,  1.0],
+    [1.0, -1.0,  1.0 ],
 ];
 
 static VERTEX: &str = r#"
