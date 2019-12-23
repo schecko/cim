@@ -11,6 +11,7 @@ extern crate rand;
 mod pipeline;
 mod renderer;
 mod ogl;
+mod input;
 
 use cgmath::*;
 use cgmath::prelude::*;
@@ -27,6 +28,7 @@ use std::ffi::{ CString, CStr, };
 use std::mem;
 use crate::renderer::*;
 use crate::ogl::*;
+use crate::input::*;
 
 static DEFAULT_GRID_LENGTH: usize = 4;
 
@@ -88,7 +90,9 @@ impl GameState {
         quad_data.data(&mut RECT.to_vec(), gl::STATIC_DRAW);
         let grid = Array2::from_shape_fn(
             (20, 20),
-            |(x, y)| GridCell { biome: rand::random() }
+            |(x, y)| {
+                GridCell { biome: rand::random() }
+            }
         );
         let mut rect_positions: Vec<_> = grid.indexed_iter().map(|((x, y), grid)| {
             [
@@ -227,12 +231,12 @@ fn main() -> Result<(), String> {
     world.register::<GridPosition>();
     world.insert(game_state);
     world.create_entity().with(GridPosition { x: 0, y: 0 }).build();
+    let mut input_state = InputState::new();
 
     let mut render_system = RenderSystem;
 
     event_loop.run(move |event, _, control_flow| {
         *control_flow = ControlFlow::Poll;
-        let mut game_state = world.fetch_mut::<GameState>();
         match event {
             Event::LoopDestroyed => return,
             Event::WindowEvent { ref event, .. } => {
@@ -244,40 +248,14 @@ fn main() -> Result<(), String> {
                         unsafe { gl::Viewport(0, 0, physical.width as _, physical.height as _); }
                     },
                     WindowEvent::CloseRequested => *control_flow = ControlFlow::Exit,
-                    WindowEvent::KeyboardInput { input: glutin::event::KeyboardInput { state, scancode, virtual_keycode, modifiers }, ..} if *state == ElementState::Pressed => {
-                        let (grid_dim_x, grid_dim_y) = game_state.grid.dim();
-                        match virtual_keycode {
-                            Some(VirtualKeyCode::H) => {
-                                if game_state.cursor.x < grid_dim_x - 1 {
-                                    game_state.cursor.x += 1;
-                                }
-                            },
-                            Some(VirtualKeyCode::J) => {
-                                if game_state.cursor.y < grid_dim_y - 1 {
-                                    game_state.cursor.y += 1;
-                                }
-                            },
-                            Some(VirtualKeyCode::K) => {
-                                if game_state.cursor.y > 0 {
-                                    game_state.cursor.y -= 1;
-                                }
-                            },
-                            Some(VirtualKeyCode::L) => {
-                                if game_state.cursor.x > 0 {
-                                    game_state.cursor.x -= 1;
-                                }
-                            },
-                            _ => {},
-                        }
-
+                    WindowEvent::KeyboardInput { input, .. } if input.state == ElementState::Pressed => {
+                        input_state.event(&mut world, input);
                     },
                     _ => {},
                 }
             },
             _ => { },
         };
-
-        drop(game_state);
 
         render_system.run_now(&world);
 

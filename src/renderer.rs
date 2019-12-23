@@ -57,7 +57,7 @@ impl<'a> System<'a> for RenderSystem {
 
             let decomp = Decomposed {
                 scale: 1.0,
-                rot: Quaternion::new(1.0, -0.5, 0.0, 0.0),
+                rot: Quaternion::new(0.0, 0.0, 0.0, 0.0),
                 disp: Vector3::new(0.0, 0.0, 0.0),
             };
 
@@ -65,7 +65,7 @@ impl<'a> System<'a> for RenderSystem {
             let proj: Matrix4<f32> = perspective(Deg(45.0), 1.0, 0.1, 1000.0);
             let view: Matrix4<f32> = Decomposed {
                 scale: 1.0,
-                rot: Quaternion::new(0.0f32, 0.0, 0.0, 0.0),
+                rot: Quaternion::new(1.0f32, -0.4, 0.0, 0.0),
                 disp: Vector3::new(0.0f32, 0.0, -60.0),
             }.into();
 
