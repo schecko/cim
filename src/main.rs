@@ -1,12 +1,13 @@
 
+#[macro_use] extern crate lazy_static;
 #[macro_use] extern crate rand_derive;
-
+#[macro_use] extern crate specs;
+#[macro_use] extern crate strum_macros;
 extern crate cgmath;
 extern crate glutin;
 extern crate ndarray;
 extern crate rand;
-#[macro_use] extern crate specs;
-#[macro_use] extern crate lazy_static;
+extern crate strum;
 
 mod pipeline;
 mod renderer;
