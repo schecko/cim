@@ -13,12 +13,7 @@ pub enum InputMode {
     Edit,
     Command,
     Editor,
-}
-
-enum InputModeTransition {
-    None,
-    Reset,
-    Go(InputMode),
+    Camera,
 }
 
 struct Node {
@@ -52,37 +47,138 @@ pub struct InputState {
 
 impl InputState {
     pub fn new() -> Self {
-        let mut normal = Node::new();
-        let mut j_node = Node::new();
-        let mut jj_node = Node::new();
-        j_node.action = Some(|_| {
-            println!("hello world");
-            None
-        });
-        j_node.scancode = 36; // J
+        let normal = Node {
+            action: None,
+            modifiers: Default::default(),
+            scancode: 0,
+            children: vec![
+                Node {
+                    action: Some(|_| {
+                        println!("free camera mode");
+                        Some(InputMode::Camera)
+                    }),
+                    modifiers: Default::default(),
+                    scancode: 33, // F
+                    children: vec![ ],
+                },
+                Node {
+                    action: Some(|mut world| {
+                        world.exec(|(mut game_state): (WriteExpect<crate::GameState>)| {
+                            let (grid_dim_x, grid_dim_y) = game_state.grid.dim();
+                            if game_state.cursor.x < grid_dim_x - 1 {
+                                game_state.cursor.x += 1;
+                            }
+                        });
+                        None
+                    }),
+                    modifiers: Default::default(),
+                    scancode: 35, // H
+                    children: vec![
+                    ],
+                },
+                Node {
+                    action: Some(|mut world| {
+                        world.exec(|(mut game_state): (WriteExpect<crate::GameState>)| {
+                            let (grid_dim_x, grid_dim_y) = game_state.grid.dim();
+                            if game_state.cursor.y < grid_dim_y - 1 {
+                                game_state.cursor.y += 1;
+                            }
+                        });
+                        None
+                    }),
+                    modifiers: Default::default(),
+                    scancode: 36, // J
+                    children: vec![ ],
+                },
+                Node {
+                    action: Some(|mut world| {
+                        world.exec(|(mut game_state): (WriteExpect<crate::GameState>)| {
+                            let (grid_dim_x, grid_dim_y) = game_state.grid.dim();
+                            if game_state.cursor.y > 0 {
+                                game_state.cursor.y -= 1;
+                            }
+                        });
+                        None
+                    }),
+                    modifiers: Default::default(),
+                    scancode: 37, // K
+                    children: vec![ ],
+                },
+                Node {
+                    action: Some(|mut world| {
+                        world.exec(|(mut game_state): (WriteExpect<crate::GameState>)| {
+                            let (grid_dim_x, grid_dim_y) = game_state.grid.dim();
+                            if game_state.cursor.x > 0 {
+                                game_state.cursor.x -= 1;
+                            }
+                        });
+                        None
+                    }),
+                    modifiers: Default::default(),
+                    scancode: 38, // L
+                    children: vec![ ],
+                },
+                Node {
+                    action: Some(|_| {
+                        println!("command mode");
+                        Some(InputMode::Command)
+                    }),
+                    modifiers: ModifiersState {
+                        shift: true,
+                        ..Default::default()
+                    },
+                    scancode: 39, // ;
+                    children: vec![ ],
+                },
+            ],
+        };
 
-        jj_node.action = Some(|_| {
-            println!("hello world 2");
-            None
-        });
-        jj_node.scancode = 36; // J
+        let command = Node {
+            action: None,
+            modifiers: Default::default(),
+            scancode: 0,
+            children: vec![
+                Node {
+                    action: Some(|_| {
+                        Some(InputMode::Normal)
+                    }),
+                    modifiers: Default::default(),
+                    scancode: 1, // <ESC>
+                    children: vec![ ],
+                },
+            ]
+        };
 
-        j_node.add_child(jj_node);
-        normal.add_child(j_node);
+        let camera = Node {
+            action: None,
+            modifiers: Default::default(),
+            scancode: 0,
+            children: vec![
+                Node {
+                    action: Some(|_| {
+                        Some(InputMode::Normal)
+                    }),
+                    modifiers: Default::default(),
+                    scancode: 1, // <ESC>
+                    children: vec![ ],
+                },
+            ]
+        };
 
         InputState {
             mode: InputMode::Normal,
             trees: [
                 normal,
                 Node::new(),
+                command,
                 Node::new(),
-                Node::new(),
+                camera,
             ],
             current: std::ptr::null_mut(),
         }
     }
 
-    unsafe fn traverse(&mut self, world: &mut World, input: &KeyboardInput) -> Option<InputMode> {
+    unsafe fn traverse(&mut self, world: &mut World, input: &KeyboardInput) {
         match (*self.current).children.iter_mut().find(|node| node.scancode == input.scancode) {
             Some(child) => {
                 self.current = child as *mut _;
@@ -93,8 +189,11 @@ impl InputState {
                             Some(fun) => fun(world),
                             None => None,
                         };
+                        if let Some(new_mode) = transition {
+                            self.mode = new_mode;
+                        }
+
                         self.current = std::ptr::null_mut();
-                        return transition;
                     },
                     _ => { },
                 }
@@ -103,8 +202,6 @@ impl InputState {
                 self.current = std::ptr::null_mut();
             }
         }
-
-        None
     }
 
     pub fn event(&mut self, world: &mut World, input: &KeyboardInput) {
@@ -115,33 +212,6 @@ impl InputState {
         unsafe {
             self.traverse(world, input);
         }
-
-        world.exec(|(mut game_state): (WriteExpect<crate::GameState>)| {
-            let (grid_dim_x, grid_dim_y) = game_state.grid.dim();
-            match input.virtual_keycode {
-                Some(VirtualKeyCode::H) => {
-                    if game_state.cursor.x < grid_dim_x - 1 {
-                        game_state.cursor.x += 1;
-                    }
-                },
-                Some(VirtualKeyCode::J) => {
-                    if game_state.cursor.y < grid_dim_y - 1 {
-                        game_state.cursor.y += 1;
-                    }
-                },
-                Some(VirtualKeyCode::K) => {
-                    if game_state.cursor.y > 0 {
-                        game_state.cursor.y -= 1;
-                    }
-                },
-                Some(VirtualKeyCode::L) => {
-                    if game_state.cursor.x > 0 {
-                        game_state.cursor.x -= 1;
-                    }
-                },
-                _ => {},
-            }
-        });
     }
 }
 
