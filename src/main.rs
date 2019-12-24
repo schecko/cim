@@ -83,6 +83,26 @@ pub struct GameState {
     cube_vao: Vao,
 }
 
+#[derive(Component)]
+pub struct Camera {
+    projection: Matrix4<f32>,
+    view: Decomposed<Vector3<f32>, Quaternion<f32>>,
+}
+
+impl Camera {
+    fn new() -> Self {
+        Self {
+            projection: perspective(Deg(45.0), 1.0, 0.1, 1000.0),
+            view: Decomposed {
+                scale: 1.0,
+                rot: Quaternion::new(1.0f32, -0.4, 0.0, 0.0),
+                disp: Vector3::new(0.0f32, 0.0, -60.0),
+            },
+        }
+    }
+}
+
+
 impl GameState {
     fn new() -> Result<GameState, String> {
         let quad_data = Buffer::new();
@@ -231,6 +251,7 @@ fn main() -> Result<(), String> {
     let mut world = World::new();
     world.register::<GridPosition>();
     world.insert(game_state);
+    world.insert(Camera::new());
     world.create_entity().with(GridPosition { x: 0, y: 0 }).build();
     let mut input_state = InputState::new();
 

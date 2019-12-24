@@ -45,6 +45,8 @@ pub struct InputState {
     current: *mut Node,
 }
 
+static CAMERA_SPEED: f32 = 0.01;
+
 impl InputState {
     pub fn new() -> Self {
         let normal = Node {
@@ -54,7 +56,6 @@ impl InputState {
             children: vec![
                 Node {
                     action: Some(|_| {
-                        println!("free camera mode");
                         Some(InputMode::Camera)
                     }),
                     modifiers: Default::default(),
@@ -120,7 +121,6 @@ impl InputState {
                 },
                 Node {
                     action: Some(|_| {
-                        println!("command mode");
                         Some(InputMode::Command)
                     }),
                     modifiers: ModifiersState {
@@ -133,23 +133,117 @@ impl InputState {
             ],
         };
 
-        let command = Node {
+        let camera = Node {
             action: None,
             modifiers: Default::default(),
             scancode: 0,
             children: vec![
                 Node {
-                    action: Some(|_| {
-                        Some(InputMode::Normal)
+                    action: Some(|mut world| {
+                        world.exec(|(mut camera): (WriteExpect<crate::Camera>)| {
+                            camera.view.rot.s += CAMERA_SPEED;
+                        });
+                        None
                     }),
                     modifiers: Default::default(),
-                    scancode: 1, // <ESC>
+                    scancode: 35, // H
+                    children: vec![
+                    ],
+                },
+                Node {
+                    action: Some(|mut world| {
+                        world.exec(|(mut camera): (WriteExpect<crate::Camera>)| {
+                            camera.view.rot.s -= CAMERA_SPEED;
+                        });
+                        None
+                    }),
+                    modifiers: ModifiersState {
+                        shift: true,
+                        ..Default::default()
+                    },
+                    scancode: 35, // H
+                    children: vec![
+                    ],
+                },
+                Node {
+                    action: Some(|mut world| {
+                        world.exec(|(mut camera): (WriteExpect<crate::Camera>)| {
+                            camera.view.rot.v.x += CAMERA_SPEED;
+                        });
+                        None
+                    }),
+                    modifiers: Default::default(),
+                    scancode: 36, // J
+                    children: vec![ ],
+                },
+                Node {
+                    action: Some(|mut world| {
+                        world.exec(|(mut camera): (WriteExpect<crate::Camera>)| {
+                            camera.view.rot.v.x -= CAMERA_SPEED;
+                        });
+                        None
+                    }),
+                    modifiers: ModifiersState {
+                        shift: true,
+                        ..Default::default()
+                    },
+                    scancode: 36, // J
+                    children: vec![ ],
+                },
+                Node {
+                    action: Some(|mut world| {
+                        world.exec(|(mut camera): (WriteExpect<crate::Camera>)| {
+                            camera.view.rot.v.y += CAMERA_SPEED;
+                        });
+                        None
+                    }),
+                    modifiers: Default::default(),
+                    scancode: 37, // K
+                    children: vec![ ],
+                },
+                Node {
+                    action: Some(|mut world| {
+                        world.exec(|(mut camera): (WriteExpect<crate::Camera>)| {
+                            camera.view.rot.v.y -= CAMERA_SPEED;
+                        });
+                        None
+                    }),
+                    modifiers: ModifiersState {
+                        shift: true,
+                        ..Default::default()
+                    },
+                    scancode: 37, // K
+                    children: vec![ ],
+                },
+                Node {
+                    action: Some(|mut world| {
+                        world.exec(|(mut camera): (WriteExpect<crate::Camera>)| {
+                            camera.view.rot.v.z -= CAMERA_SPEED;
+                        });
+                        None
+                    }),
+                    modifiers: Default::default(),
+                    scancode: 38, // L
+                    children: vec![ ],
+                },
+                Node {
+                    action: Some(|mut world| {
+                        world.exec(|(mut camera): (WriteExpect<crate::Camera>)| {
+                            camera.view.rot.v.z -= 0.1;
+                        });
+                        None
+                    }),
+                    modifiers: ModifiersState {
+                        shift: true,
+                        ..Default::default()
+                    },
+                    scancode: 38, // L
                     children: vec![ ],
                 },
             ]
         };
 
-        let camera = Node {
+        let command = Node {
             action: None,
             modifiers: Default::default(),
             scancode: 0,
@@ -179,7 +273,7 @@ impl InputState {
     }
 
     unsafe fn traverse(&mut self, world: &mut World, input: &KeyboardInput) {
-        match (*self.current).children.iter_mut().find(|node| node.scancode == input.scancode) {
+        match (*self.current).children.iter_mut().find(|node| node.scancode == input.scancode && node.modifiers == input.modifiers) {
             Some(child) => {
                 self.current = child as *mut _;
 
@@ -205,6 +299,12 @@ impl InputState {
     }
 
     pub fn event(&mut self, world: &mut World, input: &KeyboardInput) {
+        if input.scancode == 1 {
+            self.mode = InputMode::Normal;
+            self.current = std::ptr::null_mut();
+            return;
+        }
+
         if self.current == std::ptr::null_mut() {
             self.current = &mut self.trees[self.mode as usize] as *mut _;
         }

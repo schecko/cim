@@ -6,9 +6,9 @@ use cgmath::prelude::*;
 pub struct RenderSystem;
 
 impl<'a> System<'a> for RenderSystem {
-    type SystemData = (ReadStorage<'a, crate::GridPosition>, ReadExpect<'a, crate::GameState>);
+    type SystemData = (ReadStorage<'a, crate::GridPosition>, ReadExpect<'a, crate::GameState>, ReadExpect<'a, crate::Camera>);
 
-    fn run(&mut self, (grid_pos, game_state): Self::SystemData) {
+    fn run(&mut self, (grid_pos, game_state, camera): Self::SystemData) {
         use specs::Join;
 
         let (grid_width, grid_height) = game_state.grid.dim();
@@ -62,12 +62,8 @@ impl<'a> System<'a> for RenderSystem {
             };
 
             // TODO: proper screen ratio
-            let proj: Matrix4<f32> = perspective(Deg(45.0), 1.0, 0.1, 1000.0);
-            let view: Matrix4<f32> = Decomposed {
-                scale: 1.0,
-                rot: Quaternion::new(1.0f32, -0.4, 0.0, 0.0),
-                disp: Vector3::new(0.0f32, 0.0, -60.0),
-            }.into();
+            let proj: Matrix4<f32> = camera.projection;
+            let view: Matrix4<f32> = camera.view.into();
 
             let model: Matrix4<f32> = decomp.into();
 
