@@ -1,7 +1,7 @@
 
 use specs::prelude::*;
 use glutin::ContextBuilder;
-use glutin::event::{Event, WindowEvent, VirtualKeyCode, ElementState, KeyboardInput, ModifiersState, };
+use glutin::event::{Event, WindowEvent, VirtualKeyCode, ElementState, KeyboardInput, ModifiersState, ScanCode, };
 use glutin::event_loop::{ControlFlow, EventLoop};
 use glutin::window::WindowBuilder;
 use glutin::{ PossiblyCurrent, };
@@ -16,9 +16,20 @@ pub enum InputMode {
     Camera,
 }
 
+pub enum KeyCode {
+    Virtual(VirtualKeyCode),
+    Physical(ScanCode),
+}
+
+impl Default for KeyCode {
+    fn default() -> Self {
+        KeyCode::Physical(0)
+    }
+}
+
 struct Node {
     children: Vec<Node>,
-    scancode: u32,
+    code: KeyCode,
     modifiers: ModifiersState,
     action: Option<fn(&mut World) -> Option<InputMode>>,
 }
@@ -27,16 +38,11 @@ impl Node {
     fn new() -> Self {
         Self {
             children: Vec::new(),
-            scancode: 0,
+            code: KeyCode::Physical(0),
             modifiers: Default::default(),
             action: None,
         }
     }
-
-    fn add_child(&mut self, other: Node) {
-        self.children.push(other);
-    }
-
 }
 
 pub struct InputState {
@@ -51,15 +57,23 @@ impl InputState {
     pub fn new() -> Self {
         let normal = Node {
             action: None,
+            code: Default::default(), // root is unused
             modifiers: Default::default(),
-            scancode: 0,
             children: vec![
                 Node {
                     action: Some(|_| {
                         Some(InputMode::Camera)
                     }),
                     modifiers: Default::default(),
-                    scancode: 33, // F
+                    code: KeyCode::Virtual(VirtualKeyCode::F),
+                    children: vec![ ],
+                },
+                Node {
+                    action: Some(|_| {
+                        Some(InputMode::Edit)
+                    }),
+                    modifiers: Default::default(),
+                    code: KeyCode::Virtual(VirtualKeyCode::I),
                     children: vec![ ],
                 },
                 Node {
@@ -73,9 +87,8 @@ impl InputState {
                         None
                     }),
                     modifiers: Default::default(),
-                    scancode: 35, // H
-                    children: vec![
-                    ],
+                    code: KeyCode::Virtual(VirtualKeyCode::H),
+                    children: vec![ ],
                 },
                 Node {
                     action: Some(|mut world| {
@@ -88,7 +101,7 @@ impl InputState {
                         None
                     }),
                     modifiers: Default::default(),
-                    scancode: 36, // J
+                    code: KeyCode::Virtual(VirtualKeyCode::J),
                     children: vec![ ],
                 },
                 Node {
@@ -102,7 +115,7 @@ impl InputState {
                         None
                     }),
                     modifiers: Default::default(),
-                    scancode: 37, // K
+                    code: KeyCode::Virtual(VirtualKeyCode::K),
                     children: vec![ ],
                 },
                 Node {
@@ -116,18 +129,15 @@ impl InputState {
                         None
                     }),
                     modifiers: Default::default(),
-                    scancode: 38, // L
+                    code: KeyCode::Virtual(VirtualKeyCode::L),
                     children: vec![ ],
                 },
                 Node {
                     action: Some(|_| {
                         Some(InputMode::Command)
                     }),
-                    modifiers: ModifiersState {
-                        shift: true,
-                        ..Default::default()
-                    },
-                    scancode: 39, // ;
+                    modifiers: Default::default(),
+                    code: KeyCode::Virtual(VirtualKeyCode::Semicolon),
                     children: vec![ ],
                 },
             ],
@@ -136,7 +146,7 @@ impl InputState {
         let camera = Node {
             action: None,
             modifiers: Default::default(),
-            scancode: 0,
+            code: Default::default(), // root is unused
             children: vec![
                 Node {
                     action: Some(|mut world| {
@@ -146,7 +156,7 @@ impl InputState {
                         None
                     }),
                     modifiers: Default::default(),
-                    scancode: 35, // H
+                    code: KeyCode::Virtual(VirtualKeyCode::H),
                     children: vec![
                     ],
                 },
@@ -161,7 +171,7 @@ impl InputState {
                         shift: true,
                         ..Default::default()
                     },
-                    scancode: 35, // H
+                    code: KeyCode::Virtual(VirtualKeyCode::H),
                     children: vec![
                     ],
                 },
@@ -173,7 +183,7 @@ impl InputState {
                         None
                     }),
                     modifiers: Default::default(),
-                    scancode: 36, // J
+                    code: KeyCode::Virtual(VirtualKeyCode::J),
                     children: vec![ ],
                 },
                 Node {
@@ -187,7 +197,7 @@ impl InputState {
                         shift: true,
                         ..Default::default()
                     },
-                    scancode: 36, // J
+                    code: KeyCode::Virtual(VirtualKeyCode::J),
                     children: vec![ ],
                 },
                 Node {
@@ -198,7 +208,7 @@ impl InputState {
                         None
                     }),
                     modifiers: Default::default(),
-                    scancode: 37, // K
+                    code: KeyCode::Virtual(VirtualKeyCode::K),
                     children: vec![ ],
                 },
                 Node {
@@ -212,7 +222,7 @@ impl InputState {
                         shift: true,
                         ..Default::default()
                     },
-                    scancode: 37, // K
+                    code: KeyCode::Virtual(VirtualKeyCode::K),
                     children: vec![ ],
                 },
                 Node {
@@ -223,7 +233,7 @@ impl InputState {
                         None
                     }),
                     modifiers: Default::default(),
-                    scancode: 38, // L
+                    code: KeyCode::Virtual(VirtualKeyCode::L),
                     children: vec![ ],
                 },
                 Node {
@@ -237,7 +247,7 @@ impl InputState {
                         shift: true,
                         ..Default::default()
                     },
-                    scancode: 38, // L
+                    code: KeyCode::Virtual(VirtualKeyCode::L),
                     children: vec![ ],
                 },
             ]
@@ -246,14 +256,37 @@ impl InputState {
         let command = Node {
             action: None,
             modifiers: Default::default(),
-            scancode: 0,
+            code: Default::default(), // root is unused
             children: vec![
                 Node {
                     action: Some(|_| {
                         Some(InputMode::Normal)
                     }),
                     modifiers: Default::default(),
-                    scancode: 1, // <ESC>
+                    code: KeyCode::Virtual(VirtualKeyCode::Escape),
+                    children: vec![ ],
+                },
+            ]
+        };
+
+        let edit = Node {
+            action: None,
+            modifiers: Default::default(),
+            code: Default::default(), // root is unused
+            children: vec![
+                Node {
+                    action: Some(|mut world| {
+                        world.exec(|(mut grid_pos, game_state): (WriteStorage<crate::GridPosition>, ReadExpect<crate::GameState>)| {
+                            unimplemented!();
+                            let (grid_dim_x, grid_dim_y) = game_state.grid.dim();
+                            if game_state.cursor.x < grid_dim_x - 1 {
+                                game_state.cursor.x += 1;
+                            }
+                        });
+                        None
+                    }),
+                    modifiers: Default::default(),
+                    code: KeyCode::Virtual(VirtualKeyCode::H),
                     children: vec![ ],
                 },
             ]
@@ -273,7 +306,17 @@ impl InputState {
     }
 
     unsafe fn traverse(&mut self, world: &mut World, input: &KeyboardInput) {
-        match (*self.current).children.iter_mut().find(|node| node.scancode == input.scancode && node.modifiers == input.modifiers) {
+        match (*self.current)
+            .children
+            .iter_mut()
+            .find(|node| {
+                (match node.code {
+                    KeyCode::Virtual(v) => input.virtual_keycode.map_or(false, |iv| iv == v),
+                    KeyCode::Physical(p) => input.scancode == p,
+                })
+                && node.modifiers == input.modifiers
+            })
+        {
             Some(child) => {
                 self.current = child as *mut _;
 
@@ -299,7 +342,7 @@ impl InputState {
     }
 
     pub fn event(&mut self, world: &mut World, input: &KeyboardInput) {
-        if input.scancode == 1 {
+        if input.virtual_keycode.map_or(false, |v| v == VirtualKeyCode::Escape) {
             self.mode = InputMode::Normal;
             self.current = std::ptr::null_mut();
             return;
