@@ -78,7 +78,7 @@ impl InputState {
                     children: vec![ ],
                 },
                 Node {
-                    action: Some(|mut world| {
+                    action: Some(|world| {
                         world.exec(|(mut game_state): (WriteExpect<crate::GameState>)| {
                             let (grid_dim_x, grid_dim_y) = game_state.grid.dim();
                             if game_state.cursor.x < grid_dim_x - 1 {
@@ -92,7 +92,7 @@ impl InputState {
                     children: vec![ ],
                 },
                 Node {
-                    action: Some(|mut world| {
+                    action: Some(|world| {
                         world.exec(|(mut game_state): (WriteExpect<crate::GameState>)| {
                             let (grid_dim_x, grid_dim_y) = game_state.grid.dim();
                             if game_state.cursor.y < grid_dim_y - 1 {
@@ -106,7 +106,7 @@ impl InputState {
                     children: vec![ ],
                 },
                 Node {
-                    action: Some(|mut world| {
+                    action: Some(|world| {
                         world.exec(|(mut game_state): (WriteExpect<crate::GameState>)| {
                             let (grid_dim_x, grid_dim_y) = game_state.grid.dim();
                             if game_state.cursor.y > 0 {
@@ -120,7 +120,7 @@ impl InputState {
                     children: vec![ ],
                 },
                 Node {
-                    action: Some(|mut world| {
+                    action: Some(|world| {
                         world.exec(|(mut game_state): (WriteExpect<crate::GameState>)| {
                             let (grid_dim_x, grid_dim_y) = game_state.grid.dim();
                             if game_state.cursor.x > 0 {
@@ -153,7 +153,7 @@ impl InputState {
             code: Default::default(), // root is unused
             children: vec![
                 Node {
-                    action: Some(|mut world| {
+                    action: Some(|world| {
                         world.exec(|(mut camera): (WriteExpect<crate::Camera>)| {
                             camera.view.rot.s += CAMERA_SPEED;
                         });
@@ -165,7 +165,7 @@ impl InputState {
                     ],
                 },
                 Node {
-                    action: Some(|mut world| {
+                    action: Some(|world| {
                         world.exec(|(mut camera): (WriteExpect<crate::Camera>)| {
                             camera.view.rot.s -= CAMERA_SPEED;
                         });
@@ -180,7 +180,7 @@ impl InputState {
                     ],
                 },
                 Node {
-                    action: Some(|mut world| {
+                    action: Some(|world| {
                         world.exec(|(mut camera): (WriteExpect<crate::Camera>)| {
                             camera.view.rot.v.x += CAMERA_SPEED;
                         });
@@ -191,7 +191,7 @@ impl InputState {
                     children: vec![ ],
                 },
                 Node {
-                    action: Some(|mut world| {
+                    action: Some(|world| {
                         world.exec(|(mut camera): (WriteExpect<crate::Camera>)| {
                             camera.view.rot.v.x -= CAMERA_SPEED;
                         });
@@ -205,7 +205,7 @@ impl InputState {
                     children: vec![ ],
                 },
                 Node {
-                    action: Some(|mut world| {
+                    action: Some(|world| {
                         world.exec(|(mut camera): (WriteExpect<crate::Camera>)| {
                             camera.view.rot.v.y += CAMERA_SPEED;
                         });
@@ -216,7 +216,7 @@ impl InputState {
                     children: vec![ ],
                 },
                 Node {
-                    action: Some(|mut world| {
+                    action: Some(|world| {
                         world.exec(|(mut camera): (WriteExpect<crate::Camera>)| {
                             camera.view.rot.v.y -= CAMERA_SPEED;
                         });
@@ -230,7 +230,7 @@ impl InputState {
                     children: vec![ ],
                 },
                 Node {
-                    action: Some(|mut world| {
+                    action: Some(|world| {
                         world.exec(|(mut camera): (WriteExpect<crate::Camera>)| {
                             camera.view.rot.v.z -= CAMERA_SPEED;
                         });
@@ -241,7 +241,7 @@ impl InputState {
                     children: vec![ ],
                 },
                 Node {
-                    action: Some(|mut world| {
+                    action: Some(|world| {
                         world.exec(|(mut camera): (WriteExpect<crate::Camera>)| {
                             camera.view.rot.v.z -= 0.1;
                         });
@@ -276,7 +276,7 @@ impl InputState {
                     code: KeyCode::Virtual(VirtualKeyCode::Q),
                     children: vec![
                         Node {
-                            action: Some(|mut world| {
+                            action: Some(|world| {
                                 world.exec(|(mut game_state): (WriteExpect<crate::GameState>)| {
                                     game_state.running = false;
                                 });
@@ -297,7 +297,7 @@ impl InputState {
             code: Default::default(), // root is unused
             children: vec![
                 Node {
-                    action: Some(|mut world| {
+                    action: Some(|world| {
                         world.exec(|(mut grid_pos, game_state): (WriteStorage<crate::GridPosition>, ReadExpect<crate::GameState>)| {
                             unimplemented!();
                             let (grid_dim_x, grid_dim_y) = game_state.grid.dim();
