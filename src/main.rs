@@ -81,6 +81,8 @@ pub struct GameState {
     cube_data: Buffer,
     cube_instance_data: Buffer,
     cube_vao: Vao,
+
+    running: bool,
 }
 
 #[derive(Component)]
@@ -140,6 +142,8 @@ impl GameState {
             cube_data,
             cube_instance_data,
             cube_vao,
+
+            running: true,
         })
     }
 }
@@ -280,8 +284,13 @@ fn main() -> Result<(), String> {
         };
 
         render_system.run_now(&world);
-
         context.swap_buffers().unwrap();
+
+        world.exec(|(game_state): (ReadExpect<crate::GameState>)| {
+            if !game_state.running {
+                *control_flow = ControlFlow::Exit;
+            }
+        });
     });
 
 }

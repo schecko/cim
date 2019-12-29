@@ -16,6 +16,7 @@ pub enum InputMode {
     Camera,
 }
 
+#[derive(Debug)]
 pub enum KeyCode {
     Virtual(VirtualKeyCode),
     Physical(ScanCode),
@@ -136,7 +137,10 @@ impl InputState {
                     action: Some(|_| {
                         Some(InputMode::Command)
                     }),
-                    modifiers: Default::default(),
+                    modifiers: ModifiersState {
+                        shift: true,
+                        ..Default::default()
+                    },
                     code: KeyCode::Virtual(VirtualKeyCode::Semicolon),
                     children: vec![ ],
                 },
@@ -265,6 +269,24 @@ impl InputState {
                     modifiers: Default::default(),
                     code: KeyCode::Virtual(VirtualKeyCode::Escape),
                     children: vec![ ],
+                },
+                Node {
+                    action: None,
+                    modifiers: Default::default(),
+                    code: KeyCode::Virtual(VirtualKeyCode::Q),
+                    children: vec![
+                        Node {
+                            action: Some(|mut world| {
+                                world.exec(|(mut game_state): (WriteExpect<crate::GameState>)| {
+                                    game_state.running = false;
+                                });
+                                None
+                            }),
+                            modifiers: Default::default(),
+                            code: KeyCode::Virtual(VirtualKeyCode::Return),
+                            children: vec![ ],
+                        },
+                    ],
                 },
             ]
         };
