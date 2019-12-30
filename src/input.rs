@@ -10,7 +10,7 @@ use strum::{EnumCount};
 #[derive(EnumCount, Clone, Copy)]
 pub enum InputMode {
     Normal,
-    Edit,
+    Unit,
     Command,
     Editor,
     Camera,
@@ -70,8 +70,11 @@ impl InputState {
                     children: vec![ ],
                 },
                 Node {
-                    action: Some(|_| {
-                        Some(InputMode::Edit)
+                    action: Some(|world| {
+                        world.exec(|(mut game_state): (WriteExpect<crate::GameState>)| {
+                            game_state.yanked_location = Some(game_state.cursor);
+                        });
+                        Some(InputMode::Unit)
                     }),
                     modifiers: Default::default(),
                     code: KeyCode::Virtual(VirtualKeyCode::I),
@@ -80,10 +83,41 @@ impl InputState {
                 Node {
                     action: Some(|world| {
                         world.exec(|(mut game_state): (WriteExpect<crate::GameState>)| {
-                            let (grid_dim_x, grid_dim_y) = game_state.grid.dim();
-                            if game_state.cursor.x < grid_dim_x - 1 {
-                                game_state.cursor.x += 1;
+                            game_state.yanked_location = Some(game_state.cursor);
+                        });
+                        None
+                    }),
+                    modifiers: Default::default(),
+                    code: KeyCode::Virtual(VirtualKeyCode::Y),
+                    children: vec![ ],
+                },
+                Node {
+                    action: Some(|world| {
+                        world.exec(|(ents, mut grid_pos, mut game_state): (Entities, WriteStorage<crate::GridPosition>, WriteExpect<crate::GameState>)| {
+                            if let Some(loc) = game_state.yanked_location {
+                                let source_unit = game_state.grid.get_mut(loc.loc).unwrap().unit.take();
+                                let cursor = game_state.cursor;
+                                let dest = game_state.grid.get_mut(cursor.loc).unwrap();
+                                dest.unit = source_unit;
+
+                                if let Some(id) = dest.unit {
+                                    match (&ents, &mut grid_pos).join().find(|(e, p)| e.id() == id) {
+                                        Some((ent, pos)) => pos.xy = cursor.loc,
+                                        None => {},
+                                    }
+                                }
                             }
+                        });
+                        None
+                    }),
+                    modifiers: Default::default(),
+                    code: KeyCode::Virtual(VirtualKeyCode::P),
+                    children: vec![ ],
+                },
+                Node {
+                    action: Some(|world| {
+                        world.exec(|(mut game_state): (WriteExpect<crate::GameState>)| {
+                            game_state.cursor = game_state.cursor.left(&game_state.grid, 1);
                         });
                         None
                     }),
@@ -94,10 +128,7 @@ impl InputState {
                 Node {
                     action: Some(|world| {
                         world.exec(|(mut game_state): (WriteExpect<crate::GameState>)| {
-                            let (grid_dim_x, grid_dim_y) = game_state.grid.dim();
-                            if game_state.cursor.y < grid_dim_y - 1 {
-                                game_state.cursor.y += 1;
-                            }
+                            game_state.cursor = game_state.cursor.down(&game_state.grid, 1);
                         });
                         None
                     }),
@@ -108,10 +139,7 @@ impl InputState {
                 Node {
                     action: Some(|world| {
                         world.exec(|(mut game_state): (WriteExpect<crate::GameState>)| {
-                            let (grid_dim_x, grid_dim_y) = game_state.grid.dim();
-                            if game_state.cursor.y > 0 {
-                                game_state.cursor.y -= 1;
-                            }
+                            game_state.cursor = game_state.cursor.up(&game_state.grid, 1);
                         });
                         None
                     }),
@@ -122,10 +150,7 @@ impl InputState {
                 Node {
                     action: Some(|world| {
                         world.exec(|(mut game_state): (WriteExpect<crate::GameState>)| {
-                            let (grid_dim_x, grid_dim_y) = game_state.grid.dim();
-                            if game_state.cursor.x > 0 {
-                                game_state.cursor.x -= 1;
-                            }
+                            game_state.cursor = game_state.cursor.right(&game_state.grid, 1);
                         });
                         None
                     }),
@@ -291,19 +316,30 @@ impl InputState {
             ]
         };
 
-        let edit = Node {
+        let unit = Node {
             action: None,
             modifiers: Default::default(),
             code: Default::default(), // root is unused
             children: vec![
                 Node {
                     action: Some(|world| {
-                        world.exec(|(mut grid_pos, game_state): (WriteStorage<crate::GridPosition>, ReadExpect<crate::GameState>)| {
-                            unimplemented!();
+                        world.exec(|(ents, mut grid_pos, mut game_state): (Entities, WriteStorage<crate::GridPosition>, WriteExpect<crate::GameState>)| {
                             let (grid_dim_x, grid_dim_y) = game_state.grid.dim();
-                            if game_state.cursor.x < grid_dim_x - 1 {
-                                game_state.cursor.x += 1;
-                            }
+                            /*if game_state.cursor.0 < grid_dim_x - 1 {
+                                let mut cursor = game_state.cursor;
+                                let source_unit = game_state.grid.get_mut(cursor).unwrap().unit.take();
+                                let dest_i = (cursor.0 + 1, cursor.1);
+                                let dest = game_state.grid.get_mut(dest_i).unwrap();
+                                dest.unit = source_unit;
+
+                                if let Some(id) = dest.unit {
+                                    match (&ents, &mut grid_pos).join().find(|(e, p)| e.id() == id) {
+                                        Some((ent, pos)) => pos.xy = dest_i,
+                                        None => {},
+                                    }
+                                }
+                                game_state.cursor = dest_i;
+                            }*/
                         });
                         None
                     }),
@@ -318,7 +354,7 @@ impl InputState {
             mode: InputMode::Normal,
             trees: [
                 normal,
-                Node::new(),
+                unit,
                 command,
                 Node::new(),
                 camera,

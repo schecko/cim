@@ -16,7 +16,7 @@ impl<'a> System<'a> for RenderSystem {
         let signed_height = grid_height as isize;
 
         let mut rect_positions: Vec<_> = game_state.grid.indexed_iter().map(|((x, y), grid)| {
-            let loc_z = match game_state.cursor == Vector2::new(x, y) {
+            let loc_z = match game_state.cursor == (x, y).into() {
                 true => 1.0,
                 false => 0.0,
             };
@@ -33,9 +33,9 @@ impl<'a> System<'a> for RenderSystem {
         let mut unit_positions = grid_pos
             .join()
             .map(|pos| {
-                let loc_x = (signed_width / 2 - pos.x as isize) as f32;
-                let loc_y = (signed_height / 2 - pos.y as isize) as f32;
-                let loc_z = match game_state.cursor == Vector2::new(pos.x, pos.y) {
+                let loc_x = (signed_width / 2 - pos.xy.0 as isize) as f32;
+                let loc_y = (signed_height / 2 - pos.xy.1 as isize) as f32;
+                let loc_z = match game_state.cursor == pos.xy.into() {
                     true => 2.0,
                     false => 1.0,
                 };

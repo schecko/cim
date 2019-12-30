@@ -8,6 +8,7 @@ extern crate glutin;
 extern crate ndarray;
 extern crate rand;
 extern crate strum;
+extern crate num;
 
 mod pipeline;
 mod renderer;
@@ -59,19 +60,60 @@ impl Biome {
 #[derive(Debug, Clone)]
 struct GridCell {
     pub biome: Biome,
+    pub unit: Option<specs::world::Index>,
 }
 
 #[derive(Debug, Component)]
 #[storage(VecStorage)]
 pub struct GridPosition {
-    x: usize,
-    y: usize,
+    xy: (usize, usize),
+}
+
+#[derive(Clone, Copy, PartialEq, Eq, Default)]
+struct Cursor {
+    pub loc: (usize, usize),
+}
+
+impl Cursor {
+    fn new(x: usize, y: usize) -> Self {
+        Self { loc: (x, y) }
+    }
+
+    fn right<T>(&self, grid: &Array2<T>, distance: usize) -> Self {
+        let (grid_dim_x, grid_dim_y) = grid.dim();
+        let new_vert = self.loc.0 as isize - distance as isize;
+        Cursor{ loc: (num::clamp(new_vert, 0, grid_dim_x as isize - 1) as usize, self.loc.1) }
+    }
+
+    fn left<T>(&self, grid: &Array2<T>, distance: usize) -> Self {
+        let (grid_dim_x, grid_dim_y) = grid.dim();
+        let new_vert = self.loc.0 + distance;
+        Cursor{ loc: (num::clamp(new_vert, 0, grid_dim_x - 1), self.loc.1) }
+    }
+
+    fn down<T>(&self, grid: &Array2<T>, distance: usize) -> Self {
+        let (grid_dim_x, grid_dim_y) = grid.dim();
+        let new_vert = self.loc.1 + distance;
+        Cursor{ loc: (self.loc.0, num::clamp(new_vert, 0, grid_dim_y - 1)) }
+    }
+
+    fn up<T>(&self, grid: &Array2<T>, distance: usize) -> Self {
+        let (grid_dim_x, grid_dim_y) = grid.dim();
+        let new_vert = self.loc.1 as isize - distance as isize;
+        Cursor{ loc: (self.loc.0, num::clamp(new_vert, 0, grid_dim_y as isize - 1) as usize) }
+    }
+}
+
+impl From<(usize, usize)> for Cursor {
+    fn from(other: (usize, usize)) -> Self {
+        Self { loc: other }
+    }
 }
 
 #[derive(Component)]
 pub struct GameState {
     grid: Array2<GridCell>,
-    cursor: Vector2<usize>,
+    cursor: Cursor,
     solid: Pipeline,
 
     quad_data: Buffer,
@@ -83,6 +125,8 @@ pub struct GameState {
     cube_vao: Vao,
 
     running: bool,
+
+    yanked_location: Option<Cursor>,
 }
 
 #[derive(Component)]
@@ -97,7 +141,7 @@ impl Camera {
             projection: perspective(Deg(45.0), 1.0, 0.1, 1000.0),
             view: Decomposed {
                 scale: 1.0,
-                rot: Quaternion::new(1.0f32, -0.4, 0.0, 0.0),
+                rot: Quaternion::new(-1.0f32, -0.4, 0.0, 0.0),
                 disp: Vector3::new(0.0f32, 0.0, -60.0),
             },
         }
@@ -114,7 +158,10 @@ impl GameState {
         let grid = Array2::from_shape_fn(
             (20, 20),
             |(x, y)| {
-                GridCell { biome: rand::random() }
+                GridCell {
+                    biome: rand::random(),
+                    unit: None,
+                }
             }
         );
         let mut rect_positions: Vec<_> = grid.indexed_iter().map(|((x, y), grid)| {
@@ -131,7 +178,7 @@ impl GameState {
         let cube_vao = Vao::new(cube_data, cube_instance_data);
 
         Ok(GameState {
-            cursor: Vector2::new(0, 0),
+            cursor: Default::default(),
             grid,
             solid: Pipeline::new(VERTEX, FRAGMENT)?,
 
@@ -144,6 +191,7 @@ impl GameState {
             cube_vao,
 
             running: true,
+            yanked_location: None,
         })
     }
 }
@@ -222,7 +270,7 @@ static VERTEX: &str = r#"
     uniform mat4 proj;
 
     void main() {
-        gl_Position = proj * view * model * vec4(aWorldPos + aVertOffset, 1.0);
+        gl_Position = proj * view * model * vec4(-aWorldPos - aVertOffset, 1.0);
         fColor = aColor;
     }
 "#;
@@ -254,9 +302,13 @@ fn main() -> Result<(), String> {
 
     let mut world = World::new();
     world.register::<GridPosition>();
+    let pos = (0, 0);
+    let ent = world.create_entity().with(GridPosition { xy: pos }).build();
+    game_state.grid.get_mut(pos).unwrap().unit = Some(ent.id());
+
     world.insert(game_state);
     world.insert(Camera::new());
-    world.create_entity().with(GridPosition { x: 0, y: 0 }).build();
+
     let mut input_state = InputState::new();
 
     let mut render_system = RenderSystem;
