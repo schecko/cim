@@ -31,10 +31,11 @@ use std::mem;
 use crate::renderer::*;
 use crate::ogl::*;
 use crate::input::*;
+use rand::distributions::{ Uniform, Distribution, };
 
 static DEFAULT_GRID_LENGTH: usize = 4;
 
-#[derive(Debug, Clone, Rand)]
+#[derive(Debug, Clone, PartialEq, Eq, Rand)]
 enum Biome {
     Desert,
     Grassland,
@@ -148,6 +149,20 @@ impl Camera {
     }
 }
 
+fn grid_fill(mut grid: &mut Array2<GridCell>, depth: u32, max_depth: u32, (x, y): (usize, usize)) {
+    let cell = grid.get_mut((x, y)).unwrap();
+    if cell.biome == Biome::Ocean {
+        cell.biome = rand::random();
+    }
+
+    let (grid_dim_x, grid_dim_y) = grid.dim();
+    if depth < max_depth {
+        if x < grid_dim_x - 1 { grid_fill(&mut grid, depth + 1, max_depth, (x + 1, y)); }
+        if x > 1 { grid_fill(&mut grid, depth + 1, max_depth, (x - 1, y)); }
+        if y < grid_dim_y - 1 { grid_fill(&mut grid, depth + 1, max_depth, (x, y + 1)); }
+        if y > 1 { grid_fill(&mut grid, depth + 1, max_depth, (x, y - 1)); }
+    }
+}
 
 impl GameState {
     fn new() -> Result<GameState, String> {
@@ -155,15 +170,29 @@ impl GameState {
         let quad_instance_data = Buffer::new();
         let quad_vao = Vao::new(quad_data, quad_instance_data);
         quad_data.data(&mut RECT.to_vec(), gl::STATIC_DRAW);
-        let grid = Array2::from_shape_fn(
-            (20, 20),
+        let mut grid = Array2::from_shape_fn(
+            (50, 50),
             |(x, y)| {
                 GridCell {
-                    biome: rand::random(),
+                    biome: Biome::Ocean,
                     unit: None,
                 }
             }
         );
+
+        let num_continents = 10;
+        let (grid_dim_x, grid_dim_y) = grid.dim();
+
+        let mut rng = rand::thread_rng();
+        let rand_x = Uniform::from(0..grid_dim_x);
+        let rand_y = Uniform::from(0..grid_dim_y);
+
+        for i in 0..num_continents {
+            let x = rand_x.sample(&mut rng);
+            let y = rand_y.sample(&mut rng);
+            grid_fill(&mut grid, 0, 10, (x, y));
+        }
+
         let mut rect_positions: Vec<_> = grid.indexed_iter().map(|((x, y), grid)| {
             [
                 Vector3::new(0.0, 0.0, 0.0),
