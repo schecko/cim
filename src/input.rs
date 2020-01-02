@@ -324,27 +324,93 @@ impl InputState {
                 Node {
                     action: Some(|world| {
                         world.exec(|(ents, mut grid_pos, mut game_state): (Entities, WriteStorage<crate::GridPosition>, WriteExpect<crate::GameState>)| {
-                            let (grid_dim_x, grid_dim_y) = game_state.grid.dim();
-                            /*if game_state.cursor.0 < grid_dim_x - 1 {
-                                let mut cursor = game_state.cursor;
-                                let source_unit = game_state.grid.get_mut(cursor).unwrap().unit.take();
-                                let dest_i = (cursor.0 + 1, cursor.1);
-                                let dest = game_state.grid.get_mut(dest_i).unwrap();
-                                dest.unit = source_unit;
+                            let cursor = game_state.cursor;
+                            let dest_i = cursor.left(&game_state.grid, 1);
+                            let source_unit = game_state.grid.get_mut(cursor.loc).unwrap().unit.take();
+                            let dest = game_state.grid.get_mut(dest_i.loc).unwrap();
+                            dest.unit = source_unit;
 
-                                if let Some(id) = dest.unit {
-                                    match (&ents, &mut grid_pos).join().find(|(e, p)| e.id() == id) {
-                                        Some((ent, pos)) => pos.xy = dest_i,
-                                        None => {},
-                                    }
+                            if let Some(id) = dest.unit {
+                                match (&ents, &mut grid_pos).join().find(|(e, p)| e.id() == id) {
+                                    Some((ent, pos)) => pos.xy = dest_i.loc,
+                                    None => {},
                                 }
-                                game_state.cursor = dest_i;
-                            }*/
+                            }
+                            game_state.cursor = dest_i;
                         });
                         None
                     }),
                     modifiers: Default::default(),
                     code: KeyCode::Virtual(VirtualKeyCode::H),
+                    children: vec![ ],
+                },
+                Node {
+                    action: Some(|world| {
+                        world.exec(|(ents, mut grid_pos, mut game_state): (Entities, WriteStorage<crate::GridPosition>, WriteExpect<crate::GameState>)| {
+                            let cursor = game_state.cursor;
+                            let dest_i = cursor.down(&game_state.grid, 1);
+                            let source_unit = game_state.grid.get_mut(cursor.loc).unwrap().unit.take();
+                            let dest = game_state.grid.get_mut(dest_i.loc).unwrap();
+                            dest.unit = source_unit;
+
+                            if let Some(id) = dest.unit {
+                                match (&ents, &mut grid_pos).join().find(|(e, p)| e.id() == id) {
+                                    Some((ent, pos)) => pos.xy = dest_i.loc,
+                                    None => {},
+                                }
+                            }
+                            game_state.cursor = dest_i;
+                        });
+                        None
+                    }),
+                    modifiers: Default::default(),
+                    code: KeyCode::Virtual(VirtualKeyCode::J),
+                    children: vec![ ],
+                },
+                Node {
+                    action: Some(|world| {
+                        world.exec(|(ents, mut grid_pos, mut game_state): (Entities, WriteStorage<crate::GridPosition>, WriteExpect<crate::GameState>)| {
+                            let cursor = game_state.cursor;
+                            let dest_i = cursor.up(&game_state.grid, 1);
+                            let source_unit = game_state.grid.get_mut(cursor.loc).unwrap().unit.take();
+                            let dest = game_state.grid.get_mut(dest_i.loc).unwrap();
+                            dest.unit = source_unit;
+
+                            if let Some(id) = dest.unit {
+                                match (&ents, &mut grid_pos).join().find(|(e, p)| e.id() == id) {
+                                    Some((ent, pos)) => pos.xy = dest_i.loc,
+                                    None => {},
+                                }
+                            }
+                            game_state.cursor = dest_i;
+                        });
+                        None
+                    }),
+                    modifiers: Default::default(),
+                    code: KeyCode::Virtual(VirtualKeyCode::K),
+                    children: vec![ ],
+                },
+                Node {
+                    action: Some(|world| {
+                        world.exec(|(ents, mut grid_pos, mut game_state): (Entities, WriteStorage<crate::GridPosition>, WriteExpect<crate::GameState>)| {
+                            let cursor = game_state.cursor;
+                            let dest_i = cursor.right(&game_state.grid, 1);
+                            let source_unit = game_state.grid.get_mut(cursor.loc).unwrap().unit.take();
+                            let dest = game_state.grid.get_mut(dest_i.loc).unwrap();
+                            dest.unit = source_unit;
+
+                            if let Some(id) = dest.unit {
+                                match (&ents, &mut grid_pos).join().find(|(e, p)| e.id() == id) {
+                                    Some((ent, pos)) => pos.xy = dest_i.loc,
+                                    None => {},
+                                }
+                            }
+                            game_state.cursor = dest_i;
+                        });
+                        None
+                    }),
+                    modifiers: Default::default(),
+                    code: KeyCode::Virtual(VirtualKeyCode::L),
                     children: vec![ ],
                 },
             ]

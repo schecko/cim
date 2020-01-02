@@ -79,25 +79,25 @@ impl Cursor {
         Self { loc: (x, y) }
     }
 
-    fn right<T>(&self, grid: &Array2<T>, distance: usize) -> Self {
+    fn left<T>(&self, grid: &Array2<T>, distance: usize) -> Self {
         let (grid_dim_x, grid_dim_y) = grid.dim();
         let new_vert = self.loc.0 as isize - distance as isize;
         Cursor{ loc: (num::clamp(new_vert, 0, grid_dim_x as isize - 1) as usize, self.loc.1) }
     }
 
-    fn left<T>(&self, grid: &Array2<T>, distance: usize) -> Self {
+    fn right<T>(&self, grid: &Array2<T>, distance: usize) -> Self {
         let (grid_dim_x, grid_dim_y) = grid.dim();
         let new_vert = self.loc.0 + distance;
         Cursor{ loc: (num::clamp(new_vert, 0, grid_dim_x - 1), self.loc.1) }
     }
 
-    fn down<T>(&self, grid: &Array2<T>, distance: usize) -> Self {
+    fn up<T>(&self, grid: &Array2<T>, distance: usize) -> Self {
         let (grid_dim_x, grid_dim_y) = grid.dim();
         let new_vert = self.loc.1 + distance;
         Cursor{ loc: (self.loc.0, num::clamp(new_vert, 0, grid_dim_y - 1)) }
     }
 
-    fn up<T>(&self, grid: &Array2<T>, distance: usize) -> Self {
+    fn down<T>(&self, grid: &Array2<T>, distance: usize) -> Self {
         let (grid_dim_x, grid_dim_y) = grid.dim();
         let new_vert = self.loc.1 as isize - distance as isize;
         Cursor{ loc: (self.loc.0, num::clamp(new_vert, 0, grid_dim_y as isize - 1) as usize) }
@@ -141,7 +141,7 @@ impl Camera {
             projection: perspective(Deg(45.0), 1.0, 0.1, 1000.0),
             view: Decomposed {
                 scale: 1.0,
-                rot: Quaternion::new(-1.0f32, -0.4, 0.0, 0.0),
+                rot: Quaternion::new(-0.6f32, 0.50, 0.0, 0.0),
                 disp: Vector3::new(0.0f32, 0.0, -60.0),
             },
         }
@@ -270,7 +270,7 @@ static VERTEX: &str = r#"
     uniform mat4 proj;
 
     void main() {
-        gl_Position = proj * view * model * vec4(-aWorldPos - aVertOffset, 1.0);
+        gl_Position = proj * view * model * vec4(+aWorldPos + aVertOffset, 1.0);
         fColor = aColor;
     }
 "#;

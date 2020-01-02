@@ -20,8 +20,8 @@ impl<'a> System<'a> for RenderSystem {
                 true => 1.0,
                 false => 0.0,
             };
-            let loc_x = (signed_width / 2 - x as isize) as f32;
-            let loc_y = (signed_height / 2 - y as isize) as f32;
+            let loc_x = (-signed_width / 2 + x as isize) as f32 + 0.5;
+            let loc_y = (-signed_height / 2 + y as isize) as f32;
             // TODO: game grid lines rather than spacers.
             [
                 Vector3::new(2.0 * loc_x, 2.0 * loc_y, loc_z),
@@ -33,8 +33,8 @@ impl<'a> System<'a> for RenderSystem {
         let mut unit_positions = grid_pos
             .join()
             .map(|pos| {
-                let loc_x = (signed_width / 2 - pos.xy.0 as isize) as f32;
-                let loc_y = (signed_height / 2 - pos.xy.1 as isize) as f32;
+                let loc_x = (-signed_width / 2 + pos.xy.0 as isize) as f32 + 0.5;
+                let loc_y = (-signed_height / 2 + pos.xy.1 as isize) as f32;
                 let loc_z = match game_state.cursor == pos.xy.into() {
                     true => 2.0,
                     false => 1.0,
@@ -50,8 +50,9 @@ impl<'a> System<'a> for RenderSystem {
         game_state.cube_instance_data.data(&mut unit_positions, gl::STATIC_DRAW);
 
         unsafe {
+            gl::Enable(gl::DEPTH_TEST);
             gl::ClearColor(1.0, 0.5, 0.7, 1.0);
-            gl::Clear(gl::COLOR_BUFFER_BIT);
+            gl::Clear(gl::COLOR_BUFFER_BIT | gl::DEPTH_BUFFER_BIT);
 
             game_state.solid.set_use();
 
