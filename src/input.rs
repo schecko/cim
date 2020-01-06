@@ -166,7 +166,22 @@ impl InputState {
                         shift: true,
                         ..Default::default()
                     },
+                    // Some keyboards return Semicolon with shift,
+                    // others return Colon with shift
                     code: KeyCode::Virtual(VirtualKeyCode::Semicolon),
+                    children: vec![ ],
+                },
+                Node {
+                    action: Some(|_| {
+                        Some(InputMode::Command)
+                    }),
+                    modifiers: ModifiersState {
+                        shift: true,
+                        ..Default::default()
+                    },
+                    // Some keyboards return Semicolon with shift,
+                    // others return Colon with shift
+                    code: KeyCode::Virtual(VirtualKeyCode::Colon),
                     children: vec![ ],
                 },
             ],

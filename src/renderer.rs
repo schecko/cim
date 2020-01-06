@@ -64,7 +64,11 @@ impl<'a> System<'a> for RenderSystem {
 
             // TODO: proper screen ratio
             let proj: Matrix4<f32> = camera.projection;
-            let view: Matrix4<f32> = camera.view.into();
+            let mut view_raw = camera.view;
+            let camera_disp = -1.0;
+            view_raw.disp.x = game_state.cursor.loc.0 as f32 * camera_disp;
+            view_raw.disp.y = game_state.cursor.loc.1 as f32 * camera_disp;
+            let view: Matrix4<f32> = view_raw.into();
 
             let model: Matrix4<f32> = decomp.into();
 
