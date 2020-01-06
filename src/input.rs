@@ -195,7 +195,7 @@ impl InputState {
                 Node {
                     action: Some(|world| {
                         world.exec(|(mut camera): (WriteExpect<crate::Camera>)| {
-                            camera.view.rot.s += CAMERA_SPEED;
+                            //camera.view.rot.s += CAMERA_SPEED;
                         });
                         None
                     }),
@@ -207,7 +207,7 @@ impl InputState {
                 Node {
                     action: Some(|world| {
                         world.exec(|(mut camera): (WriteExpect<crate::Camera>)| {
-                            camera.view.rot.s -= CAMERA_SPEED;
+                            //camera.view.rot.s -= CAMERA_SPEED;
                         });
                         None
                     }),
@@ -222,7 +222,7 @@ impl InputState {
                 Node {
                     action: Some(|world| {
                         world.exec(|(mut camera): (WriteExpect<crate::Camera>)| {
-                            camera.view.rot.v.x += CAMERA_SPEED;
+                            //camera.view.rot.v.x += CAMERA_SPEED;
                         });
                         None
                     }),
@@ -233,7 +233,7 @@ impl InputState {
                 Node {
                     action: Some(|world| {
                         world.exec(|(mut camera): (WriteExpect<crate::Camera>)| {
-                            camera.view.rot.v.x -= CAMERA_SPEED;
+                            //camera.view.rot.v.x -= CAMERA_SPEED;
                         });
                         None
                     }),
@@ -247,7 +247,7 @@ impl InputState {
                 Node {
                     action: Some(|world| {
                         world.exec(|(mut camera): (WriteExpect<crate::Camera>)| {
-                            camera.view.rot.v.y += CAMERA_SPEED;
+                            //camera.view.rot.v.y += CAMERA_SPEED;
                         });
                         None
                     }),
@@ -258,7 +258,7 @@ impl InputState {
                 Node {
                     action: Some(|world| {
                         world.exec(|(mut camera): (WriteExpect<crate::Camera>)| {
-                            camera.view.rot.v.y -= CAMERA_SPEED;
+                            //camera.view.rot.v.y -= CAMERA_SPEED;
                         });
                         None
                     }),
@@ -272,7 +272,7 @@ impl InputState {
                 Node {
                     action: Some(|world| {
                         world.exec(|(mut camera): (WriteExpect<crate::Camera>)| {
-                            camera.view.rot.v.z -= CAMERA_SPEED;
+                            //camera.view.rot.v.z -= CAMERA_SPEED;
                         });
                         None
                     }),
@@ -283,7 +283,7 @@ impl InputState {
                 Node {
                     action: Some(|world| {
                         world.exec(|(mut camera): (WriteExpect<crate::Camera>)| {
-                            camera.view.rot.v.z -= 0.1;
+                            //camera.view.rot.v.z -= 0.1;
                         });
                         None
                     }),
