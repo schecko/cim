@@ -64,11 +64,16 @@ impl<'a> System<'a> for RenderSystem {
 
             // TODO: proper screen ratio
             let proj: Matrix4<f32> = camera.projection;
-            let mut view_raw = camera.view;
-            view_raw.disp.x += game_state.cursor.loc.0 as f32 * -2.0;
-            view_raw.disp.y += game_state.cursor.loc.1 as f32 * -2.0;
-            dbg!(&view_raw);
-            let view: Matrix4<f32> = view_raw.into();
+            let mut rot_raw = Decomposed::<Vector3<f32>, Quaternion<f32>>::one();
+            rot_raw.rot = camera.view.rot;
+            let mut disp_raw = Decomposed::<Vector3<f32>, Quaternion<f32>>::one();
+            disp_raw.disp = camera.view.disp;
+            disp_raw.disp.x += game_state.cursor.loc.0 as f32 * -2.0;
+            disp_raw.disp.y += game_state.cursor.loc.1 as f32 * -2.0;
+
+            let rot: Matrix4<f32> = rot_raw.into();
+            let disp: Matrix4<f32> = disp_raw.into();
+            let view = rot * disp;
 
             let model: Matrix4<f32> = decomp.into();
 

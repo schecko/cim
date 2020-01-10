@@ -132,7 +132,7 @@ pub struct GameState {
 #[derive(Component)]
 pub struct Camera {
     projection: Matrix4<f32>,
-    view: Decomposed<Vector3<f32>, Basis3<f32>>,
+    view: Decomposed<Vector3<f32>, Quaternion<f32>>,
 }
 
 impl Camera {
@@ -141,8 +141,8 @@ impl Camera {
             projection: perspective(Deg(45.0), 1.0, 0.1, 1000.0),
             view: Decomposed {
                 scale: 1.0,
-                rot: Basis3::look_at(Vector3::new(0.0, 0.0, 1.0), Vector3::new(0.0, 1.0, 0.0)),
-                disp: Vector3::new(0.0f32, 0.0, -60.0),
+                rot: Quaternion::look_at(Vector3::new(0.0, -1.0, 1.0), Vector3::new(0.0, 1.0, 0.0)),
+                disp: Vector3::new(0.0f32, 100.0, -120.0),
             },
         }
     }
