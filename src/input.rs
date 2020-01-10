@@ -6,6 +6,8 @@ use glutin::event_loop::{ControlFlow, EventLoop};
 use glutin::window::WindowBuilder;
 use glutin::{ PossiblyCurrent, };
 use strum::{EnumCount};
+use cgmath::*;
+use cgmath::prelude::*;
 
 #[derive(EnumCount, Clone, Copy)]
 pub enum InputMode {
@@ -195,7 +197,10 @@ impl InputState {
                 Node {
                     action: Some(|world| {
                         world.exec(|(mut camera): (WriteExpect<crate::Camera>)| {
-                            //camera.view.rot.s += CAMERA_SPEED;
+                            let mut rot = Quaternion::<f32>::one();
+                            rot.v.z = -CAMERA_SPEED;
+                            camera.view.rot = camera.view.rot * rot;
+                            camera.view.rot.normalize();
                         });
                         None
                     }),
@@ -207,22 +212,10 @@ impl InputState {
                 Node {
                     action: Some(|world| {
                         world.exec(|(mut camera): (WriteExpect<crate::Camera>)| {
-                            //camera.view.rot.s -= CAMERA_SPEED;
-                        });
-                        None
-                    }),
-                    modifiers: ModifiersState {
-                        shift: true,
-                        ..Default::default()
-                    },
-                    code: KeyCode::Virtual(VirtualKeyCode::H),
-                    children: vec![
-                    ],
-                },
-                Node {
-                    action: Some(|world| {
-                        world.exec(|(mut camera): (WriteExpect<crate::Camera>)| {
-                            //camera.view.rot.v.x += CAMERA_SPEED;
+                            let mut rot = Quaternion::<f32>::one();
+                            rot.v.x = CAMERA_SPEED;
+                            camera.view.rot = camera.view.rot * rot;
+                            camera.view.rot.normalize();
                         });
                         None
                     }),
@@ -233,21 +226,10 @@ impl InputState {
                 Node {
                     action: Some(|world| {
                         world.exec(|(mut camera): (WriteExpect<crate::Camera>)| {
-                            //camera.view.rot.v.x -= CAMERA_SPEED;
-                        });
-                        None
-                    }),
-                    modifiers: ModifiersState {
-                        shift: true,
-                        ..Default::default()
-                    },
-                    code: KeyCode::Virtual(VirtualKeyCode::J),
-                    children: vec![ ],
-                },
-                Node {
-                    action: Some(|world| {
-                        world.exec(|(mut camera): (WriteExpect<crate::Camera>)| {
-                            //camera.view.rot.v.y += CAMERA_SPEED;
+                            let mut rot = Quaternion::<f32>::one();
+                            rot.v.x = -CAMERA_SPEED;
+                            camera.view.rot = camera.view.rot * rot;
+                            camera.view.rot.normalize();
                         });
                         None
                     }),
@@ -258,39 +240,14 @@ impl InputState {
                 Node {
                     action: Some(|world| {
                         world.exec(|(mut camera): (WriteExpect<crate::Camera>)| {
-                            //camera.view.rot.v.y -= CAMERA_SPEED;
-                        });
-                        None
-                    }),
-                    modifiers: ModifiersState {
-                        shift: true,
-                        ..Default::default()
-                    },
-                    code: KeyCode::Virtual(VirtualKeyCode::K),
-                    children: vec![ ],
-                },
-                Node {
-                    action: Some(|world| {
-                        world.exec(|(mut camera): (WriteExpect<crate::Camera>)| {
-                            //camera.view.rot.v.z -= CAMERA_SPEED;
+                            let mut rot = Quaternion::<f32>::one();
+                            rot.v.z = CAMERA_SPEED;
+                            camera.view.rot = camera.view.rot * rot;
+                            camera.view.rot.normalize();
                         });
                         None
                     }),
                     modifiers: Default::default(),
-                    code: KeyCode::Virtual(VirtualKeyCode::L),
-                    children: vec![ ],
-                },
-                Node {
-                    action: Some(|world| {
-                        world.exec(|(mut camera): (WriteExpect<crate::Camera>)| {
-                            //camera.view.rot.v.z -= 0.1;
-                        });
-                        None
-                    }),
-                    modifiers: ModifiersState {
-                        shift: true,
-                        ..Default::default()
-                    },
                     code: KeyCode::Virtual(VirtualKeyCode::L),
                     children: vec![ ],
                 },

@@ -142,7 +142,7 @@ impl Camera {
             view: Decomposed {
                 scale: 1.0,
                 rot: Quaternion::look_at(Vector3::new(0.0, -1.0, 1.0), Vector3::new(0.0, 1.0, 0.0)),
-                disp: Vector3::new(0.0f32, 100.0, -120.0),
+                disp: Vector3::new(0.0f32, 100.0, -100.0),
             },
         }
     }
