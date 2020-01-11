@@ -1,5 +1,4 @@
 
-use specs::prelude::*;
 use glutin::ContextBuilder;
 use glutin::event::{Event, WindowEvent, VirtualKeyCode, ElementState, KeyboardInput, ModifiersState, ScanCode, };
 use glutin::event_loop::{ControlFlow, EventLoop};
@@ -8,6 +7,7 @@ use glutin::{ PossiblyCurrent, };
 use strum::{EnumCount};
 use cgmath::*;
 use cgmath::prelude::*;
+use crate::*;
 
 #[derive(EnumCount, Clone, Copy)]
 pub enum InputMode {
@@ -73,9 +73,7 @@ impl InputState {
                 },
                 Node {
                     action: Some(|world| {
-                        world.exec(|(mut game_state): (WriteExpect<crate::GameState>)| {
-                            game_state.yanked_location = Some(game_state.cursor);
-                        });
+                        world.game_state.yanked_location = Some(world.game_state.cursor);
                         Some(InputMode::Unit)
                     }),
                     modifiers: Default::default(),
@@ -84,9 +82,7 @@ impl InputState {
                 },
                 Node {
                     action: Some(|world| {
-                        world.exec(|(mut game_state): (WriteExpect<crate::GameState>)| {
-                            game_state.yanked_location = Some(game_state.cursor);
-                        });
+                        world.game_state.yanked_location = Some(world.game_state.cursor);
                         None
                     }),
                     modifiers: Default::default(),
@@ -95,21 +91,12 @@ impl InputState {
                 },
                 Node {
                     action: Some(|world| {
-                        world.exec(|(ents, mut grid_pos, mut game_state): (Entities, WriteStorage<crate::GridPosition>, WriteExpect<crate::GameState>)| {
-                            if let Some(loc) = game_state.yanked_location {
-                                let source_unit = game_state.grid.get_mut(loc.loc).unwrap().unit.take();
-                                let cursor = game_state.cursor;
-                                let dest = game_state.grid.get_mut(cursor.loc).unwrap();
-                                dest.unit = source_unit;
-
-                                if let Some(id) = dest.unit {
-                                    match (&ents, &mut grid_pos).join().find(|(e, p)| e.id() == id) {
-                                        Some((ent, pos)) => pos.xy = cursor.loc,
-                                        None => {},
-                                    }
-                                }
-                            }
-                        });
+                        if let Some(loc) = world.game_state.yanked_location {
+                            let source_unit = world.game_state.grid.get_mut(loc.loc).unwrap().unit.take();
+                            let cursor = world.game_state.cursor;
+                            let dest = world.game_state.grid.get_mut(cursor.loc).unwrap();
+                            dest.unit = source_unit;
+                        }
                         None
                     }),
                     modifiers: Default::default(),
@@ -118,9 +105,7 @@ impl InputState {
                 },
                 Node {
                     action: Some(|world| {
-                        world.exec(|(mut game_state): (WriteExpect<crate::GameState>)| {
-                            game_state.cursor = game_state.cursor.left(&game_state.grid, 1);
-                        });
+                        world.game_state.cursor = world.game_state.cursor.left(&world.game_state.grid, 1);
                         None
                     }),
                     modifiers: Default::default(),
@@ -129,9 +114,7 @@ impl InputState {
                 },
                 Node {
                     action: Some(|world| {
-                        world.exec(|(mut game_state): (WriteExpect<crate::GameState>)| {
-                            game_state.cursor = game_state.cursor.down(&game_state.grid, 1);
-                        });
+                        world.game_state.cursor = world.game_state.cursor.down(&world.game_state.grid, 1);
                         None
                     }),
                     modifiers: Default::default(),
@@ -140,9 +123,7 @@ impl InputState {
                 },
                 Node {
                     action: Some(|world| {
-                        world.exec(|(mut game_state): (WriteExpect<crate::GameState>)| {
-                            game_state.cursor = game_state.cursor.up(&game_state.grid, 1);
-                        });
+                        world.game_state.cursor = world.game_state.cursor.up(&world.game_state.grid, 1);
                         None
                     }),
                     modifiers: Default::default(),
@@ -151,9 +132,7 @@ impl InputState {
                 },
                 Node {
                     action: Some(|world| {
-                        world.exec(|(mut game_state): (WriteExpect<crate::GameState>)| {
-                            game_state.cursor = game_state.cursor.right(&game_state.grid, 1);
-                        });
+                        world.game_state.cursor = world.game_state.cursor.right(&world.game_state.grid, 1);
                         None
                     }),
                     modifiers: Default::default(),
@@ -196,12 +175,10 @@ impl InputState {
             children: vec![
                 Node {
                     action: Some(|world| {
-                        world.exec(|(mut camera): (WriteExpect<crate::Camera>)| {
-                            let mut rot = Quaternion::<f32>::one();
-                            rot.v.z = -CAMERA_SPEED;
-                            camera.view.rot = camera.view.rot * rot;
-                            camera.view.rot.normalize();
-                        });
+                        let mut rot = Quaternion::<f32>::one();
+                        rot.v.z = -CAMERA_SPEED;
+                        world.camera.view.rot = world.camera.view.rot * rot;
+                        world.camera.view.rot.normalize();
                         None
                     }),
                     modifiers: Default::default(),
@@ -211,12 +188,10 @@ impl InputState {
                 },
                 Node {
                     action: Some(|world| {
-                        world.exec(|(mut camera): (WriteExpect<crate::Camera>)| {
-                            let mut rot = Quaternion::<f32>::one();
-                            rot.v.x = CAMERA_SPEED;
-                            camera.view.rot = camera.view.rot * rot;
-                            camera.view.rot.normalize();
-                        });
+                        let mut rot = Quaternion::<f32>::one();
+                        rot.v.x = CAMERA_SPEED;
+                        world.camera.view.rot = world.camera.view.rot * rot;
+                        world.camera.view.rot.normalize();
                         None
                     }),
                     modifiers: Default::default(),
@@ -225,12 +200,10 @@ impl InputState {
                 },
                 Node {
                     action: Some(|world| {
-                        world.exec(|(mut camera): (WriteExpect<crate::Camera>)| {
-                            let mut rot = Quaternion::<f32>::one();
-                            rot.v.x = -CAMERA_SPEED;
-                            camera.view.rot = camera.view.rot * rot;
-                            camera.view.rot.normalize();
-                        });
+                        let mut rot = Quaternion::<f32>::one();
+                        rot.v.x = -CAMERA_SPEED;
+                        world.camera.view.rot = world.camera.view.rot * rot;
+                        world.camera.view.rot.normalize();
                         None
                     }),
                     modifiers: Default::default(),
@@ -239,12 +212,10 @@ impl InputState {
                 },
                 Node {
                     action: Some(|world| {
-                        world.exec(|(mut camera): (WriteExpect<crate::Camera>)| {
-                            let mut rot = Quaternion::<f32>::one();
-                            rot.v.z = CAMERA_SPEED;
-                            camera.view.rot = camera.view.rot * rot;
-                            camera.view.rot.normalize();
-                        });
+                        let mut rot = Quaternion::<f32>::one();
+                        rot.v.z = CAMERA_SPEED;
+                        world.camera.view.rot = world.camera.view.rot * rot;
+                        world.camera.view.rot.normalize();
                         None
                     }),
                     modifiers: Default::default(),
@@ -274,9 +245,7 @@ impl InputState {
                     children: vec![
                         Node {
                             action: Some(|world| {
-                                world.exec(|(mut game_state): (WriteExpect<crate::GameState>)| {
-                                    game_state.running = false;
-                                });
+                                world.game_state.running = false;
                                 None
                             }),
                             modifiers: Default::default(),
@@ -295,21 +264,13 @@ impl InputState {
             children: vec![
                 Node {
                     action: Some(|world| {
-                        world.exec(|(ents, mut grid_pos, mut game_state): (Entities, WriteStorage<crate::GridPosition>, WriteExpect<crate::GameState>)| {
-                            let cursor = game_state.cursor;
-                            let dest_i = cursor.left(&game_state.grid, 1);
-                            let source_unit = game_state.grid.get_mut(cursor.loc).unwrap().unit.take();
-                            let dest = game_state.grid.get_mut(dest_i.loc).unwrap();
-                            dest.unit = source_unit;
+                        let cursor = world.game_state.cursor;
+                        let dest_i = cursor.left(&world.game_state.grid, 1);
+                        let source_unit = world.game_state.grid.get_mut(cursor.loc).unwrap().unit.take();
+                        let dest = world.game_state.grid.get_mut(dest_i.loc).unwrap();
+                        dest.unit = source_unit;
 
-                            if let Some(id) = dest.unit {
-                                match (&ents, &mut grid_pos).join().find(|(e, p)| e.id() == id) {
-                                    Some((ent, pos)) => pos.xy = dest_i.loc,
-                                    None => {},
-                                }
-                            }
-                            game_state.cursor = dest_i;
-                        });
+                        world.game_state.cursor = dest_i;
                         None
                     }),
                     modifiers: Default::default(),
@@ -318,21 +279,13 @@ impl InputState {
                 },
                 Node {
                     action: Some(|world| {
-                        world.exec(|(ents, mut grid_pos, mut game_state): (Entities, WriteStorage<crate::GridPosition>, WriteExpect<crate::GameState>)| {
-                            let cursor = game_state.cursor;
-                            let dest_i = cursor.down(&game_state.grid, 1);
-                            let source_unit = game_state.grid.get_mut(cursor.loc).unwrap().unit.take();
-                            let dest = game_state.grid.get_mut(dest_i.loc).unwrap();
-                            dest.unit = source_unit;
+                        let cursor = world.game_state.cursor;
+                        let dest_i = cursor.down(&world.game_state.grid, 1);
+                        let source_unit = world.game_state.grid.get_mut(cursor.loc).unwrap().unit.take();
+                        let dest = world.game_state.grid.get_mut(dest_i.loc).unwrap();
+                        dest.unit = source_unit;
 
-                            if let Some(id) = dest.unit {
-                                match (&ents, &mut grid_pos).join().find(|(e, p)| e.id() == id) {
-                                    Some((ent, pos)) => pos.xy = dest_i.loc,
-                                    None => {},
-                                }
-                            }
-                            game_state.cursor = dest_i;
-                        });
+                        world.game_state.cursor = dest_i;
                         None
                     }),
                     modifiers: Default::default(),
@@ -341,21 +294,13 @@ impl InputState {
                 },
                 Node {
                     action: Some(|world| {
-                        world.exec(|(ents, mut grid_pos, mut game_state): (Entities, WriteStorage<crate::GridPosition>, WriteExpect<crate::GameState>)| {
-                            let cursor = game_state.cursor;
-                            let dest_i = cursor.up(&game_state.grid, 1);
-                            let source_unit = game_state.grid.get_mut(cursor.loc).unwrap().unit.take();
-                            let dest = game_state.grid.get_mut(dest_i.loc).unwrap();
-                            dest.unit = source_unit;
+                        let cursor = world.game_state.cursor;
+                        let dest_i = cursor.up(&world.game_state.grid, 1);
+                        let source_unit = world.game_state.grid.get_mut(cursor.loc).unwrap().unit.take();
+                        let dest = world.game_state.grid.get_mut(dest_i.loc).unwrap();
+                        dest.unit = source_unit;
 
-                            if let Some(id) = dest.unit {
-                                match (&ents, &mut grid_pos).join().find(|(e, p)| e.id() == id) {
-                                    Some((ent, pos)) => pos.xy = dest_i.loc,
-                                    None => {},
-                                }
-                            }
-                            game_state.cursor = dest_i;
-                        });
+                        world.game_state.cursor = dest_i;
                         None
                     }),
                     modifiers: Default::default(),
@@ -364,21 +309,13 @@ impl InputState {
                 },
                 Node {
                     action: Some(|world| {
-                        world.exec(|(ents, mut grid_pos, mut game_state): (Entities, WriteStorage<crate::GridPosition>, WriteExpect<crate::GameState>)| {
-                            let cursor = game_state.cursor;
-                            let dest_i = cursor.right(&game_state.grid, 1);
-                            let source_unit = game_state.grid.get_mut(cursor.loc).unwrap().unit.take();
-                            let dest = game_state.grid.get_mut(dest_i.loc).unwrap();
-                            dest.unit = source_unit;
+                        let cursor = world.game_state.cursor;
+                        let dest_i = cursor.right(&world.game_state.grid, 1);
+                        let source_unit = world.game_state.grid.get_mut(cursor.loc).unwrap().unit.take();
+                        let dest = world.game_state.grid.get_mut(dest_i.loc).unwrap();
+                        dest.unit = source_unit;
 
-                            if let Some(id) = dest.unit {
-                                match (&ents, &mut grid_pos).join().find(|(e, p)| e.id() == id) {
-                                    Some((ent, pos)) => pos.xy = dest_i.loc,
-                                    None => {},
-                                }
-                            }
-                            game_state.cursor = dest_i;
-                        });
+                        world.game_state.cursor = dest_i;
                         None
                     }),
                     modifiers: Default::default(),

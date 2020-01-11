@@ -1,16 +1,12 @@
 
 use cgmath::*;
-use specs::prelude::*;
 use cgmath::prelude::*;
+use crate::*;
 
-pub struct RenderSystem;
+pub struct Renderer;
 
-impl<'a> System<'a> for RenderSystem {
-    type SystemData = (ReadStorage<'a, crate::GridPosition>, ReadExpect<'a, crate::GameState>, ReadExpect<'a, crate::Camera>);
-
-    fn run(&mut self, (grid_pos, game_state, camera): Self::SystemData) {
-        use specs::Join;
-
+impl Renderer {
+    pub fn render(&mut self, game_state: &mut GameState, camera: &mut Camera) {
         let (grid_width, grid_height) = game_state.grid.dim();
         let signed_width = grid_width as isize;
         let signed_height = grid_height as isize;
@@ -30,13 +26,13 @@ impl<'a> System<'a> for RenderSystem {
         }).collect();
         game_state.quad_instance_data.sub_data(&mut rect_positions);
 
-        /*let mut unit_positions: Vec<_> = game_state.grid
+        let mut unit_positions: Vec<_> = game_state.grid
             .indexed_iter()
             .filter(|(_, cell)| cell.unit.is_some())
             .map(|((x, y), cell)| {
                 let loc_x = x as f32 + 0.5;
                 let loc_y = y as f32;
-                let loc_z = match game_state.cursor == pos.xy.into() {
+                let loc_z = match game_state.cursor == (x, y).into() {
                     true => 2.0,
                     false => 1.0,
                 };
@@ -45,9 +41,9 @@ impl<'a> System<'a> for RenderSystem {
                     Vector3::new(loc_x * 2.0, loc_y * 2.0, loc_z),
                     Vector3::new(0.5, 0.5, 0.5),
                 ]
-            }).collect();*/
+            }).collect();
 
-        let mut unit_positions = grid_pos
+        /*let mut unit_positions = grid_pos
             .join()
             .map(|pos| {
                 let loc_x = pos.xy.0 as f32 + 0.5;
@@ -62,7 +58,7 @@ impl<'a> System<'a> for RenderSystem {
                     Vector3::new(0.5, 0.5, 0.5),
                 ]
             })
-            .collect();
+            .collect();*/
 
         game_state.cube_instance_data.data(&mut unit_positions, gl::STATIC_DRAW);
 
