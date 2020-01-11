@@ -1,7 +1,6 @@
 
 #[macro_use] extern crate lazy_static;
 #[macro_use] extern crate rand_derive;
-#[macro_use] extern crate specs;
 #[macro_use] extern crate strum_macros;
 extern crate cgmath;
 extern crate glutin;
@@ -25,7 +24,6 @@ use glutin::window::WindowBuilder;
 use glutin::{ PossiblyCurrent, };
 use ndarray::*;
 use pipeline::*;
-use specs::prelude::*;
 use std::ffi::{ CString, CStr, };
 use std::mem;
 use crate::renderer::*;
@@ -58,16 +56,30 @@ impl Biome {
     }
 }
 
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+enum UnitType {
+    Settler,
+    Soldier,
+    Scout,
+}
+
+#[derive(Debug, Clone)]
+struct Unit {
+    t: UnitType,
+}
+
+#[derive(Debug, Clone)]
+struct Structure {
+    next_unit: UnitType,
+    next_unit_ready: u32,
+}
+
 #[derive(Debug, Clone)]
 struct GridCell {
     pub biome: Biome,
-    pub unit: Option<specs::world::Index>,
-}
-
-#[derive(Debug, Component)]
-#[storage(VecStorage)]
-pub struct GridPosition {
-    xy: (usize, usize),
+    pub unit: Option<Unit>,
+    pub structure: Option<Structure>,
 }
 
 #[derive(Clone, Copy, PartialEq, Eq, Default)]
@@ -111,7 +123,6 @@ impl From<(usize, usize)> for Cursor {
     }
 }
 
-#[derive(Component)]
 pub struct GameState {
     grid: Array2<GridCell>,
     cursor: Cursor,
@@ -125,12 +136,12 @@ pub struct GameState {
     cube_instance_data: Buffer,
     cube_vao: Vao,
 
-    running: bool,
+    turn: u32,
 
+    running: bool,
     yanked_location: Option<Cursor>,
 }
 
-#[derive(Component)]
 pub struct Camera {
     projection: Matrix4<f32>,
     view: Decomposed<Vector3<f32>, Quaternion<f32>>,
@@ -142,8 +153,8 @@ impl Camera {
             projection: perspective(Deg(45.0), 1.0, 0.1, 1000.0),
             view: Decomposed {
                 scale: 1.0,
-                rot: Quaternion::new(-0.6f32, 0.50, 0.0, 0.0),
-                disp: Vector3::new(0.0f32, 0.0, -60.0),
+                rot: Quaternion::look_at(Vector3::new(0.0, -1.0, 1.0), Vector3::new(0.0, 1.0, 0.0)),
+                disp: Vector3::new(0.0f32, 25.0, -25.0),
             },
         }
     }
@@ -176,6 +187,7 @@ impl GameState {
                 GridCell {
                     biome: Biome::Ocean,
                     unit: None,
+                    structure: None,
                 }
             }
         );
@@ -218,6 +230,8 @@ impl GameState {
             cube_data,
             cube_instance_data,
             cube_vao,
+
+            turn: 0,
 
             running: true,
             yanked_location: None,
@@ -299,7 +313,7 @@ static VERTEX: &str = r#"
     uniform mat4 proj;
 
     void main() {
-        gl_Position = proj * view * model * vec4(+aWorldPos + aVertOffset, 1.0);
+        gl_Position = proj * view * model * vec4(aWorldPos + aVertOffset, 1.0);
         fColor = aColor;
     }
 "#;
@@ -315,6 +329,11 @@ static FRAGMENT: &str = r#"
     }
 "#;
 
+pub struct World {
+    game_state: GameState,
+    camera: Camera,
+}
+
 fn main() -> Result<(), String> {
     let event_loop = EventLoop::new();
     let window_builder = WindowBuilder::new().with_title("Cim");
@@ -327,20 +346,17 @@ fn main() -> Result<(), String> {
 
     load(context.context());
 
-    let mut game_state = GameState::new()?;
+    let mut world = World {
+        game_state: GameState::new()?,
+        camera: Camera::new(),
+    };
 
-    let mut world = World::new();
-    world.register::<GridPosition>();
-    let pos = (0, 0);
-    let ent = world.create_entity().with(GridPosition { xy: pos }).build();
-    game_state.grid.get_mut(pos).unwrap().unit = Some(ent.id());
-
-    world.insert(game_state);
-    world.insert(Camera::new());
+    world.game_state.grid.get_mut((0, 0)).unwrap().unit = Some(Unit {
+        t: UnitType::Settler,
+    });
 
     let mut input_state = InputState::new();
-
-    let mut render_system = RenderSystem;
+    let mut renderer = Renderer;
 
     event_loop.run(move |event, _, control_flow| {
         *control_flow = ControlFlow::Poll;
@@ -364,14 +380,25 @@ fn main() -> Result<(), String> {
             _ => { },
         };
 
-        render_system.run_now(&world);
+        let current_turn = world.game_state.turn;
+        world.game_state.grid
+            .iter_mut()
+            .for_each(|cell| {
+                if let Some(structure) = &mut cell.structure {
+                    if structure.next_unit_ready >= current_turn && cell.unit.is_none() {
+                        cell.unit = Some(Unit { t: structure.next_unit });
+                        structure.next_unit_ready = current_turn + 5;
+                    }
+                }
+            });
+
+
+        renderer.render(&mut world.game_state, &mut world.camera);
         context.swap_buffers().unwrap();
 
-        world.exec(|(game_state): (ReadExpect<crate::GameState>)| {
-            if !game_state.running {
-                *control_flow = ControlFlow::Exit;
-            }
-        });
+        if !world.game_state.running {
+            *control_flow = ControlFlow::Exit;
+        }
     });
 
 }

@@ -1,16 +1,12 @@
 
 use cgmath::*;
-use specs::prelude::*;
 use cgmath::prelude::*;
+use crate::*;
 
-pub struct RenderSystem;
+pub struct Renderer;
 
-impl<'a> System<'a> for RenderSystem {
-    type SystemData = (ReadStorage<'a, crate::GridPosition>, ReadExpect<'a, crate::GameState>, ReadExpect<'a, crate::Camera>);
-
-    fn run(&mut self, (grid_pos, game_state, camera): Self::SystemData) {
-        use specs::Join;
-
+impl Renderer {
+    pub fn render(&mut self, game_state: &mut GameState, camera: &mut Camera) {
         let (grid_width, grid_height) = game_state.grid.dim();
         let signed_width = grid_width as isize;
         let signed_height = grid_height as isize;
@@ -20,8 +16,8 @@ impl<'a> System<'a> for RenderSystem {
                 true => 1.0,
                 false => 0.0,
             };
-            let loc_x = (-signed_width / 2 + x as isize) as f32 + 0.5;
-            let loc_y = (-signed_height / 2 + y as isize) as f32;
+            let loc_x = x as f32 + 0.5;
+            let loc_y = y as f32;
             // TODO: game grid lines rather than spacers.
             [
                 Vector3::new(2.0 * loc_x, 2.0 * loc_y, loc_z),
@@ -30,12 +26,13 @@ impl<'a> System<'a> for RenderSystem {
         }).collect();
         game_state.quad_instance_data.sub_data(&mut rect_positions);
 
-        let mut unit_positions = grid_pos
-            .join()
-            .map(|pos| {
-                let loc_x = (-signed_width / 2 + pos.xy.0 as isize) as f32 + 0.5;
-                let loc_y = (-signed_height / 2 + pos.xy.1 as isize) as f32;
-                let loc_z = match game_state.cursor == pos.xy.into() {
+        let mut unit_positions: Vec<_> = game_state.grid
+            .indexed_iter()
+            .filter(|(_, cell)| cell.unit.is_some())
+            .map(|((x, y), cell)| {
+                let loc_x = x as f32 + 0.5;
+                let loc_y = y as f32;
+                let loc_z = match game_state.cursor == (x, y).into() {
                     true => 2.0,
                     false => 1.0,
                 };
@@ -44,8 +41,25 @@ impl<'a> System<'a> for RenderSystem {
                     Vector3::new(loc_x * 2.0, loc_y * 2.0, loc_z),
                     Vector3::new(0.5, 0.5, 0.5),
                 ]
-            })
-            .collect();
+            }).collect();
+
+        unit_positions.append(&mut game_state.grid
+            .indexed_iter()
+            .filter(|(_, cell)| cell.structure.is_some())
+            .map(|((x, y), cell)| {
+                let loc_x = x as f32 + 0.5;
+                let loc_y = y as f32;
+                let loc_z = match game_state.cursor == (x, y).into() {
+                    true => 2.0,
+                    false => 1.0,
+                };
+
+                [
+                    Vector3::new(loc_x * 2.0, loc_y * 2.0, loc_z),
+                    Vector3::new(0.7, 0.7, 0.7),
+                ]
+            }).collect()
+        );
 
         game_state.cube_instance_data.data(&mut unit_positions, gl::STATIC_DRAW);
 
@@ -58,13 +72,22 @@ impl<'a> System<'a> for RenderSystem {
 
             let decomp = Decomposed {
                 scale: 1.0,
-                rot: Quaternion::new(0.0, 0.0, 0.0, 0.0),
+                rot: Basis3::look_at(Vector3::new(0.0, 0.0, 1.0), Vector3::new(0.0, 1.0, 0.0)),
                 disp: Vector3::new(0.0, 0.0, 0.0),
             };
 
             // TODO: proper screen ratio
             let proj: Matrix4<f32> = camera.projection;
-            let view: Matrix4<f32> = camera.view.into();
+            let mut rot_raw = Decomposed::<Vector3<f32>, Quaternion<f32>>::one();
+            rot_raw.rot = camera.view.rot;
+            let mut disp_raw = Decomposed::<Vector3<f32>, Quaternion<f32>>::one();
+            disp_raw.disp = camera.view.disp;
+            disp_raw.disp.x += game_state.cursor.loc.0 as f32 * -2.0;
+            disp_raw.disp.y += game_state.cursor.loc.1 as f32 * -2.0;
+
+            let rot: Matrix4<f32> = rot_raw.into();
+            let disp: Matrix4<f32> = disp_raw.into();
+            let view = rot * disp;
 
             let model: Matrix4<f32> = decomp.into();
 
