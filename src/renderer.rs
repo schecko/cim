@@ -43,22 +43,23 @@ impl Renderer {
                 ]
             }).collect();
 
-        /*let mut unit_positions = grid_pos
-            .join()
-            .map(|pos| {
-                let loc_x = pos.xy.0 as f32 + 0.5;
-                let loc_y = pos.xy.1 as f32;
-                let loc_z = match game_state.cursor == pos.xy.into() {
+        unit_positions.append(&mut game_state.grid
+            .indexed_iter()
+            .filter(|(_, cell)| cell.structure.is_some())
+            .map(|((x, y), cell)| {
+                let loc_x = x as f32 + 0.5;
+                let loc_y = y as f32;
+                let loc_z = match game_state.cursor == (x, y).into() {
                     true => 2.0,
                     false => 1.0,
                 };
 
                 [
                     Vector3::new(loc_x * 2.0, loc_y * 2.0, loc_z),
-                    Vector3::new(0.5, 0.5, 0.5),
+                    Vector3::new(0.7, 0.7, 0.7),
                 ]
-            })
-            .collect();*/
+            }).collect()
+        );
 
         game_state.cube_instance_data.data(&mut unit_positions, gl::STATIC_DRAW);
 

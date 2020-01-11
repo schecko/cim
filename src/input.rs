@@ -64,6 +64,15 @@ impl InputState {
             modifiers: Default::default(),
             children: vec![
                 Node {
+                    action: Some(|world| {
+                        world.game_state.turn += 1;
+                        None
+                    }),
+                    modifiers: Default::default(),
+                    code: KeyCode::Virtual(VirtualKeyCode::Space),
+                    children: vec![ ],
+                },
+                Node {
                     action: Some(|_| {
                         Some(InputMode::Camera)
                     }),
@@ -320,6 +329,36 @@ impl InputState {
                     }),
                     modifiers: Default::default(),
                     code: KeyCode::Virtual(VirtualKeyCode::L),
+                    children: vec![ ],
+                },
+                Node {
+                    action: Some(|world| {
+                        let cursor = world.game_state.cursor;
+
+                        let cell = world.game_state.grid.get_mut(cursor.loc).unwrap();
+
+                        if cell.structure.is_none() {
+                            let swap = match &cell.unit {
+                                Some(unit) if unit.t == UnitType::Settler => {
+                                    true
+                                },
+                                _ => {
+                                    false
+                                },
+                            };
+
+                            if swap {
+                                cell.unit.take();
+                                cell.structure = Some(Structure {
+                                    next_unit: UnitType::Settler,
+                                    next_unit_ready: world.game_state.turn + 5,
+                                });
+                            }
+                        }
+                        None
+                    }),
+                    modifiers: Default::default(),
+                    code: KeyCode::Virtual(VirtualKeyCode::S),
                     children: vec![ ],
                 },
             ]

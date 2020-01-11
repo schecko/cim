@@ -55,13 +55,30 @@ impl Biome {
     }
 }
 
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+enum UnitType {
+    Settler,
+    Soldier,
+    Scout,
+}
+
 #[derive(Debug, Clone)]
-struct Unit;
+struct Unit {
+    t: UnitType,
+}
+
+#[derive(Debug, Clone)]
+struct Structure {
+    next_unit: UnitType,
+    next_unit_ready: u32,
+}
 
 #[derive(Debug, Clone)]
 struct GridCell {
     pub biome: Biome,
     pub unit: Option<Unit>,
+    pub structure: Option<Structure>,
 }
 
 #[derive(Clone, Copy, PartialEq, Eq, Default)]
@@ -118,8 +135,9 @@ pub struct GameState {
     cube_instance_data: Buffer,
     cube_vao: Vao,
 
-    running: bool,
+    turn: u32,
 
+    running: bool,
     yanked_location: Option<Cursor>,
 }
 
@@ -135,7 +153,7 @@ impl Camera {
             view: Decomposed {
                 scale: 1.0,
                 rot: Quaternion::look_at(Vector3::new(0.0, -1.0, 1.0), Vector3::new(0.0, 1.0, 0.0)),
-                disp: Vector3::new(0.0f32, 100.0, -100.0),
+                disp: Vector3::new(0.0f32, 25.0, -25.0),
             },
         }
     }
@@ -153,6 +171,7 @@ impl GameState {
                 GridCell {
                     biome: rand::random(),
                     unit: None,
+                    structure: None,
                 }
             }
         );
@@ -181,6 +200,8 @@ impl GameState {
             cube_data,
             cube_instance_data,
             cube_vao,
+
+            turn: 0,
 
             running: true,
             yanked_location: None,
@@ -300,6 +321,10 @@ fn main() -> Result<(), String> {
         camera: Camera::new(),
     };
 
+    world.game_state.grid.get_mut((0, 0)).unwrap().unit = Some(Unit {
+        t: UnitType::Settler,
+    });
+
     let mut input_state = InputState::new();
     let mut renderer = Renderer;
 
@@ -324,6 +349,19 @@ fn main() -> Result<(), String> {
             },
             _ => { },
         };
+
+        let current_turn = world.game_state.turn;
+        world.game_state.grid
+            .iter_mut()
+            .for_each(|cell| {
+                if let Some(structure) = &mut cell.structure {
+                    if structure.next_unit_ready >= current_turn && cell.unit.is_none() {
+                        cell.unit = Some(Unit { t: structure.next_unit });
+                        structure.next_unit_ready = current_turn + 5;
+                    }
+                }
+            });
+
 
         renderer.render(&mut world.game_state, &mut world.camera);
         context.swap_buffers().unwrap();
