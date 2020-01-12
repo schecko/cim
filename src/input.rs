@@ -334,17 +334,11 @@ impl InputState {
                 Node {
                     action: Some(|world| {
                         let cursor = world.game_state.cursor;
-
                         let cell = world.game_state.grid.get_mut(cursor.loc).unwrap();
-
                         if cell.structure.is_none() {
                             let swap = match &cell.unit {
-                                Some(unit) if unit.t == UnitType::Settler => {
-                                    true
-                                },
-                                _ => {
-                                    false
-                                },
+                                Some(unit) if unit.t == UnitType::Settler => true,
+                                _ => false,
                             };
 
                             if swap {
@@ -355,7 +349,6 @@ impl InputState {
                                 });
                             }
                         }
-
                         None
                     }),
                     modifiers: Default::default(),

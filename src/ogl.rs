@@ -72,4 +72,29 @@ impl Vao {
 
         Vao(vao)
     }
+
+    pub fn text_new(model_data: Buffer) -> Self {
+        let vao = unsafe {
+            let mut vao: u32 = 0;
+            gl::GenVertexArrays(1, &mut vao as *mut _);
+            gl::BindVertexArray(vao);
+
+            gl::BindBuffer(gl::ARRAY_BUFFER, model_data.0);
+            gl::EnableVertexAttribArray(0);
+            gl::VertexAttribPointer(0, 2, gl::FLOAT, gl::FALSE, 8 * mem::size_of::<f32>() as i32, std::ptr::null());
+
+            gl::EnableVertexAttribArray(1);
+            gl::VertexAttribPointer(1, 2, gl::FLOAT, gl::FALSE, 8 * mem::size_of::<f32>() as i32, (2 * mem::size_of::<f32>()) as *const _);
+
+            gl::EnableVertexAttribArray(2);
+            gl::VertexAttribPointer(2, 4, gl::FLOAT, gl::FALSE, 8 * mem::size_of::<f32>() as i32, (4 * mem::size_of::<f32>()) as *const _);
+
+            assert!(gl::GetError() == 0);
+            gl::BindVertexArray(0);
+            gl::BindBuffer(gl::ARRAY_BUFFER, 0);
+            vao
+        };
+
+        Vao(vao)
+    }
 }

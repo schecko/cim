@@ -8,6 +8,7 @@ extern crate ndarray;
 extern crate rand;
 extern crate strum;
 extern crate num;
+extern crate rusttype;
 
 mod pipeline;
 mod renderer;
@@ -30,6 +31,8 @@ use crate::renderer::*;
 use crate::ogl::*;
 use crate::input::*;
 use rand::distributions::{ Uniform, Distribution, };
+use rusttype::*;
+use rusttype::gpu_cache::*;
 
 static DEFAULT_GRID_LENGTH: usize = 4;
 
@@ -317,7 +320,7 @@ static VERTEX: &str = r#"
     layout (location = 1) in vec3 aWorldPos;
     layout (location = 2) in vec3 aColor;
 
-    out vec3 fColor;
+    out vec3 vColor;
 
     uniform mat4 model;
     uniform mat4 view;
@@ -325,7 +328,7 @@ static VERTEX: &str = r#"
 
     void main() {
         gl_Position = proj * view * model * vec4(aWorldPos + aVertOffset, 1.0);
-        fColor = aColor;
+        vColor = aColor;
     }
 "#;
 
@@ -333,10 +336,41 @@ static FRAGMENT: &str = r#"
     #version 330 core
 
     out vec4 FragColor;
-    in vec3 fColor;
+    in vec3 vColor;
 
     void main() {
-        FragColor = vec4(fColor, 1.0);
+        FragColor = vec4(vColor, 1.0);
+    }
+"#;
+
+static VERTEX_TEXT: &str = r#"
+    #version 330 core
+    in vec2 aPosition;
+    in vec2 aTexCoord;
+    in vec4 aColor;
+
+    out vec2 vTexCoord;
+    out vec4 vColor;
+
+    void main() {
+        gl_Position = vec4(aPosition, 0.0, 1.0);
+        vTexCoord = aTexCoord;
+        vColor = aColor;
+    }
+"#;
+
+static FRAGMENT_TEXT: &str = r#"
+    #version 330 core
+
+    in vec2 vTexCoord;
+    in vec4 vColor;
+
+    out vec4 fColor;
+
+    uniform sampler2D uFontCache;
+
+    void main() {
+        fColor = vColor * vec4(0.0, 0.0, 0.0, texture(uFontCache, vTexCoord));
     }
 "#;
 
@@ -353,9 +387,33 @@ fn main() -> Result<(), String> {
         .build_windowed(window_builder, &event_loop)
         .unwrap();
 
+
     let context = unsafe { context.make_current().unwrap() };
 
     load(context.context());
+
+    // FONT LOADING
+    let text = "hello world".to_owned();
+    let font_data = include_bytes!("C:/Windows/Fonts/Arial.ttf");
+    let font = Font::from_bytes(font_data as &[u8]).unwrap();
+    let dpi_factor = context.window().hidpi_factor();
+    let cache_width = (512. * dpi_factor) as u32;
+    let cache_height = (512. * dpi_factor) as u32;
+    let mut text_cache = Cache::builder()
+        .dimensions(cache_width, cache_height)
+        .build();
+    let mut texture: u32 = 0;
+    unsafe {
+        gl::GenTextures(1, &mut texture as *mut _);
+        gl::BindTexture(gl::TEXTURE_2D, texture);
+        gl::TexParameteri(gl::TEXTURE_2D, gl::TEXTURE_MIN_FILTER, gl::LINEAR as i32);
+        gl::TexParameteri(gl::TEXTURE_2D, gl::TEXTURE_MAG_FILTER, gl::LINEAR as i32);
+        let mut data = vec![0x00u8; cache_width as usize * cache_height as usize];
+        gl::TexImage2D(gl::TEXTURE_2D, 0, gl::ALPHA as i32, cache_width as i32, cache_height as i32, 0, gl::ALPHA, gl::UNSIGNED_BYTE, data.as_mut_ptr() as _);
+    }
+    let text_pipeline = Pipeline::new(VERTEX_TEXT, FRAGMENT_TEXT)?;
+    let text_buffer = Buffer::new();
+    let text_vao = Vao::text_new(text_buffer);
 
     let mut world = World {
         game_state: GameState::new()?,
@@ -391,6 +449,112 @@ fn main() -> Result<(), String> {
             _ => { },
         };
 
+        let text_verts = { // FONT RENDERING
+            let mut glyphs: Vec<PositionedGlyph<'_>> = Vec::new();
+            let scale = Scale::uniform(24.0 * context.window().hidpi_factor() as f32);
+            let metrics = font.v_metrics(scale);
+            let mut caret = point(0.0, metrics.ascent);
+
+            for c in text.chars() {
+                let base_glyph = font.glyph(c);
+                let glyph = base_glyph.scaled(scale).positioned(caret);
+                caret.x += glyph.unpositioned().h_metrics().advance_width;
+                glyphs.push(glyph);
+            }
+
+            glyphs.iter().for_each(|glyph| {
+                text_cache.queue_glyph(0, glyph.clone());
+            });
+
+            text_cache.cache_queued(|rect, data| {
+                unsafe {
+                    gl::TextureSubImage2D(
+                        texture,
+                        0,
+                        rect.min.x as i32,
+                        rect.min.y as i32,
+                        rect.width() as i32,
+                        rect.height() as i32,
+                        gl::ALPHA,
+                        gl::UNSIGNED_BYTE,
+                        data.as_ptr() as _
+                    );
+                }
+            });
+
+            text_pipeline.set_use();
+            let font_tex_location = text_pipeline.get_uniform_location("uFontCache");
+            assert!(font_tex_location >= 0);
+            unsafe {
+            assert!(gl::GetError() == 0);
+                gl::BindTexture(gl::TEXTURE_2D, texture);
+                gl::ActiveTexture(gl::TEXTURE0);
+                assert!(gl::GetError() == 0);
+
+                gl::Uniform1i(font_tex_location, texture as i32);
+                assert!(gl::GetError() == 0);
+            }
+
+            let mut text_verts: Vec<[[f32; 8]; 6]> = glyphs
+                .iter()
+                .filter_map(|glyph| {
+                    if let Ok(data) = text_cache.rect_for(0, glyph) {
+                        data
+                    } else {
+                        None
+                    }
+                })
+                .map(|(uv, pix_loc)| {
+                    let window_size = context.window().inner_size();
+                    let width = window_size.width as f32;
+                    let height = window_size.height as f32;
+                    let loc = Rect {
+                        min: point(pix_loc.min.x as f32 / width * 2., pix_loc.min.y as f32 / height * 2.),
+                        max: point(pix_loc.max.x as f32 / width * 2., pix_loc.max.y as f32 / height * 2.),
+                    };
+
+                    [
+                        [
+                            // pos
+                            loc.min.x, loc.max.y,
+                            // uv
+                            uv.min.x, uv.max.y,
+                            // color
+                            0.0, 0.0, 0.0, 1.0
+                        ],
+                        [
+                            loc.min.x, loc.min.y,
+                            uv.min.x, uv.min.y,
+                            0.0, 0.0, 0.0, 1.0
+                        ],
+                        [
+                            loc.max.x, loc.min.y,
+                            uv.max.x, uv.min.y,
+                            0.0, 0.0, 0.0, 1.0
+                        ],
+                        [
+                            loc.max.x, loc.min.y,
+                            uv.max.x, uv.min.y,
+                            0.0, 0.0, 0.0, 1.0
+                        ],
+                        [
+                            loc.max.x, loc.max.y,
+                            uv.min.x, uv.max.y,
+                            0.0, 0.0, 0.0, 1.0
+                        ],
+                        [
+                            loc.min.x, loc.max.y,
+                            uv.min.x, uv.max.y,
+                            0.0, 0.0, 0.0, 1.0
+                        ],
+                    ]
+                })
+                .collect();
+                text_buffer.data(&mut text_verts, gl::DYNAMIC_DRAW);
+
+                text_verts
+        };
+
         let current_turn = world.game_state.turn;
         world.game_state.grid
             .iter_mut()
@@ -403,8 +567,20 @@ fn main() -> Result<(), String> {
                 }
             });
 
-
         renderer.render(&mut world.game_state, &mut world.camera);
+
+        unsafe {
+            text_pipeline.set_use();
+            gl::ActiveTexture(gl::TEXTURE0);
+            gl::BindTexture(gl::TEXTURE_2D, texture);
+            gl::Disable(gl::DEPTH_TEST);
+            gl::Enable(gl::BLEND);
+            gl::BindVertexArray(text_vao.0);
+            gl::BlendFunc(gl::ONE, gl::SRC_ALPHA);
+            gl::PolygonMode(gl::FRONT_AND_BACK, gl::FILL);
+            gl::DrawArrays(gl::TRIANGLES, 0, text_verts.len() as i32 * 6);
+        }
+
         context.swap_buffers().unwrap();
 
         if !world.game_state.running {
