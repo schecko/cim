@@ -154,7 +154,7 @@ impl Camera {
             view: Decomposed {
                 scale: 1.0,
                 rot: Quaternion::look_at(Vector3::new(0.0, -1.0, 1.0), Vector3::new(0.0, 1.0, 0.0)),
-                disp: Vector3::new(0.0f32, 25.0, -25.0),
+                disp: Vector3::new(0.0f32, 30.0, -30.0),
             },
         }
     }
@@ -164,14 +164,25 @@ fn grid_fill(mut grid: &mut Array2<GridCell>, depth: u32, max_depth: u32, (x, y)
     let cell = grid.get_mut((x, y)).unwrap();
     if cell.biome == Biome::Ocean {
         cell.biome = rand::random();
+    } else {
+        return ();
     }
 
     let (grid_dim_x, grid_dim_y) = grid.dim();
     if depth < max_depth {
-        if x < grid_dim_x - 1 { grid_fill(&mut grid, depth + 1, max_depth, (x + 1, y)); }
-        if x > 1 { grid_fill(&mut grid, depth + 1, max_depth, (x - 1, y)); }
-        if y < grid_dim_y - 1 { grid_fill(&mut grid, depth + 1, max_depth, (x, y + 1)); }
-        if y > 1 { grid_fill(&mut grid, depth + 1, max_depth, (x, y - 1)); }
+        if rand::random::<bool>() {
+            // trend vertically
+            if y < grid_dim_y - 1 { grid_fill(&mut grid, depth + 1, max_depth, (x, y + 1)); }
+            if y > 0 { grid_fill(&mut grid, depth + 1, max_depth, (x, y - 1)); }
+            if x < grid_dim_x - 1 { grid_fill(&mut grid, depth + 1, max_depth, (x + 1, y)); }
+            if x > 0 { grid_fill(&mut grid, depth + 1, max_depth, (x - 1, y)); }
+        } else {
+            // trend horizontally
+            if x < grid_dim_x - 1 { grid_fill(&mut grid, depth + 1, max_depth, (x + 1, y)); }
+            if x > 0 { grid_fill(&mut grid, depth + 1, max_depth, (x - 1, y)); }
+            if y < grid_dim_y - 1 { grid_fill(&mut grid, depth + 1, max_depth, (x, y + 1)); }
+            if y > 0 { grid_fill(&mut grid, depth + 1, max_depth, (x, y - 1)); }
+        }
     }
 }
 
@@ -202,7 +213,7 @@ impl GameState {
         for i in 0..num_continents {
             let x = rand_x.sample(&mut rng);
             let y = rand_y.sample(&mut rng);
-            grid_fill(&mut grid, 0, 10, (x, y));
+            grid_fill(&mut grid, 0, 50, (x, y));
         }
 
         let mut rect_positions: Vec<_> = grid.indexed_iter().map(|((x, y), grid)| {
