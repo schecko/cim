@@ -361,16 +361,17 @@ static VERTEX_TEXT: &str = r#"
 
 static FRAGMENT_TEXT: &str = r#"
     #version 330 core
+    #extension GL_ARB_explicit_uniform_location : enable
 
     in vec2 vTexCoord;
     in vec4 vColor;
 
     out vec4 fColor;
 
-    uniform sampler2D uFontCache;
+    uniform sampler2D font_cache;
 
     void main() {
-        fColor = vColor * vec4(0.0, 0.0, 0.0, texture(uFontCache, vTexCoord));
+        fColor = vColor * vec4(0.0, 0.0, 0.0, texture(font_cache, vTexCoord));
     }
 "#;
 
@@ -393,7 +394,7 @@ fn main() -> Result<(), String> {
     load(context.context());
 
     // FONT LOADING
-    let text = "hello world".to_owned();
+    let text = "abcdefghijklmnopqrstuvwxyz ABCDEFGHIJKLMNOPQRSTUVWXYZ".to_owned();
     let font_data = include_bytes!("C:/Windows/Fonts/Arial.ttf");
     let font = Font::from_bytes(font_data as &[u8]).unwrap();
     let dpi_factor = context.window().hidpi_factor();
@@ -408,8 +409,20 @@ fn main() -> Result<(), String> {
         gl::BindTexture(gl::TEXTURE_2D, texture);
         gl::TexParameteri(gl::TEXTURE_2D, gl::TEXTURE_MIN_FILTER, gl::LINEAR as i32);
         gl::TexParameteri(gl::TEXTURE_2D, gl::TEXTURE_MAG_FILTER, gl::LINEAR as i32);
-        let mut data = vec![0x00u8; cache_width as usize * cache_height as usize];
-        gl::TexImage2D(gl::TEXTURE_2D, 0, gl::ALPHA as i32, cache_width as i32, cache_height as i32, 0, gl::ALPHA, gl::UNSIGNED_BYTE, data.as_mut_ptr() as _);
+        gl::TexParameteri(gl::TEXTURE_2D, gl::TEXTURE_WRAP_S, gl::REPEAT as i32);
+        gl::TexParameteri(gl::TEXTURE_2D, gl::TEXTURE_WRAP_T, gl::REPEAT as i32);
+        let data = vec![0x00u8; cache_width as usize * cache_height as usize];
+        gl::TexImage2D(
+            gl::TEXTURE_2D,
+            0,
+            gl::RED as i32,
+            cache_width as i32,
+            cache_height as i32,
+            0,
+            gl::RED,
+            gl::UNSIGNED_BYTE,
+            data.as_ptr() as _
+        );
     }
     let text_pipeline = Pipeline::new(VERTEX_TEXT, FRAGMENT_TEXT)?;
     let text_buffer = Buffer::new();
@@ -475,7 +488,7 @@ fn main() -> Result<(), String> {
                         rect.min.y as i32,
                         rect.width() as i32,
                         rect.height() as i32,
-                        gl::ALPHA,
+                        gl::RED,
                         gl::UNSIGNED_BYTE,
                         data.as_ptr() as _
                     );
@@ -483,15 +496,10 @@ fn main() -> Result<(), String> {
             });
 
             text_pipeline.set_use();
-            let font_tex_location = text_pipeline.get_uniform_location("uFontCache");
+            let font_tex_location = text_pipeline.get_uniform_location("font_cache");
             assert!(font_tex_location >= 0);
             unsafe {
-            assert!(gl::GetError() == 0);
-                gl::BindTexture(gl::TEXTURE_2D, texture);
-                gl::ActiveTexture(gl::TEXTURE0);
-                assert!(gl::GetError() == 0);
-
-                gl::Uniform1i(font_tex_location, texture as i32);
+                gl::Uniform1i(font_tex_location, 0);
                 assert!(gl::GetError() == 0);
             }
 
@@ -509,8 +517,8 @@ fn main() -> Result<(), String> {
                     let width = window_size.width as f32;
                     let height = window_size.height as f32;
                     let loc = Rect {
-                        min: point(pix_loc.min.x as f32 / width * 2., pix_loc.min.y as f32 / height * 2.),
-                        max: point(pix_loc.max.x as f32 / width * 2., pix_loc.max.y as f32 / height * 2.),
+                        min: point(pix_loc.min.x as f32 / width * 4., pix_loc.min.y as f32 / height * 8.),
+                        max: point(pix_loc.max.x as f32 / width * 4., pix_loc.max.y as f32 / height * 8.),
                     };
 
                     [
@@ -571,12 +579,14 @@ fn main() -> Result<(), String> {
 
         unsafe {
             text_pipeline.set_use();
-            gl::ActiveTexture(gl::TEXTURE0);
-            gl::BindTexture(gl::TEXTURE_2D, texture);
+            gl::BindVertexArray(text_vao.0);
+            //for i in (1..80) {
+                gl::ActiveTexture(gl::TEXTURE0);
+                gl::BindTexture(gl::TEXTURE_2D, texture);
+            //}
             gl::Disable(gl::DEPTH_TEST);
             gl::Enable(gl::BLEND);
-            gl::BindVertexArray(text_vao.0);
-            gl::BlendFunc(gl::ONE, gl::SRC_ALPHA);
+            //gl::BlendFunc(gl::ONE, gl::SRC_ALPHA);
             gl::PolygonMode(gl::FRONT_AND_BACK, gl::FILL);
             gl::DrawArrays(gl::TRIANGLES, 0, text_verts.len() as i32 * 6);
         }
