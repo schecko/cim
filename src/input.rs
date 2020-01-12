@@ -355,6 +355,7 @@ impl InputState {
                                 });
                             }
                         }
+
                         None
                     }),
                     modifiers: Default::default(),

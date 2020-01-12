@@ -396,7 +396,7 @@ fn main() -> Result<(), String> {
             .iter_mut()
             .for_each(|cell| {
                 if let Some(structure) = &mut cell.structure {
-                    if structure.next_unit_ready >= current_turn && cell.unit.is_none() {
+                    if structure.next_unit_ready <= current_turn && cell.unit.is_none() {
                         cell.unit = Some(Unit { t: structure.next_unit });
                         structure.next_unit_ready = current_turn + 5;
                     }
