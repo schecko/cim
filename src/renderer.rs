@@ -66,7 +66,7 @@ impl Renderer {
         unsafe {
             gl::Enable(gl::DEPTH_TEST);
             gl::Disable(gl::BLEND);
-            gl::ClearColor(1.0, 0.5, 0.7, 1.0);
+            gl::ClearColor(0.3, 0.3, 0.3, 1.0);
             gl::Clear(gl::COLOR_BUFFER_BIT | gl::DEPTH_BUFFER_BIT);
 
             game_state.solid.set_use();

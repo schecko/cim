@@ -1,4 +1,3 @@
-
 #[macro_use] extern crate lazy_static;
 #[macro_use] extern crate rand_derive;
 #[macro_use] extern crate strum_macros;
@@ -371,13 +370,23 @@ static FRAGMENT_TEXT: &str = r#"
     uniform sampler2D font_cache;
 
     void main() {
-        fColor = vColor * vec4(0.0, 0.0, 0.0, texture(font_cache, vTexCoord));
+        float c = texture(font_cache, vTexCoord).r;
+        fColor = vec4(c, c, c, 1.0);
     }
 "#;
 
 pub struct World {
     game_state: GameState,
     camera: Camera,
+}
+
+#[no_mangle]
+extern "system" fn opengl_message_callback(source: u32, t: u32, id: u32, severity: u32, length: i32, message: *const i8, user: *mut std::ffi::c_void) {
+    unsafe {
+        if t == gl::DEBUG_TYPE_ERROR {
+            println!(" type: {:x?} message: {}", t, std::ffi::CStr::from_ptr(message).to_string_lossy());
+        }
+    }
 }
 
 fn main() -> Result<(), String> {
@@ -388,30 +397,32 @@ fn main() -> Result<(), String> {
         .build_windowed(window_builder, &event_loop)
         .unwrap();
 
-
     let context = unsafe { context.make_current().unwrap() };
 
     load(context.context());
+    unsafe {
+        gl::Enable(gl::DEBUG_OUTPUT);
+        gl::DebugMessageCallback(Some(opengl_message_callback), std::ptr::null());
+    }
 
     // FONT LOADING
-    let text = "abcdefghijklmnopqrstuvwxyz ABCDEFGHIJKLMNOPQRSTUVWXYZ".to_owned();
-    let font_data = include_bytes!("C:/Windows/Fonts/Arial.ttf");
+    let text = "a".to_owned(); //bcdefghijklmnopqrstuvwxyz ABCDEFGHIJKLMNOPQRSTUVWXYZ".to_owned();
+    let font_data = include_bytes!("../arialbd.ttf");
     let font = Font::from_bytes(font_data as &[u8]).unwrap();
     let dpi_factor = context.window().hidpi_factor();
     let cache_width = (512. * dpi_factor) as u32;
     let cache_height = (512. * dpi_factor) as u32;
     let mut text_cache = Cache::builder()
         .dimensions(cache_width, cache_height)
+        .align_4x4(true)
         .build();
     let mut texture: u32 = 0;
     unsafe {
         gl::GenTextures(1, &mut texture as *mut _);
         gl::BindTexture(gl::TEXTURE_2D, texture);
-        gl::TexParameteri(gl::TEXTURE_2D, gl::TEXTURE_MIN_FILTER, gl::LINEAR as i32);
-        gl::TexParameteri(gl::TEXTURE_2D, gl::TEXTURE_MAG_FILTER, gl::LINEAR as i32);
-        gl::TexParameteri(gl::TEXTURE_2D, gl::TEXTURE_WRAP_S, gl::REPEAT as i32);
-        gl::TexParameteri(gl::TEXTURE_2D, gl::TEXTURE_WRAP_T, gl::REPEAT as i32);
-        let data = vec![0x00u8; cache_width as usize * cache_height as usize];
+        gl::TexParameteri(gl::TEXTURE_2D, gl::TEXTURE_MIN_FILTER, gl::NEAREST as i32);
+        gl::TexParameteri(gl::TEXTURE_2D, gl::TEXTURE_MAG_FILTER, gl::NEAREST as i32);
+        let data = vec![0x69u8; cache_width as usize * cache_height as usize];
         gl::TexImage2D(
             gl::TEXTURE_2D,
             0,
@@ -464,7 +475,7 @@ fn main() -> Result<(), String> {
 
         let text_verts = { // FONT RENDERING
             let mut glyphs: Vec<PositionedGlyph<'_>> = Vec::new();
-            let scale = Scale::uniform(24.0 * context.window().hidpi_factor() as f32);
+            let scale = Scale::uniform(200.0 * context.window().hidpi_factor() as f32);
             let metrics = font.v_metrics(scale);
             let mut caret = point(0.0, metrics.ascent);
 
@@ -480,20 +491,24 @@ fn main() -> Result<(), String> {
             });
 
             text_cache.cache_queued(|rect, data| {
+                assert!(rect.width() as usize * rect.height() as usize == data.len());
                 unsafe {
-                    gl::TextureSubImage2D(
-                        texture,
+                    gl::BindTexture(gl::TEXTURE_2D, texture);
+                    assert!(gl::GetError() == 0);
+                    gl::TexSubImage2D(
+                        gl::TEXTURE_2D,
                         0,
                         rect.min.x as i32,
                         rect.min.y as i32,
-                        rect.width() as i32,
+                        rect.width() as i32 - 1,
                         rect.height() as i32,
                         gl::RED,
                         gl::UNSIGNED_BYTE,
                         data.as_ptr() as _
                     );
+                    assert!(gl::GetError() == 0);
                 }
-            });
+            }).expect("Failed to render glyph");
 
             text_pipeline.set_use();
             let font_tex_location = text_pipeline.get_uniform_location("font_cache");
@@ -517,42 +532,42 @@ fn main() -> Result<(), String> {
                     let width = window_size.width as f32;
                     let height = window_size.height as f32;
                     let loc = Rect {
-                        min: point(pix_loc.min.x as f32 / width * 4., pix_loc.min.y as f32 / height * 8.),
-                        max: point(pix_loc.max.x as f32 / width * 4., pix_loc.max.y as f32 / height * 8.),
+                        min: point(pix_loc.min.x as f32 / width * 1., pix_loc.min.y as f32 / height * 1.),
+                        max: point(pix_loc.max.x as f32 / width * 1., pix_loc.max.y as f32 / height * 1.),
                     };
 
                     [
                         [
                             // pos
-                            loc.min.x, loc.max.y,
+                            loc.min.x, loc.max.y, // bottom right
                             // uv
-                            uv.min.x, uv.max.y,
+                            uv.min.x, uv.min.y,
                             // color
                             0.0, 0.0, 0.0, 1.0
                         ],
                         [
                             loc.min.x, loc.min.y,
-                            uv.min.x, uv.min.y,
+                            uv.min.x, uv.max.y,
                             0.0, 0.0, 0.0, 1.0
                         ],
                         [
                             loc.max.x, loc.min.y,
-                            uv.max.x, uv.min.y,
+                            uv.max.x, uv.max.y,
                             0.0, 0.0, 0.0, 1.0
                         ],
                         [
                             loc.max.x, loc.min.y,
-                            uv.max.x, uv.min.y,
+                            uv.max.x, uv.max.y,
                             0.0, 0.0, 0.0, 1.0
                         ],
                         [
                             loc.max.x, loc.max.y,
-                            uv.min.x, uv.max.y,
+                            uv.max.x, uv.min.y,
                             0.0, 0.0, 0.0, 1.0
                         ],
                         [
                             loc.min.x, loc.max.y,
-                            uv.min.x, uv.max.y,
+                            uv.min.x, uv.min.y,
                             0.0, 0.0, 0.0, 1.0
                         ],
                     ]
