@@ -152,10 +152,7 @@ impl InputState {
                     action: Some(|_| {
                         Some(InputMode::Command)
                     }),
-                    modifiers: ModifiersState {
-                        shift: true,
-                        ..Default::default()
-                    },
+                    modifiers: ModifiersState::SHIFT,
                     // Some keyboards return Semicolon with shift,
                     // others return Colon with shift
                     code: KeyCode::Virtual(VirtualKeyCode::Semicolon),
@@ -165,10 +162,7 @@ impl InputState {
                     action: Some(|_| {
                         Some(InputMode::Command)
                     }),
-                    modifiers: ModifiersState {
-                        shift: true,
-                        ..Default::default()
-                    },
+                    modifiers: ModifiersState::SHIFT,
                     // Some keyboards return Semicolon with shift,
                     // others return Colon with shift
                     code: KeyCode::Virtual(VirtualKeyCode::Colon),

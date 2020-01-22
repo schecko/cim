@@ -409,7 +409,7 @@ fn main() -> Result<(), String> {
     let text = "a".to_owned(); //bcdefghijklmnopqrstuvwxyz ABCDEFGHIJKLMNOPQRSTUVWXYZ".to_owned();
     let font_data = include_bytes!("../arialbd.ttf");
     let font = Font::from_bytes(font_data as &[u8]).unwrap();
-    let dpi_factor = context.window().hidpi_factor();
+    let dpi_factor = context.window().scale_factor();
     let cache_width = (512. * dpi_factor) as u32;
     let cache_height = (512. * dpi_factor) as u32;
     let mut text_cache = Cache::builder()
@@ -457,11 +457,9 @@ fn main() -> Result<(), String> {
             Event::LoopDestroyed => return,
             Event::WindowEvent { ref event, .. } => {
                 match event {
-                    WindowEvent::Resized(logical_size) => {
-                        let dpi_factor = context.window().hidpi_factor();
-                        let physical = logical_size.to_physical(dpi_factor);
-                        context.resize(physical);
-                        unsafe { gl::Viewport(0, 0, physical.width as _, physical.height as _); }
+                    WindowEvent::Resized(physical_size) => {
+                        context.resize(*physical_size);
+                        unsafe { gl::Viewport(0, 0, physical_size.width as _, physical_size.height as _); }
                     },
                     WindowEvent::CloseRequested => *control_flow = ControlFlow::Exit,
                     WindowEvent::KeyboardInput { input, .. } if input.state == ElementState::Pressed => {
@@ -475,7 +473,7 @@ fn main() -> Result<(), String> {
 
         let text_verts = { // FONT RENDERING
             let mut glyphs: Vec<PositionedGlyph<'_>> = Vec::new();
-            let scale = Scale::uniform(200.0 * context.window().hidpi_factor() as f32);
+            let scale = Scale::uniform(200.0 * context.window().scale_factor() as f32);
             let metrics = font.v_metrics(scale);
             let mut caret = point(0.0, metrics.ascent);
 
