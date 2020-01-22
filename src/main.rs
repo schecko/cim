@@ -410,8 +410,8 @@ fn main() -> Result<(), String> {
     let font_data = include_bytes!("../arialbd.ttf");
     let font = Font::from_bytes(font_data as &[u8]).unwrap();
     let dpi_factor = context.window().scale_factor();
-    let cache_width = (512. * dpi_factor) as u32;
-    let cache_height = (512. * dpi_factor) as u32;
+    let cache_width = (512. * dpi_factor.round()) as u32;
+    let cache_height = (512. * dpi_factor.round()) as u32;
     let mut text_cache = Cache::builder()
         .dimensions(cache_width, cache_height)
         .align_4x4(true)
@@ -422,6 +422,7 @@ fn main() -> Result<(), String> {
         gl::BindTexture(gl::TEXTURE_2D, texture);
         gl::TexParameteri(gl::TEXTURE_2D, gl::TEXTURE_MIN_FILTER, gl::NEAREST as i32);
         gl::TexParameteri(gl::TEXTURE_2D, gl::TEXTURE_MAG_FILTER, gl::NEAREST as i32);
+
         let data = vec![0x69u8; cache_width as usize * cache_height as usize];
         gl::TexImage2D(
             gl::TEXTURE_2D,
@@ -444,12 +445,14 @@ fn main() -> Result<(), String> {
         camera: Camera::new(),
     };
 
+
     world.game_state.grid.get_mut((0, 0)).unwrap().unit = Some(Unit {
         t: UnitType::Settler,
     });
 
     let mut input_state = InputState::new();
     let mut renderer = Renderer;
+
 
     event_loop.run(move |event, _, control_flow| {
         *control_flow = ControlFlow::Poll;
