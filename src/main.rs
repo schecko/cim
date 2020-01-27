@@ -352,7 +352,7 @@ static VERTEX_TEXT: &str = r#"
     out vec4 vColor;
 
     void main() {
-        gl_Position = vec4(aPosition, 0.0, 1.0);
+        gl_Position = vec4(aPosition.x, -aPosition.y, 0.0, 1.0);
         vTexCoord = aTexCoord;
         vColor = aColor;
     }
@@ -370,8 +370,8 @@ static FRAGMENT_TEXT: &str = r#"
     uniform sampler2D font_cache;
 
     void main() {
-        float c = texture(font_cache, vTexCoord).r;
-        fColor = vec4(c, c, c, 1.0);
+        float a = texture(font_cache, vTexCoord).r;
+        fColor = vec4(vColor.rgb, a);
     }
 "#;
 
@@ -542,33 +542,33 @@ fn main() -> Result<(), String> {
                             // pos
                             loc.min.x, loc.max.y, // bottom right
                             // uv
-                            uv.min.x, uv.min.y,
+                            uv.min.x, uv.max.y,
                             // color
                             0.0, 0.0, 0.0, 1.0
                         ],
                         [
                             loc.min.x, loc.min.y,
-                            uv.min.x, uv.max.y,
+                            uv.min.x, uv.min.y,
                             0.0, 0.0, 0.0, 1.0
                         ],
                         [
                             loc.max.x, loc.min.y,
-                            uv.max.x, uv.max.y,
-                            0.0, 0.0, 0.0, 1.0
-                        ],
-                        [
-                            loc.max.x, loc.min.y,
-                            uv.max.x, uv.max.y,
-                            0.0, 0.0, 0.0, 1.0
-                        ],
-                        [
-                            loc.max.x, loc.max.y,
                             uv.max.x, uv.min.y,
                             0.0, 0.0, 0.0, 1.0
                         ],
                         [
+                            loc.max.x, loc.min.y,
+                            uv.max.x, uv.min.y,
+                            0.0, 0.0, 0.0, 1.0
+                        ],
+                        [
+                            loc.max.x, loc.max.y,
+                            uv.max.x, uv.max.y,
+                            0.0, 0.0, 0.0, 1.0
+                        ],
+                        [
                             loc.min.x, loc.max.y,
-                            uv.min.x, uv.min.y,
+                            uv.min.x, uv.max.y,
                             0.0, 0.0, 0.0, 1.0
                         ],
                     ]
@@ -596,13 +596,11 @@ fn main() -> Result<(), String> {
         unsafe {
             text_pipeline.set_use();
             gl::BindVertexArray(text_vao.0);
-            //for i in (1..80) {
-                gl::ActiveTexture(gl::TEXTURE0);
-                gl::BindTexture(gl::TEXTURE_2D, texture);
-            //}
+            gl::ActiveTexture(gl::TEXTURE0);
+            gl::BindTexture(gl::TEXTURE_2D, texture);
             gl::Disable(gl::DEPTH_TEST);
             gl::Enable(gl::BLEND);
-            //gl::BlendFunc(gl::ONE, gl::SRC_ALPHA);
+            gl::BlendFunc(gl::SRC_ALPHA, gl::ONE_MINUS_SRC_ALPHA);
             gl::PolygonMode(gl::FRONT_AND_BACK, gl::FILL);
             gl::DrawArrays(gl::TRIANGLES, 0, text_verts.len() as i32 * 6);
         }
