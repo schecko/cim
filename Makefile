@@ -1,10 +1,14 @@
 .PHONY: build
+SOURCE=source ~/.cargo/env
+SHELL=/bin/bash
 
 run:
-	cargo run
+	$(SOURCE) && cargo run
+
+r: run
 
 build:
-	cargo build
+	$(SOURCE) && cargo build
 
 clean:
-	cargo clean
+	$(SOURCE) && cargo clean

@@ -406,7 +406,7 @@ fn main() -> Result<(), String> {
     }
 
     // FONT LOADING
-    let text = "a".to_owned(); //bcdefghijklmnopqrstuvwxyz ABCDEFGHIJKLMNOPQRSTUVWXYZ".to_owned();
+    let text = "abc".to_owned(); //bcdefghijklmnopqrstuvwxyz ABCDEFGHIJKLMNOPQRSTUVWXYZ".to_owned();
     let font_data = include_bytes!("../arialbd.ttf");
     let font = Font::from_bytes(font_data as &[u8]).unwrap();
     let dpi_factor = context.window().scale_factor();
@@ -453,7 +453,6 @@ fn main() -> Result<(), String> {
     let mut input_state = InputState::new();
     let mut renderer = Renderer;
 
-
     event_loop.run(move |event, _, control_flow| {
         *control_flow = ControlFlow::Poll;
         match event {
@@ -468,7 +467,8 @@ fn main() -> Result<(), String> {
                     WindowEvent::KeyboardInput { input, .. } if input.state == ElementState::Pressed => {
                         input_state.event(&mut world, input);
                     },
-                    _ => {},
+                    _ => {
+                    },
                 }
             },
             _ => { },
