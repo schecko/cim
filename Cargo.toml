@@ -16,3 +16,6 @@ strum = "0.17.1"
 strum_macros = "0.17.1"
 num = "0.2.0"
 rusttype = { version = "0.8.2", features = ["gpu_cache"] }
+
+[profile.dev]
+debug = true
