@@ -406,7 +406,7 @@ fn main() -> Result<(), String> {
     }
 
     // FONT LOADING
-    let text = "abcdefghijklmnopqrstuvwxyz ABCDEFGHIJKLMNOPQRSTUVWXYZ".to_owned();
+    let mut text = String::new();
     let font_data = include_bytes!("../arialbd.ttf");
     let font = Font::from_bytes(font_data as &[u8]).unwrap();
     let dpi_factor = context.window().scale_factor();
@@ -466,6 +466,9 @@ fn main() -> Result<(), String> {
                     WindowEvent::CloseRequested => *control_flow = ControlFlow::Exit,
                     WindowEvent::KeyboardInput { input, .. } if input.state == ElementState::Pressed => {
                         input_state.event(&mut world, input);
+                    },
+                    WindowEvent::ReceivedCharacter(c) => {
+                        text.push(*c);
                     },
                     _ => {
                     },
