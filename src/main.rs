@@ -406,7 +406,7 @@ fn main() -> Result<(), String> {
     }
 
     // FONT LOADING
-    let text = "abc".to_owned(); //bcdefghijklmnopqrstuvwxyz ABCDEFGHIJKLMNOPQRSTUVWXYZ".to_owned();
+    let text = "abcdefghijklmnopqrstuvwxyz ABCDEFGHIJKLMNOPQRSTUVWXYZ".to_owned();
     let font_data = include_bytes!("../arialbd.ttf");
     let font = Font::from_bytes(font_data as &[u8]).unwrap();
     let dpi_factor = context.window().scale_factor();
@@ -476,9 +476,12 @@ fn main() -> Result<(), String> {
 
         let text_verts = { // FONT RENDERING
             let mut glyphs: Vec<PositionedGlyph<'_>> = Vec::new();
-            let scale = Scale::uniform(200.0 * context.window().scale_factor() as f32);
+            // TODO figure out why scale_factor blows up on linux
+            //let factor = context.window().scale_factor().round();
+            let screen_size = context.window().inner_size();
+            let scale = Scale::uniform(100.0);
             let metrics = font.v_metrics(scale);
-            let mut caret = point(0.0, metrics.ascent);
+            let mut caret = point(screen_size.width as f32 * -1., screen_size.height as f32);
 
             for c in text.chars() {
                 let base_glyph = font.glyph(c);
