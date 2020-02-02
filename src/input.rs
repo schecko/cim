@@ -9,7 +9,7 @@ use cgmath::*;
 use cgmath::prelude::*;
 use crate::*;
 
-#[derive(EnumCount, Clone, Copy)]
+#[derive(Display, EnumCount, Clone, Copy)]
 pub enum InputMode {
     Normal,
     Unit,
@@ -49,7 +49,7 @@ impl Node {
 }
 
 pub struct InputState {
-    mode: InputMode,
+    pub mode: InputMode,
     trees: [Node; INPUTMODE_COUNT],
     current: *mut Node,
 }
@@ -391,12 +391,14 @@ impl InputState {
                         }
 
                         self.current = std::ptr::null_mut();
+                        world.game_state.command_text = String::new();
                     },
                     _ => { },
                 }
             },
             None => {
                 self.current = std::ptr::null_mut();
+                world.game_state.command_text = String::new();
             }
         }
     }

@@ -142,6 +142,8 @@ pub struct GameState {
 
     running: bool,
     yanked_location: Option<Cursor>,
+
+    command_text: String,
 }
 
 pub struct Camera {
@@ -248,6 +250,8 @@ impl GameState {
 
             running: true,
             yanked_location: None,
+
+            command_text: String::new(),
         })
     }
 }
@@ -406,7 +410,6 @@ fn main() -> Result<(), String> {
     }
 
     // FONT LOADING
-    let mut text = String::new();
     let font_data = include_bytes!("../arialbd.ttf");
     let font = Font::from_bytes(font_data as &[u8]).unwrap();
     let dpi_factor = context.window().scale_factor();
@@ -468,7 +471,7 @@ fn main() -> Result<(), String> {
                         input_state.event(&mut world, input);
                     },
                     WindowEvent::ReceivedCharacter(c) => {
-                        text.push(*c);
+                        world.game_state.command_text.push(*c);
                     },
                     _ => {
                     },
@@ -484,7 +487,9 @@ fn main() -> Result<(), String> {
                     let metrics = font.v_metrics(scale);
                     let mut caret = point(screen_size.width as f32 * -1., screen_size.height as f32);
 
-                    for c in text.chars() {
+                    let render_text = format!("{} {}", input_state.mode.to_string(), world.game_state.command_text);
+
+                    for c in render_text.chars() {
                         let base_glyph = font.glyph(c);
                         let glyph = base_glyph.scaled(scale).positioned(caret);
                         caret.x += glyph.unpositioned().h_metrics().advance_width;
