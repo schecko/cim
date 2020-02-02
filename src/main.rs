@@ -455,6 +455,7 @@ fn main() -> Result<(), String> {
 
     let mut input_state = InputState::new();
     let mut renderer = Renderer;
+    let mut last_frame = std::time::Instant::now();
 
     event_loop.run(move |event, _, control_flow| {
         *control_flow = ControlFlow::Poll;
@@ -478,6 +479,11 @@ fn main() -> Result<(), String> {
                 }
             },
             Event::RedrawRequested(_) => {
+                let frame_start = std::time::Instant::now();
+                let dt = (frame_start - last_frame).as_secs_f64();
+                last_frame = frame_start;
+                let fps = 1. / dt;
+
                 let text_verts = { // FONT RENDERING
                     let mut glyphs: Vec<PositionedGlyph<'_>> = Vec::new();
                     // TODO figure out why scale_factor blows up on linux
@@ -485,15 +491,29 @@ fn main() -> Result<(), String> {
                     let screen_size = context.window().inner_size();
                     let scale = Scale::uniform(100.0);
                     let metrics = font.v_metrics(scale);
-                    let mut caret = point(screen_size.width as f32 * -1., screen_size.height as f32);
 
-                    let render_text = format!("{} {}", input_state.mode.to_string(), world.game_state.command_text);
+                    { // bottom left text
+                        let mut caret = point(screen_size.width as f32 * -1., screen_size.height as f32);
+                        let command_text = format!("{} {}", input_state.mode.to_string(), world.game_state.command_text);
 
-                    for c in render_text.chars() {
-                        let base_glyph = font.glyph(c);
-                        let glyph = base_glyph.scaled(scale).positioned(caret);
-                        caret.x += glyph.unpositioned().h_metrics().advance_width;
-                        glyphs.push(glyph);
+                        for c in command_text.chars() {
+                            let base_glyph = font.glyph(c);
+                            let glyph = base_glyph.scaled(scale).positioned(caret);
+                            caret.x += glyph.unpositioned().h_metrics().advance_width;
+                            glyphs.push(glyph);
+                        }
+                    }
+
+                    { // top left text
+                        let mut caret = point(screen_size.width as f32 * -1., -(screen_size.height as f32) + metrics.ascent);
+                        let fps_text = format!("{:2.1} fps", fps);
+
+                        for c in fps_text.chars() {
+                            let base_glyph = font.glyph(c);
+                            let glyph = base_glyph.scaled(scale).positioned(caret);
+                            caret.x += glyph.unpositioned().h_metrics().advance_width;
+                            glyphs.push(glyph);
+                        }
                     }
 
                     glyphs.iter().for_each(|glyph| {
