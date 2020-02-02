@@ -96,6 +96,34 @@ impl Renderer {
             let view_loc = game_state.solid.get_uniform_location("view");
             let proj_loc = game_state.solid.get_uniform_location("proj");
 
+            let viewport_coords = Vector2::new(0., 0.);
+            let ray_dir = if true {
+                let inv_proj_view = (proj * view).transpose();
+                let world_coord_p1 = inv_proj_view * Vector4::new(viewport_coords.x, viewport_coords.y, 1., 1.);
+                let world_coord_p2 = inv_proj_view * Vector4::new(viewport_coords.x, viewport_coords.y, 0., 1.);
+                let camera_dir = (world_coord_p1.truncate() / world_coord_p1.w) - (world_coord_p2.truncate() / world_coord_p2.w);
+                camera_dir.normalize()
+            } else {
+                let inv_proj = proj.inverse_transform().unwrap();
+                let inv_view = view.inverse_transform().unwrap();
+                let eye = inv_view * Vector4::new(viewport_coords.x, viewport_coords.y, 1., 1.);
+                dbg!(eye);
+                let world = inv_proj * Vector4::new(eye.x, eye.y, eye.z, 0.);
+                dbg!(world);
+                (world.truncate() * world.w).normalize()
+                //world.truncate()
+            };
+            dbg!(ray_dir);
+
+            let plane_point = Vector3::new(0., 0., 0.);
+            let plane_normal = Vector3::new(0., 0., 1.);
+            let ray_dir_test = camera.view.rot * Vector3::new(0., 0., -1.);
+            dbg!(ray_dir_test);
+            let points_diff = disp_raw.disp - plane_point;
+            let d = dot(plane_point - disp_raw.disp, plane_normal) / dot(ray_dir, plane_normal);
+            let intersection = disp_raw.disp + ray_dir * d;
+            dbg!(intersection);
+
             gl::UniformMatrix4fv(model_loc, 1, gl::FALSE, model.as_ptr());
             gl::UniformMatrix4fv(view_loc, 1, gl::FALSE, view.as_ptr());
             gl::UniformMatrix4fv(proj_loc, 1, gl::FALSE, proj.as_ptr());
