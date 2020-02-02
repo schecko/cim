@@ -490,7 +490,7 @@ fn main() -> Result<(), String> {
                     //let factor = context.window().scale_factor().round();
                     let screen_size = context.window().inner_size();
                     let scale = Scale::uniform(100.0);
-                    let metrics = font.v_metrics(scale);
+                    let v_metrics = font.v_metrics(scale);
 
                     { // bottom left text
                         let mut caret = point(screen_size.width as f32 * -1., screen_size.height as f32);
@@ -505,13 +505,26 @@ fn main() -> Result<(), String> {
                     }
 
                     { // top left text
-                        let mut caret = point(screen_size.width as f32 * -1., -(screen_size.height as f32) + metrics.ascent);
+                        let mut caret = point(screen_size.width as f32 * -1., -(screen_size.height as f32) + v_metrics.ascent);
                         let fps_text = format!("{:2.1} fps", fps);
 
                         for c in fps_text.chars() {
                             let base_glyph = font.glyph(c);
                             let glyph = base_glyph.scaled(scale).positioned(caret);
                             caret.x += glyph.unpositioned().h_metrics().advance_width;
+                            glyphs.push(glyph);
+                        }
+                    }
+
+                    { // top right text
+                        let mut caret = point(screen_size.width as f32 * 1., -(screen_size.height as f32) + v_metrics.ascent);
+                        let turn_text = format!("turn {}", world.game_state.turn);
+
+                        for c in turn_text.chars().rev() {
+                            let base_glyph = font.glyph(c);
+                            let scaled = base_glyph.scaled(scale);
+                            caret.x -= scaled.h_metrics().advance_width;
+                            let glyph = scaled.positioned(caret);
                             glyphs.push(glyph);
                         }
                     }

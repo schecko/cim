@@ -56,7 +56,7 @@ impl Renderer {
 
                 [
                     Vector3::new(loc_x * 2.0, loc_y * 2.0, loc_z),
-                    Vector3::new(0.7, 0.7, 0.7),
+                    Vector3::new(0.7, 0.0, 0.7),
                 ]
             }).collect()
         );
