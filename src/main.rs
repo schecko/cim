@@ -474,148 +474,151 @@ fn main() -> Result<(), String> {
                     },
                 }
             },
+            Event::RedrawRequested(_) => {
+                let text_verts = { // FONT RENDERING
+                    let mut glyphs: Vec<PositionedGlyph<'_>> = Vec::new();
+                    // TODO figure out why scale_factor blows up on linux
+                    //let factor = context.window().scale_factor().round();
+                    let screen_size = context.window().inner_size();
+                    let scale = Scale::uniform(100.0);
+                    let metrics = font.v_metrics(scale);
+                    let mut caret = point(screen_size.width as f32 * -1., screen_size.height as f32);
+
+                    for c in text.chars() {
+                        let base_glyph = font.glyph(c);
+                        let glyph = base_glyph.scaled(scale).positioned(caret);
+                        caret.x += glyph.unpositioned().h_metrics().advance_width;
+                        glyphs.push(glyph);
+                    }
+
+                    glyphs.iter().for_each(|glyph| {
+                        text_cache.queue_glyph(0, glyph.clone());
+                    });
+
+                    text_cache.cache_queued(|rect, data| {
+                        assert!(rect.width() as usize * rect.height() as usize == data.len());
+                        unsafe {
+                            gl::BindTexture(gl::TEXTURE_2D, texture);
+                            assert!(gl::GetError() == 0);
+                            gl::TexSubImage2D(
+                                gl::TEXTURE_2D,
+                                0,
+                                rect.min.x as i32,
+                                rect.min.y as i32,
+                                rect.width() as i32 - 1,
+                                rect.height() as i32,
+                                gl::RED,
+                                gl::UNSIGNED_BYTE,
+                                data.as_ptr() as _
+                            );
+                            assert!(gl::GetError() == 0);
+                        }
+                    }).expect("Failed to render glyph");
+
+                    text_pipeline.set_use();
+                    let font_tex_location = text_pipeline.get_uniform_location("font_cache");
+                    assert!(font_tex_location >= 0);
+                    unsafe {
+                        gl::Uniform1i(font_tex_location, 0);
+                        assert!(gl::GetError() == 0);
+                    }
+
+                    let mut text_verts: Vec<[[f32; 8]; 6]> = glyphs
+                        .iter()
+                        .filter_map(|glyph| {
+                            if let Ok(data) = text_cache.rect_for(0, glyph) {
+                                data
+                            } else {
+                                None
+                            }
+                        })
+                        .map(|(uv, pix_loc)| {
+                            let window_size = context.window().inner_size();
+                            let width = window_size.width as f32;
+                            let height = window_size.height as f32;
+                            let loc = Rect {
+                                min: point(pix_loc.min.x as f32 / width * 1., pix_loc.min.y as f32 / height * 1.),
+                                max: point(pix_loc.max.x as f32 / width * 1., pix_loc.max.y as f32 / height * 1.),
+                            };
+
+                            [
+                                [
+                                    // pos
+                                    loc.min.x, loc.max.y, // bottom right
+                                    // uv
+                                    uv.min.x, uv.max.y,
+                                    // color
+                                    0.0, 0.0, 0.0, 1.0
+                                ],
+                                [
+                                    loc.min.x, loc.min.y,
+                                    uv.min.x, uv.min.y,
+                                    0.0, 0.0, 0.0, 1.0
+                                ],
+                                [
+                                    loc.max.x, loc.min.y,
+                                    uv.max.x, uv.min.y,
+                                    0.0, 0.0, 0.0, 1.0
+                                ],
+                                [
+                                    loc.max.x, loc.min.y,
+                                    uv.max.x, uv.min.y,
+                                    0.0, 0.0, 0.0, 1.0
+                                ],
+                                [
+                                    loc.max.x, loc.max.y,
+                                    uv.max.x, uv.max.y,
+                                    0.0, 0.0, 0.0, 1.0
+                                ],
+                                [
+                                    loc.min.x, loc.max.y,
+                                    uv.min.x, uv.max.y,
+                                    0.0, 0.0, 0.0, 1.0
+                                ],
+                            ]
+                        })
+                        .collect();
+                        text_buffer.data(&mut text_verts, gl::DYNAMIC_DRAW);
+
+                        text_verts
+                };
+
+                let current_turn = world.game_state.turn;
+                world.game_state.grid
+                    .iter_mut()
+                    .for_each(|cell| {
+                        if let Some(structure) = &mut cell.structure {
+                            if structure.next_unit_ready <= current_turn && cell.unit.is_none() {
+                                cell.unit = Some(Unit { t: structure.next_unit });
+                                structure.next_unit_ready = current_turn + 5;
+                            }
+                        }
+                    });
+
+                renderer.render(&mut world.game_state, &mut world.camera);
+
+                unsafe {
+                    text_pipeline.set_use();
+                    gl::BindVertexArray(text_vao.0);
+                    gl::ActiveTexture(gl::TEXTURE0);
+                    gl::BindTexture(gl::TEXTURE_2D, texture);
+                    gl::Disable(gl::DEPTH_TEST);
+                    gl::Enable(gl::BLEND);
+                    gl::BlendFunc(gl::SRC_ALPHA, gl::ONE_MINUS_SRC_ALPHA);
+                    gl::PolygonMode(gl::FRONT_AND_BACK, gl::FILL);
+                    gl::DrawArrays(gl::TRIANGLES, 0, text_verts.len() as i32 * 6);
+                }
+
+                context.swap_buffers().unwrap();
+
+                if !world.game_state.running {
+                    *control_flow = ControlFlow::Exit;
+                }
+            },
             _ => { },
         };
 
-        let text_verts = { // FONT RENDERING
-            let mut glyphs: Vec<PositionedGlyph<'_>> = Vec::new();
-            // TODO figure out why scale_factor blows up on linux
-            //let factor = context.window().scale_factor().round();
-            let screen_size = context.window().inner_size();
-            let scale = Scale::uniform(100.0);
-            let metrics = font.v_metrics(scale);
-            let mut caret = point(screen_size.width as f32 * -1., screen_size.height as f32);
-
-            for c in text.chars() {
-                let base_glyph = font.glyph(c);
-                let glyph = base_glyph.scaled(scale).positioned(caret);
-                caret.x += glyph.unpositioned().h_metrics().advance_width;
-                glyphs.push(glyph);
-            }
-
-            glyphs.iter().for_each(|glyph| {
-                text_cache.queue_glyph(0, glyph.clone());
-            });
-
-            text_cache.cache_queued(|rect, data| {
-                assert!(rect.width() as usize * rect.height() as usize == data.len());
-                unsafe {
-                    gl::BindTexture(gl::TEXTURE_2D, texture);
-                    assert!(gl::GetError() == 0);
-                    gl::TexSubImage2D(
-                        gl::TEXTURE_2D,
-                        0,
-                        rect.min.x as i32,
-                        rect.min.y as i32,
-                        rect.width() as i32 - 1,
-                        rect.height() as i32,
-                        gl::RED,
-                        gl::UNSIGNED_BYTE,
-                        data.as_ptr() as _
-                    );
-                    assert!(gl::GetError() == 0);
-                }
-            }).expect("Failed to render glyph");
-
-            text_pipeline.set_use();
-            let font_tex_location = text_pipeline.get_uniform_location("font_cache");
-            assert!(font_tex_location >= 0);
-            unsafe {
-                gl::Uniform1i(font_tex_location, 0);
-                assert!(gl::GetError() == 0);
-            }
-
-            let mut text_verts: Vec<[[f32; 8]; 6]> = glyphs
-                .iter()
-                .filter_map(|glyph| {
-                    if let Ok(data) = text_cache.rect_for(0, glyph) {
-                        data
-                    } else {
-                        None
-                    }
-                })
-                .map(|(uv, pix_loc)| {
-                    let window_size = context.window().inner_size();
-                    let width = window_size.width as f32;
-                    let height = window_size.height as f32;
-                    let loc = Rect {
-                        min: point(pix_loc.min.x as f32 / width * 1., pix_loc.min.y as f32 / height * 1.),
-                        max: point(pix_loc.max.x as f32 / width * 1., pix_loc.max.y as f32 / height * 1.),
-                    };
-
-                    [
-                        [
-                            // pos
-                            loc.min.x, loc.max.y, // bottom right
-                            // uv
-                            uv.min.x, uv.max.y,
-                            // color
-                            0.0, 0.0, 0.0, 1.0
-                        ],
-                        [
-                            loc.min.x, loc.min.y,
-                            uv.min.x, uv.min.y,
-                            0.0, 0.0, 0.0, 1.0
-                        ],
-                        [
-                            loc.max.x, loc.min.y,
-                            uv.max.x, uv.min.y,
-                            0.0, 0.0, 0.0, 1.0
-                        ],
-                        [
-                            loc.max.x, loc.min.y,
-                            uv.max.x, uv.min.y,
-                            0.0, 0.0, 0.0, 1.0
-                        ],
-                        [
-                            loc.max.x, loc.max.y,
-                            uv.max.x, uv.max.y,
-                            0.0, 0.0, 0.0, 1.0
-                        ],
-                        [
-                            loc.min.x, loc.max.y,
-                            uv.min.x, uv.max.y,
-                            0.0, 0.0, 0.0, 1.0
-                        ],
-                    ]
-                })
-                .collect();
-                text_buffer.data(&mut text_verts, gl::DYNAMIC_DRAW);
-
-                text_verts
-        };
-
-        let current_turn = world.game_state.turn;
-        world.game_state.grid
-            .iter_mut()
-            .for_each(|cell| {
-                if let Some(structure) = &mut cell.structure {
-                    if structure.next_unit_ready <= current_turn && cell.unit.is_none() {
-                        cell.unit = Some(Unit { t: structure.next_unit });
-                        structure.next_unit_ready = current_turn + 5;
-                    }
-                }
-            });
-
-        renderer.render(&mut world.game_state, &mut world.camera);
-
-        unsafe {
-            text_pipeline.set_use();
-            gl::BindVertexArray(text_vao.0);
-            gl::ActiveTexture(gl::TEXTURE0);
-            gl::BindTexture(gl::TEXTURE_2D, texture);
-            gl::Disable(gl::DEPTH_TEST);
-            gl::Enable(gl::BLEND);
-            gl::BlendFunc(gl::SRC_ALPHA, gl::ONE_MINUS_SRC_ALPHA);
-            gl::PolygonMode(gl::FRONT_AND_BACK, gl::FILL);
-            gl::DrawArrays(gl::TRIANGLES, 0, text_verts.len() as i32 * 6);
-        }
-
-        context.swap_buffers().unwrap();
-
-        if !world.game_state.running {
-            *control_flow = ControlFlow::Exit;
-        }
+        context.window().request_redraw();
     });
 
 }
