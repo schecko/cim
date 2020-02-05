@@ -31,8 +31,6 @@ impl Renderer {
         };
         let model: Matrix4<f32> = decomp.into();
 
-        // TODO numeric stability of w? maybe f64? intersections are incorrect at grid location (0, 0) for
-        // viewport coords of (1, 1), but work for viewport coords of (0, 0).
         let viewport_coords = Vector2::new(0., 0.);
         let blah = |coords: Vector2<f32>| -> Vector3<f32> {
             let inv_proj = proj.inverse_transform().unwrap();
@@ -41,36 +39,36 @@ impl Renderer {
             let world_coord_p2 = inv_view * inv_proj * Vector4::new(coords.x, coords.y, 1., 1.);
             let camera_dir = (world_coord_p1.truncate() / world_coord_p1.w) - (world_coord_p2.truncate() / world_coord_p2.w);
             let mut ray_dir = camera_dir.normalize();
-            //dbg!(ray_dir);
 
             let plane_point = Vector3::new(0., 0., 0.);
             let plane_normal = Vector3::new(0., 0., 1.);
             let ray_dir_test = camera.view.rot * Vector3::new(0., 0., 1.);
-            //dbg!(ray_dir_test);
             let d = dot(plane_point - disp_raw.disp, plane_normal) / dot(ray_dir, plane_normal);
             let intersection = -disp_raw.disp - ray_dir * d;
-            //dbg!(coords, intersection);
             intersection
         };
-        //let intersection = blah(Vector2::new(0., 0.));
-        let top_right = blah(Vector2::new(1., 1.));
-        let bottom_left = blah(Vector2::new(-1., -1.));
+        let top_right = blah(Vector2::new(1., 1.)) / 2.;
+        // NOTE: use width from top corners due to perspective view
+        let top_left = blah(Vector2::new(-1., 1.)) / 2.;
+        let bottom_left = blah(Vector2::new(-1., -1.)) / 2.;
 
         let mut top_right_index = top_right.truncate().cast::<isize>().unwrap();
+        let mut top_left_index = top_left.truncate().cast::<isize>().unwrap();
         let mut bottom_left_index = bottom_left.truncate().cast::<isize>().unwrap();
         top_right_index.x = num::clamp(top_right_index.x, 0, signed_width);
-        top_right_index.y = num::clamp(top_right_index.y, 0, signed_width);
-        bottom_left_index.x = num::clamp(bottom_left_index.x, 0, signed_height);
+        top_right_index.y = num::clamp(top_right_index.y, 0, signed_height);
+        top_left_index.x = num::clamp(top_left_index.x, 0, signed_width);
+        top_left_index.y = num::clamp(top_left_index.y, 0, signed_height);
+        bottom_left_index.x = num::clamp(bottom_left_index.x, 0, signed_width);
         bottom_left_index.y = num::clamp(bottom_left_index.y, 0, signed_height);
-        dbg!(top_right_index);
-        dbg!(bottom_left_index);
 
-        let viewable_grid = game_state.grid.slice(s![bottom_left_index.x..top_right_index.x, bottom_left_index.y..top_right_index.y]);
+        let viewable_grid = game_state.grid.slice(s![top_left_index.x..top_right_index.x, bottom_left_index.y..top_right_index.y]);
 
-        // TODO use intersections to occlude gridcells that dont need to be rendered.
         let mut rect_positions: Vec<_> = viewable_grid
             .indexed_iter()
-            .map(|((x, y), grid)| {
+            .map(|((x_i, y_i), grid)| {
+                let x = x_i + top_left_index.x as usize;
+                let y = y_i + bottom_left_index.y as usize;
                 let loc_z = match game_state.cursor == (x, y).into() {
                     true => 1.0,
                     false => 0.0,

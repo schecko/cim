@@ -197,7 +197,7 @@ impl GameState {
         let quad_vao = Vao::new(quad_data, quad_instance_data);
         quad_data.data(&mut RECT.to_vec(), gl::STATIC_DRAW);
         let mut grid = Array2::from_shape_fn(
-            (50, 50),
+            (500, 500),
             |(x, y)| {
                 GridCell {
                     biome: Biome::Ocean,
