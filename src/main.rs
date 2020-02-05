@@ -652,11 +652,10 @@ fn main() -> Result<(), String> {
                 if !world.game_state.running {
                     *control_flow = ControlFlow::Exit;
                 }
+                context.window().request_redraw();
             },
             _ => { },
         };
-
-        context.window().request_redraw();
     });
 
 }
