@@ -98,19 +98,28 @@ impl Renderer {
 
             // TODO numeric stability of w? maybe f64? intersections are incorrect at grid location (0, 0) for
             // viewport coords of (1, 1), but work for viewport coords of (0, 0).
-            let viewport_coords = Vector2::new(1., 1.);
-            let inv_proj_view = (proj * view).transpose();
-            let world_coord_p1 = inv_proj_view * Vector4::new(viewport_coords.x, viewport_coords.y, 0., 1.);
-            let world_coord_p2 = inv_proj_view * Vector4::new(viewport_coords.x, viewport_coords.y, 1., 1.);
-            let camera_dir = (world_coord_p1.truncate() / world_coord_p1.w) - (world_coord_p2.truncate() / world_coord_p2.w);
-            let mut ray_dir = camera_dir.normalize();
+            let viewport_coords = Vector2::new(0., 0.);
+            let blah = |coords: Vector2<f32>| -> Vector3<f32> {
+                let inv_proj = proj.inverse_transform().unwrap();
+                let inv_view = view.transpose();
+                let world_coord_p1 = inv_view * inv_proj * Vector4::new(coords.x, coords.y, 0., 1.);
+                let world_coord_p2 = inv_view * inv_proj * Vector4::new(coords.x, coords.y, 1., 1.);
+                let camera_dir = (world_coord_p1.truncate() / world_coord_p1.w) - (world_coord_p2.truncate() / world_coord_p2.w);
+                let mut ray_dir = camera_dir.normalize();
+                //dbg!(ray_dir);
 
-            let plane_point = Vector3::new(0., 0., 0.);
-            let plane_normal = Vector3::new(0., 0., 1.);
-            let ray_dir_test = camera.view.rot * Vector3::new(0., 0., 1.);
-            let d = dot(plane_point - disp_raw.disp, plane_normal) / dot(ray_dir, plane_normal);
-            let intersection = disp_raw.disp + ray_dir * d;
-            dbg!(intersection);
+                let plane_point = Vector3::new(0., 0., 0.);
+                let plane_normal = Vector3::new(0., 0., 1.);
+                let ray_dir_test = camera.view.rot * Vector3::new(0., 0., 1.);
+                //dbg!(ray_dir_test);
+                let d = dot(plane_point - disp_raw.disp, plane_normal) / dot(ray_dir, plane_normal);
+                let intersection = disp_raw.disp + ray_dir * d;
+                //dbg!(coords, intersection);
+                intersection
+            };
+            let intersection = blah(Vector2::new(0., 0.));
+            blah(Vector2::new(1., 1.));
+            blah(Vector2::new(-1., -1.));
             // TODO use intersections to occlude gridcells that dont need to be rendered.
 
             gl::UniformMatrix4fv(model_loc, 1, gl::FALSE, model.as_ptr());
