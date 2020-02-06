@@ -144,6 +144,20 @@ pub struct GameState {
     command_text: String,
 }
 
+impl Drop for GameState {
+    fn drop(&mut self) {
+        unsafe {
+            gl::DeleteBuffers(1, &self.cube_data.0 as *const _);
+            gl::DeleteBuffers(1, &self.cube_instance_data.0 as *const _);
+            gl::DeleteBuffers(1, &self.quad_data.0 as *const _);
+            gl::DeleteBuffers(1, &self.quad_instance_data.0 as *const _);
+
+            gl::DeleteVertexArrays(1, &self.quad_vao.0 as *const _);
+            gl::DeleteVertexArrays(1, &self.cube_vao.0 as *const _);
+        }
+    }
+}
+
 pub struct Camera {
     projection: Matrix4<f32>,
     view: Decomposed<Vector3<f32>, Quaternion<f32>>,
