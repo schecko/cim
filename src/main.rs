@@ -15,7 +15,7 @@ mod input;
 
 use cgmath::*;
 use glutin::ContextBuilder;
-use glutin::event::{Event, WindowEvent, ElementState, };
+use glutin::event::{Event, WindowEvent, DeviceEvent, ElementState, };
 use glutin::event_loop::{ControlFlow, EventLoop};
 use glutin::window::WindowBuilder;
 use glutin::{ PossiblyCurrent, };
@@ -450,6 +450,14 @@ fn main() -> Result<(), String> {
     event_loop.run(move |event, _, control_flow| {
         *control_flow = ControlFlow::Poll;
         match event {
+            Event::DeviceEvent { event, .. } => {
+                match event {
+                    DeviceEvent::ModifiersChanged(state) => {
+                        input_state.modifiers = state;
+                    },
+                    _ => {}
+                }
+            },
             Event::LoopDestroyed => return,
             Event::WindowEvent { ref event, .. } => {
                 match event {

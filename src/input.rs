@@ -34,6 +34,7 @@ pub struct InputState {
     pub mode: InputMode,
     trees: [Node; INPUTMODE_COUNT],
     current: *mut Node,
+    pub modifiers: ModifiersState,
 }
 
 static CAMERA_SPEED: f32 = 0.01;
@@ -343,6 +344,7 @@ impl InputState {
                 camera,
             ],
             current: std::ptr::null_mut(),
+            modifiers: Default::default(),
         }
     }
 
@@ -355,7 +357,7 @@ impl InputState {
                     KeyCode::Virtual(v) => input.virtual_keycode.map_or(false, |iv| iv == v),
                     KeyCode::Physical(p) => input.scancode == p,
                 })
-                && node.modifiers == input.modifiers
+                && node.modifiers == self.modifiers
             })
         {
             Some(child) => {
