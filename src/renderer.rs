@@ -83,7 +83,7 @@ impl Renderer {
             }).collect();
         game_state.quad_instance_data.sub_data(&mut rect_positions);
 
-        let mut unit_positions: Vec<_> = game_state.grid
+        let mut unit_positions: Vec<_> = viewable_grid
             .indexed_iter()
             .filter(|(_, cell)| cell.unit.is_some())
             .map(|((x, y), cell)| {
@@ -100,7 +100,7 @@ impl Renderer {
                 ]
             }).collect();
 
-        unit_positions.append(&mut game_state.grid
+        unit_positions.append(&mut viewable_grid
             .indexed_iter()
             .filter(|(_, cell)| cell.structure.is_some())
             .map(|((x, y), cell)| {
