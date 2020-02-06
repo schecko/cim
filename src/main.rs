@@ -1,4 +1,3 @@
-#[macro_use] extern crate rand_derive;
 #[macro_use] extern crate strum_macros;
 extern crate cgmath;
 extern crate glutin;
@@ -25,11 +24,13 @@ use std::ffi::CStr;
 use crate::renderer::*;
 use crate::ogl::*;
 use crate::input::*;
-use rand::distributions::{ Uniform, Distribution, };
+use rand::distributions::{ Uniform, Distribution, Standard, };
+use rand::Rng;
 use rusttype::*;
 use rusttype::gpu_cache::*;
+use strum::IntoEnumIterator;
 
-#[derive(Debug, Clone, PartialEq, Eq, Rand)]
+#[derive(Debug, Clone, PartialEq, Eq, EnumIter)]
 enum Biome {
     Desert,
     Grassland,
@@ -37,6 +38,13 @@ enum Biome {
     Mountain,
     Ocean,
     Snow,
+}
+
+impl Distribution<Biome> for Standard {
+    fn sample<R: Rng + ?Sized>(&self, rng:&mut R) -> Biome {
+       use rand::seq::IteratorRandom; // for choose.
+        Biome::iter().choose(rng).unwrap()
+    }
 }
 
 impl Biome {

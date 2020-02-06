@@ -31,10 +31,10 @@ struct Node {
 }
 
 pub struct InputState {
-    pub mode: InputMode,
-    trees: [Node; INPUTMODE_COUNT],
     current: *mut Node,
+    pub mode: InputMode,
     pub modifiers: ModifiersState,
+    trees: [Node; INPUTMODE_COUNT],
 }
 
 static CAMERA_SPEED: f32 = 0.01;
