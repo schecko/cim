@@ -62,6 +62,8 @@ impl Renderer {
         bottom_left_index.x = num::clamp(bottom_left_index.x, 0, signed_width);
         bottom_left_index.y = num::clamp(bottom_left_index.y, 0, signed_height);
 
+        // TODO: perspective projection onto the grid shouldnt be a perfect square. slight speed
+        // improvment?
         let viewable_grid = game_state.grid.slice(s![top_left_index.x..top_right_index.x, bottom_left_index.y..top_right_index.y]);
 
         let mut rect_positions: Vec<_> = viewable_grid
