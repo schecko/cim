@@ -1,11 +1,5 @@
 
-use glutin::ContextBuilder;
-use glutin::event::{Event, WindowEvent, VirtualKeyCode, ElementState, KeyboardInput, ModifiersState, ScanCode, };
-use glutin::event_loop::{ControlFlow, EventLoop};
-use glutin::window::WindowBuilder;
-use glutin::{ PossiblyCurrent, };
-use strum::{EnumCount};
-use cgmath::*;
+use glutin::event::{ VirtualKeyCode, KeyboardInput, ModifiersState, ScanCode, };
 use cgmath::prelude::*;
 use crate::*;
 
@@ -14,7 +8,6 @@ pub enum InputMode {
     Normal,
     Unit,
     Command,
-    Editor,
     Camera,
 }
 
@@ -35,17 +28,6 @@ struct Node {
     code: KeyCode,
     modifiers: ModifiersState,
     action: Option<fn(&mut World) -> Option<InputMode>>,
-}
-
-impl Node {
-    fn new() -> Self {
-        Self {
-            children: Vec::new(),
-            code: KeyCode::Physical(0),
-            modifiers: Default::default(),
-            action: None,
-        }
-    }
 }
 
 pub struct InputState {
@@ -358,7 +340,6 @@ impl InputState {
                 normal,
                 unit,
                 command,
-                Node::new(),
                 camera,
             ],
             current: std::ptr::null_mut(),

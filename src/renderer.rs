@@ -1,6 +1,5 @@
 
 use cgmath::*;
-use cgmath::prelude::*;
 use crate::*;
 
 pub struct Renderer;
@@ -31,18 +30,16 @@ impl Renderer {
         };
         let model: Matrix4<f32> = decomp.into();
 
-        let viewport_coords = Vector2::new(0., 0.);
         let blah = |coords: Vector2<f32>| -> Vector3<f32> {
             let inv_proj = proj.inverse_transform().unwrap();
             let inv_view = view.transpose();
             let world_coord_p1 = inv_view * inv_proj * Vector4::new(coords.x, coords.y, 0., 1.);
             let world_coord_p2 = inv_view * inv_proj * Vector4::new(coords.x, coords.y, 1., 1.);
             let camera_dir = (world_coord_p1.truncate() / world_coord_p1.w) - (world_coord_p2.truncate() / world_coord_p2.w);
-            let mut ray_dir = camera_dir.normalize();
+            let ray_dir = camera_dir.normalize();
 
             let plane_point = Vector3::new(0., 0., 0.);
             let plane_normal = Vector3::new(0., 0., 1.);
-            let ray_dir_test = camera.view.rot * Vector3::new(0., 0., 1.);
             let d = dot(plane_point - disp_raw.disp, plane_normal) / dot(ray_dir, plane_normal);
             let intersection = -disp_raw.disp - ray_dir * d;
             intersection
@@ -88,7 +85,7 @@ impl Renderer {
         let mut unit_positions: Vec<_> = viewable_grid
             .indexed_iter()
             .filter(|(_, cell)| cell.unit.is_some())
-            .map(|((x, y), cell)| {
+            .map(|((x, y), _cell)| {
                 let loc_x = x as f32 + 0.5;
                 let loc_y = y as f32;
                 let loc_z = match game_state.cursor == (x, y).into() {
@@ -105,7 +102,7 @@ impl Renderer {
         unit_positions.append(&mut viewable_grid
             .indexed_iter()
             .filter(|(_, cell)| cell.structure.is_some())
-            .map(|((x, y), cell)| {
+            .map(|((x, y), _cell)| {
                 let loc_x = x as f32 + 0.5;
                 let loc_y = y as f32;
                 let loc_z = match game_state.cursor == (x, y).into() {

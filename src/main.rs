@@ -1,4 +1,3 @@
-#[macro_use] extern crate lazy_static;
 #[macro_use] extern crate rand_derive;
 #[macro_use] extern crate strum_macros;
 extern crate cgmath;
@@ -15,25 +14,20 @@ mod ogl;
 mod input;
 
 use cgmath::*;
-use cgmath::prelude::*;
-use gl::types::*;
 use glutin::ContextBuilder;
-use glutin::event::{Event, WindowEvent, VirtualKeyCode, ElementState, };
+use glutin::event::{Event, WindowEvent, ElementState, };
 use glutin::event_loop::{ControlFlow, EventLoop};
 use glutin::window::WindowBuilder;
 use glutin::{ PossiblyCurrent, };
 use ndarray::*;
 use pipeline::*;
-use std::ffi::{ CString, CStr, };
-use std::mem;
+use std::ffi::CStr;
 use crate::renderer::*;
 use crate::ogl::*;
 use crate::input::*;
 use rand::distributions::{ Uniform, Distribution, };
 use rusttype::*;
 use rusttype::gpu_cache::*;
-
-static DEFAULT_GRID_LENGTH: usize = 4;
 
 #[derive(Debug, Clone, PartialEq, Eq, Rand)]
 enum Biome {
@@ -62,8 +56,8 @@ impl Biome {
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 enum UnitType {
     Settler,
-    Soldier,
-    Scout,
+    //Soldier,
+    //Scout,
 }
 
 #[derive(Debug, Clone)]
@@ -90,30 +84,26 @@ struct Cursor {
 }
 
 impl Cursor {
-    fn new(x: usize, y: usize) -> Self {
-        Self { loc: (x, y) }
-    }
-
     fn left<T>(&self, grid: &Array2<T>, distance: usize) -> Self {
-        let (grid_dim_x, grid_dim_y) = grid.dim();
+        let (grid_dim_x, _grid_dim_y) = grid.dim();
         let new_vert = self.loc.0 as isize - distance as isize;
         Cursor{ loc: (num::clamp(new_vert, 0, grid_dim_x as isize - 1) as usize, self.loc.1) }
     }
 
     fn right<T>(&self, grid: &Array2<T>, distance: usize) -> Self {
-        let (grid_dim_x, grid_dim_y) = grid.dim();
+        let (grid_dim_x, _grid_dim_y) = grid.dim();
         let new_vert = self.loc.0 + distance;
         Cursor{ loc: (num::clamp(new_vert, 0, grid_dim_x - 1), self.loc.1) }
     }
 
     fn up<T>(&self, grid: &Array2<T>, distance: usize) -> Self {
-        let (grid_dim_x, grid_dim_y) = grid.dim();
+        let (_grid_dim_x, grid_dim_y) = grid.dim();
         let new_vert = self.loc.1 + distance;
         Cursor{ loc: (self.loc.0, num::clamp(new_vert, 0, grid_dim_y - 1)) }
     }
 
     fn down<T>(&self, grid: &Array2<T>, distance: usize) -> Self {
-        let (grid_dim_x, grid_dim_y) = grid.dim();
+        let (_grid_dim_x, grid_dim_y) = grid.dim();
         let new_vert = self.loc.1 as isize - distance as isize;
         Cursor{ loc: (self.loc.0, num::clamp(new_vert, 0, grid_dim_y as isize - 1) as usize) }
     }
@@ -198,7 +188,7 @@ impl GameState {
         quad_data.data(&mut RECT.to_vec(), gl::STATIC_DRAW);
         let mut grid = Array2::from_shape_fn(
             (500, 500),
-            |(x, y)| {
+            |(_x, _y)| {
                 GridCell {
                     biome: Biome::Ocean,
                     unit: None,
@@ -214,13 +204,13 @@ impl GameState {
         let rand_x = Uniform::from(0..grid_dim_x);
         let rand_y = Uniform::from(0..grid_dim_y);
 
-        for i in 0..num_continents {
+        for _ in 0..num_continents {
             let x = rand_x.sample(&mut rng);
             let y = rand_y.sample(&mut rng);
             grid_fill(&mut grid, 0, 50, (x, y));
         }
 
-        let mut rect_positions: Vec<_> = grid.indexed_iter().map(|((x, y), grid)| {
+        let mut rect_positions: Vec<_> = grid.indexed_iter().map(|((_x, _y), _grid)| {
             [
                 Vector3::new(0.0, 0.0, 0.0),
                 Vector3::new(0.0, 0.0, 0.0),
@@ -385,7 +375,7 @@ pub struct World {
 }
 
 #[no_mangle]
-extern "system" fn opengl_message_callback(source: u32, t: u32, id: u32, severity: u32, length: i32, message: *const i8, user: *mut std::ffi::c_void) {
+extern "system" fn opengl_message_callback(_source: u32, t: u32, _id: u32, _severity: u32, _length: i32, message: *const i8, _user: *mut std::ffi::c_void) {
     unsafe {
         if t == gl::DEBUG_TYPE_ERROR {
             println!(" type: {:x?} message: {}", t, std::ffi::CStr::from_ptr(message).to_string_lossy());
