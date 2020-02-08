@@ -49,8 +49,8 @@ impl Renderer {
         let top_left = blah(Vector2::new(-1., 1.)) / 2.;
         let bottom_left = blah(Vector2::new(-1., -1.)) / 2.;
 
-        let mut top_right_index = top_right.truncate().cast::<isize>().unwrap();
-        let mut top_left_index = top_left.truncate().cast::<isize>().unwrap();
+        let mut top_right_index = top_right.truncate().cast::<isize>().unwrap() + Vector2::new(2, 1); // add one to counter floor from cast
+        let mut top_left_index = top_left.truncate().cast::<isize>().unwrap() + Vector2::new(0, 1); // add one to counter floor from cast
         let mut bottom_left_index = bottom_left.truncate().cast::<isize>().unwrap();
         top_right_index.x = num::clamp(top_right_index.x, 0, signed_width);
         top_right_index.y = num::clamp(top_right_index.y, 0, signed_height);

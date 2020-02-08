@@ -60,7 +60,6 @@ impl Biome {
     }
 }
 
-
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 enum UnitType {
     Settler,
