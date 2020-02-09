@@ -81,8 +81,8 @@ struct Structure {
 #[derive(Debug, Clone)]
 struct GridCell {
     pub biome: Biome,
-    pub unit: Option<Unit>,
-    pub structure: Option<Structure>,
+    pub unit: Option<Eid<Unit>>,
+    pub structure: Option<Eid<Structure>>,
 }
 
 #[derive(Clone, Copy, PartialEq, Eq, Default)]
@@ -122,7 +122,31 @@ impl From<(usize, usize)> for Cursor {
     }
 }
 
+#[derive(Debug, Clone, PartialEq, Eq)]
+struct Eid<T> {
+    id: u32,
+    gen: u32,
+    _phantom_data: [T; 0],
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+struct Entity<T> {
+    gen: u32,
+    data: Option<T>,
+}
+
+#[derive(Debug, Clone)]
+struct Player {
+    units: Vec<Eid<Unit>>,
+    structures: Vec<Eid<Structure>>,
+}
+
 pub struct GameState {
+    units: Vec<Entity<Unit>>,
+    structures: Vec<Entity<Structure>>,
+
+    players: Vec<Player>,
+
     grid: Array2<GridCell>,
     cursor: Cursor,
     solid: Pipeline,
@@ -245,6 +269,11 @@ impl GameState {
         let cube_vao = Vao::new(cube_data, cube_instance_data);
 
         Ok(GameState {
+            units: Vec::new(),
+            structures: Vec::new(),
+
+            players: Vec::new(),
+
             cursor: Default::default(),
             grid,
             solid: Pipeline::new(VERTEX, FRAGMENT)?,
@@ -460,9 +489,10 @@ fn main() -> Result<(), String> {
     };
 
 
-    world.game_state.grid.get_mut((0, 0)).unwrap().unit = Some(Unit {
-        t: UnitType::Settler,
-    });
+    let eid = world.game_state.units.len() as u32;
+    world.game_state.units.push(Entity { gen: 0, data: Some(Unit { t: UnitType::Settler }) });
+
+    world.game_state.grid.get_mut((0, 0)).unwrap().unit = Some(Eid { id: eid, gen: 0, _phantom_data: [] });
 
     let mut input_state = InputState::new();
     let mut renderer = Renderer;
@@ -644,10 +674,12 @@ fn main() -> Result<(), String> {
                 world.game_state.grid
                     .iter_mut()
                     .for_each(|cell| {
-                        if let Some(structure) = &mut cell.structure {
-                            if structure.next_unit_ready <= current_turn && cell.unit.is_none() {
-                                cell.unit = Some(Unit { t: structure.next_unit });
-                                structure.next_unit_ready = current_turn + 5;
+                        if let Some(eid) = &mut cell.structure {
+                            if let Some(structure) = &world.game_state.structures[eid.id as usize].data {
+                                if structure.next_unit_ready <= current_turn && cell.unit.is_none() {
+                                    cell.unit = Some(Unit { t: structure.next_unit });
+                                    structure.next_unit_ready = current_turn + 5;
+                                }
                             }
                         }
                     });
