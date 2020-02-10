@@ -224,15 +224,15 @@ impl Renderer {
             .indexed_iter()
             .filter(|(_, cell)| cell.unit.is_some())
             .map(|((x, y), _cell)| {
-                let loc_x = x as f32 + 0.5;
-                let loc_y = y as f32;
+                let loc_x = 2. * x as f32 + 0.5;
+                let loc_y = 2. * y as f32;
                 let loc_z = match game_state.cursor == (x, y).into() {
-                    true => 2.0,
-                    false => 1.0,
+                    true => 2.,
+                    false => 1.,
                 };
 
                 [
-                    Vector3::new(loc_x * 2.0, loc_y * 2.0, loc_z),
+                    Vector3::new(loc_x, loc_y, loc_z),
                     Vector3::new(0.5, 0.5, 0.5),
                 ]
             }).collect();
@@ -241,15 +241,15 @@ impl Renderer {
             .indexed_iter()
             .filter(|(_, cell)| cell.structure.is_some())
             .map(|((x, y), _cell)| {
-                let loc_x = x as f32 + 0.5;
-                let loc_y = y as f32;
+                let loc_x = 2. * x as f32 + 0.5;
+                let loc_y = 2. * y as f32;
                 let loc_z = match game_state.cursor == (x, y).into() {
                     true => 2.0,
                     false => 1.0,
                 };
 
                 [
-                    Vector3::new(loc_x * 2.0, loc_y * 2.0, loc_z),
+                    Vector3::new(loc_x, loc_y, loc_z),
                     Vector3::new(0.7, 0.0, 0.7),
                 ]
             }).collect()

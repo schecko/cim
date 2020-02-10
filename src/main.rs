@@ -160,8 +160,18 @@ fn main() -> Result<(), String> {
         camera: Camera::new(),
     };
 
-    let unit = Unit { t: UnitType::Settler, loc: (0, 0).into() };
-    world.game_state.add_unit(unit);
+    let user = Player {
+        units: Vec::new(),
+        structures: Vec::new(),
+    };
+    world.game_state.players.push(user);
+
+    let start_units: Vec<_> = world.game_state.players.iter().enumerate().map(|(id, _player)| {
+        Unit::new(UnitType::Settler, id.into())
+    }).collect();
+    start_units.into_iter().for_each(|unit| {
+        world.game_state.add_unit(unit);
+    });
 
     let mut input_state = InputState::new();
     let mut renderer = Renderer::new(&world.game_state)?;
@@ -344,15 +354,11 @@ fn main() -> Result<(), String> {
 
                 let new_units: Vec<_> = world.game_state.structures
                     .iter_mut()
-                    .map(|entity| entity.data.as_mut())
-                    .map(|e| {
-                        if let Some(structure) = e {
+                    .map(|entity| {
+                        if let Some(structure) = &mut entity.data {
                             let cell = grid.get(structure.loc.loc).unwrap();
                             if structure.next_unit_ready <= current_turn && cell.unit.is_none() {
-                                let unit = Unit {
-                                    t: structure.next_unit,
-                                    loc: structure.loc,
-                                };
+                                let unit = Unit::from(structure as & _);
                                 structure.next_unit_ready = current_turn + 5;
                                 Some(unit)
                             } else {

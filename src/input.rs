@@ -324,6 +324,7 @@ impl InputState {
                                         next_unit_ready: world.game_state.turn + 5,
                                         next_unit: UnitType::Settler,
                                         loc: unit.loc,
+                                        player: unit.player,
                                     };
 
                                     let mut_cell = world.game_state.grid.get_mut(cursor.loc).unwrap();

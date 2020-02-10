@@ -42,10 +42,51 @@ pub enum UnitType {
     //Scout,
 }
 
+impl UnitType {
+    fn moves(self) -> u32 {
+        match self {
+            UnitType::Settler => 3,
+        }
+    }
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct PlayerId(usize);
+
+impl From<usize> for PlayerId {
+    fn from(other: usize) -> Self {
+        Self(other)
+    }
+}
+
 #[derive(Debug, Clone)]
 pub struct Unit {
     pub t: UnitType,
     pub loc: GridLocation,
+    pub player: PlayerId,
+    pub moves_remaining: u32,
+}
+
+impl Unit {
+    pub fn new(t: UnitType, player: PlayerId) -> Self {
+        Unit {
+            t,
+            loc: (0, 0).into(),
+            player: player.into(),
+            moves_remaining: UnitType::moves(t),
+        }
+    }
+}
+
+impl From<&Structure> for Unit {
+    fn from(s: &Structure) -> Self {
+        Unit {
+            t: s.next_unit,
+            loc: s.loc,
+            player: s.player,
+            moves_remaining: UnitType::moves(s.next_unit),
+        }
+    }
 }
 
 #[derive(Debug, Clone)]
@@ -53,6 +94,7 @@ pub struct Structure {
     pub next_unit: UnitType,
     pub next_unit_ready: u32,
     pub loc: GridLocation,
+    pub player: PlayerId,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
@@ -114,7 +156,6 @@ pub struct Player {
     pub structures: Vec<Eid<Structure>>,
 }
 
-
 #[derive(Debug, Clone)]
 pub struct GridCell {
     pub biome: Biome,
@@ -168,7 +209,7 @@ fn grid_fill(mut grid: &mut Array2<GridCell>, depth: u32, max_depth: u32, (x, y)
 impl GameState {
     pub fn new() -> Result<GameState, String> {
         let mut grid = Array2::from_shape_fn(
-            (5000, 5000),
+            (50, 50),
             |(_x, _y)| {
                 GridCell {
                     biome: Biome::Ocean,
@@ -218,6 +259,7 @@ impl GameState {
         let cell = self.grid.get_mut(loc.loc).unwrap();
         assert!(cell.unit.is_none());
         cell.unit = Some(eid.clone());
+        self.players[unit.player.0].units.push(eid.clone());
         let entity = Entity {
             gen: eid.gen,
             data: Some(unit),
@@ -234,6 +276,8 @@ impl GameState {
         let cell = self.grid.get_mut(loc.loc).unwrap();
         assert!(cell.structure.is_none());
         cell.structure = Some(eid.clone());
+        self.players[structure.player.0].structures.push(eid.clone());
+
         let entity = Entity {
             gen: eid.gen,
             data: Some(structure),
