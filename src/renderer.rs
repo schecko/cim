@@ -1,10 +1,148 @@
 
 use cgmath::*;
 use crate::*;
+use pipeline::*;
 
-pub struct Renderer;
+static VERTEX: &str = r#"
+    #version 330 core
+
+    layout (location = 0) in vec3 aVertOffset;
+    layout (location = 1) in vec3 aWorldPos;
+    layout (location = 2) in vec3 aColor;
+
+    out vec3 vColor;
+
+    uniform mat4 model;
+    uniform mat4 view;
+    uniform mat4 proj;
+
+    void main() {
+        gl_Position = proj * view * model * vec4(aWorldPos + aVertOffset, 1.0);
+        vColor = aColor;
+    }
+"#;
+
+static FRAGMENT: &str = r#"
+    #version 330 core
+
+    out vec4 FragColor;
+    in vec3 vColor;
+
+    void main() {
+        FragColor = vec4(vColor, 1.0);
+    }
+"#;
+
+pub static RECT: [[f32; 3]; 6] = [
+    [1.0, 1.0, 0.0],
+    [-1.0, 1.0, 0.0],
+    [1.0, -1.0, 0.0],
+
+    [-1.0, -1.0, 0.0],
+    [1.0, -1.0, 0.0],
+    [-1.0, 1.0, 0.0],
+];
+
+pub static CUBE: [[f32; 3]; 36] = [
+    [-1.0, -1.0, -1.0],
+    [-1.0, -1.0,  1.0],
+    [-1.0,  1.0,  1.0],
+    [1.0,  1.0, -1.0 ],
+    [-1.0, -1.0, -1.0],
+    [-1.0,  1.0, -1.0],
+    [1.0, -1.0,  1.0 ],
+    [-1.0, -1.0, -1.0],
+    [1.0, -1.0, -1.0 ],
+    [1.0,  1.0, -1.0 ],
+    [1.0, -1.0, -1.0 ],
+    [-1.0, -1.0, -1.0],
+    [-1.0, -1.0, -1.0],
+    [-1.0,  1.0,  1.0],
+    [-1.0,  1.0, -1.0],
+    [1.0, -1.0,  1.0 ],
+    [-1.0, -1.0,  1.0],
+    [-1.0, -1.0, -1.0],
+    [-1.0,  1.0,  1.0],
+    [-1.0, -1.0,  1.0],
+    [1.0, -1.0,  1.0 ],
+    [1.0,  1.0,  1.0 ],
+    [1.0, -1.0, -1.0 ],
+    [1.0,  1.0, -1.0 ],
+    [1.0, -1.0, -1.0 ],
+    [1.0,  1.0,  1.0 ],
+    [1.0, -1.0,  1.0 ],
+    [1.0,  1.0,  1.0 ],
+    [1.0,  1.0, -1.0 ],
+    [-1.0,  1.0, -1.0],
+    [1.0,  1.0,  1.0 ],
+    [-1.0,  1.0, -1.0],
+    [-1.0,  1.0,  1.0],
+    [1.0,  1.0,  1.0 ],
+    [-1.0,  1.0,  1.0],
+    [1.0, -1.0,  1.0 ],
+];
+
+pub struct Renderer {
+    solid: Pipeline,
+
+    quad_data: Buffer,
+    quad_instance_data: Buffer,
+    quad_vao: Vao,
+
+    cube_data: Buffer,
+    cube_instance_data: Buffer,
+    cube_vao: Vao,
+}
+
+impl Drop for Renderer {
+    fn drop(&mut self) {
+        unsafe {
+            gl::DeleteBuffers(1, &self.cube_data.0 as *const _);
+            gl::DeleteBuffers(1, &self.cube_instance_data.0 as *const _);
+            gl::DeleteBuffers(1, &self.quad_data.0 as *const _);
+            gl::DeleteBuffers(1, &self.quad_instance_data.0 as *const _);
+
+            gl::DeleteVertexArrays(1, &self.quad_vao.0 as *const _);
+            gl::DeleteVertexArrays(1, &self.cube_vao.0 as *const _);
+        }
+    }
+}
 
 impl Renderer {
+    pub fn new(game_state: &GameState) -> Result<Self, String> {
+        let quad_data = Buffer::new();
+        let quad_instance_data = Buffer::new();
+        let quad_vao = Vao::new(quad_data, quad_instance_data);
+        quad_data.data(&mut RECT.to_vec(), gl::STATIC_DRAW);
+
+        let mut rect_positions: Vec<_> = game_state.grid.indexed_iter().map(|((_x, _y), _grid)| {
+            [
+                Vector3::new(0.0, 0.0, 0.0),
+                Vector3::new(0.0, 0.0, 0.0),
+            ]
+        }).collect();
+        quad_instance_data.data(&mut rect_positions, gl::DYNAMIC_DRAW);
+
+        let cube_data = Buffer::new();
+        cube_data.data(&mut CUBE.to_vec(), gl::STATIC_DRAW);
+        let cube_instance_data = Buffer::new();
+        let cube_vao = Vao::new(cube_data, cube_instance_data);
+
+        let renderer = Renderer {
+            solid: Pipeline::new(VERTEX, FRAGMENT)?,
+
+            quad_data,
+            quad_instance_data,
+            quad_vao,
+
+            cube_data,
+            cube_instance_data,
+            cube_vao,
+        };
+
+        Ok(renderer)
+    }
+
     pub fn render(&mut self, game_state: &mut GameState, camera: &mut Camera) {
         let (grid_width, grid_height) = game_state.grid.dim();
         let signed_width = grid_width as isize;
@@ -80,7 +218,7 @@ impl Renderer {
                     grid.biome.color()
                 ]
             }).collect();
-        game_state.quad_instance_data.sub_data(&mut rect_positions);
+        self.quad_instance_data.sub_data(&mut rect_positions);
 
         let mut unit_positions: Vec<_> = viewable_grid
             .indexed_iter()
@@ -117,7 +255,7 @@ impl Renderer {
             }).collect()
         );
 
-        game_state.cube_instance_data.data(&mut unit_positions, gl::STATIC_DRAW);
+        self.cube_instance_data.data(&mut unit_positions, gl::STATIC_DRAW);
 
         unsafe {
             gl::Enable(gl::DEPTH_TEST);
@@ -125,22 +263,22 @@ impl Renderer {
             gl::ClearColor(0.3, 0.3, 0.3, 1.0);
             gl::Clear(gl::COLOR_BUFFER_BIT | gl::DEPTH_BUFFER_BIT);
 
-            game_state.solid.set_use();
+            self.solid.set_use();
 
-            let model_loc = game_state.solid.get_uniform_location("model");
-            let view_loc = game_state.solid.get_uniform_location("view");
-            let proj_loc = game_state.solid.get_uniform_location("proj");
+            let model_loc = self.solid.get_uniform_location("model");
+            let view_loc = self.solid.get_uniform_location("view");
+            let proj_loc = self.solid.get_uniform_location("proj");
 
             gl::UniformMatrix4fv(model_loc, 1, gl::FALSE, model.as_ptr());
             gl::UniformMatrix4fv(view_loc, 1, gl::FALSE, view.as_ptr());
             gl::UniformMatrix4fv(proj_loc, 1, gl::FALSE, proj.as_ptr());
 
             assert!(gl::GetError() == 0);
-            gl::BindVertexArray(game_state.quad_vao.0);
+            gl::BindVertexArray(self.quad_vao.0);
             gl::PolygonMode(gl::FRONT_AND_BACK, gl::FILL);
             gl::DrawArraysInstanced(gl::TRIANGLES, 0, crate::RECT.len() as i32, rect_positions.len() as i32);
 
-            gl::BindVertexArray(game_state.cube_vao.0);
+            gl::BindVertexArray(self.cube_vao.0);
             gl::PolygonMode(gl::FRONT_AND_BACK, gl::FILL);
             gl::DrawArraysInstanced(gl::TRIANGLES, 0, crate::CUBE.len() as i32, unit_positions.len() as i32);
             assert!(gl::GetError() == 0);

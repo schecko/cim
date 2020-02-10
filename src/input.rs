@@ -2,6 +2,7 @@
 use glutin::event::{ VirtualKeyCode, KeyboardInput, ModifiersState, ScanCode, };
 use cgmath::prelude::*;
 use crate::*;
+use crate::game_state::*;
 
 #[derive(Display, EnumCount, Clone, Copy)]
 pub enum InputMode {
@@ -310,20 +311,25 @@ impl InputState {
                 },
                 Node {
                     action: Some(|world| {
+                        // turn settler into a structure
                         let cursor = world.game_state.cursor;
-                        let cell = world.game_state.grid.get_mut(cursor.loc).unwrap();
-                        if cell.structure.is_none() {
-                            let swap = match &cell.unit {
-                                Some(unit) if unit.t == UnitType::Settler => true,
-                                _ => false,
-                            };
+                        let cell = world.game_state.grid.get(cursor.loc).unwrap();
 
-                            if swap {
-                                cell.unit.take();
-                                cell.structure = Some(Structure {
-                                    next_unit: UnitType::Settler,
-                                    next_unit_ready: world.game_state.turn + 5,
-                                });
+                        if cell.structure.is_none() {
+                            let swap = cell.unit.as_ref().map(|uid| world.game_state.get_unit(*uid)).flatten();
+
+                            if let Some(unit) = swap {
+                                if unit.t == UnitType::Settler {
+                                    let structure = Structure {
+                                        next_unit_ready: world.game_state.turn + 5,
+                                        next_unit: UnitType::Settler,
+                                        loc: unit.loc,
+                                    };
+
+                                    let mut_cell = world.game_state.grid.get_mut(cursor.loc).unwrap();
+                                    mut_cell.unit = None; // TODO: unit still not freed, this is only the eid
+                                    world.game_state.add_structure(structure);
+                                }
                             }
                         }
                         None
