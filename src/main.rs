@@ -163,6 +163,11 @@ fn main() -> Result<(), String> {
     let user = Player {
         units: Vec::new(),
         structures: Vec::new(),
+
+        turn_units: Vec::new(),
+        turn_structures: Vec::new(),
+
+        camera_jump: CameraJump::Unit(0),
     };
     world.game_state.players.push(user);
 
@@ -172,6 +177,8 @@ fn main() -> Result<(), String> {
     start_units.into_iter().for_each(|unit| {
         world.game_state.add_unit(unit);
     });
+
+    world.game_state.reset_turn();
 
     let mut input_state = InputState::new();
     let mut renderer = Renderer::new(&world.game_state)?;
@@ -350,34 +357,21 @@ fn main() -> Result<(), String> {
                 };
 
                 let current_turn = world.game_state.turn;
-                let grid = &mut world.game_state.grid;
-
-                let new_units: Vec<_> = world.game_state.structures
-                    .iter_mut()
-                    .map(|entity| {
-                        if let Some(structure) = &mut entity.data {
-                            let cell = grid.get(structure.loc.loc).unwrap();
-                            if structure.next_unit_ready <= current_turn && cell.unit.is_none() {
-                                let unit = Unit::from(structure as & _);
-                                structure.next_unit_ready = current_turn + 5;
-                                Some(unit)
-                            } else {
-                                None
+                unsafe {
+                    let game_state: *mut GameState = &mut world.game_state as *mut _;
+                    world.game_state.structures
+                        .iter_mut()
+                        .for_each(|entity| {
+                            if let Some(structure) = &mut entity.data {
+                                let cell = (*game_state).get_grid(structure.loc);
+                                if structure.next_unit_ready <= current_turn && cell.unit.is_none() {
+                                    let unit = Unit::from(structure as & _);
+                                    structure.next_unit_ready = current_turn + 5;
+                                    (*game_state).add_unit(unit);
+                                }
                             }
-                        } else {
-                            None
-                        }
-                    })
-                    .filter(Option::is_some)
-                    .collect();
-
-                new_units
-                    .into_iter()
-                    .for_each(|unit| {
-                        if let Some(u) = unit {
-                            world.game_state.add_unit(u);
-                        }
-                    });
+                        });
+                }
 
                 renderer.render(&mut world.game_state, &mut world.camera);
 

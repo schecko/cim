@@ -49,7 +49,47 @@ impl InputState {
             children: vec![
                 Node {
                     action: Some(|world| {
-                        world.game_state.turn += 1;
+                        //world.game_state.turn += 1;
+                        let player: *mut Player = &mut world.game_state.players[0] as *mut _;
+                        for _ in 0..2 {
+                            unsafe {
+                                match &mut (*player).camera_jump {
+                                    CameraJump::Unit(i) if (*player).turn_units.len() > *i => {
+                                        println!("unit");
+                                        let eid = (*player).turn_units[*i];
+                                        let unit = &world.game_state.get_unit(eid);
+                                        if let Some(u) = unit {
+                                            world.game_state.cursor = u.loc;
+                                            break;
+                                        }
+
+                                        *i += 1;
+                                    },
+                                    CameraJump::Structure(i) if (*player).turn_structures.len() > *i => {
+                                        println!("struct");
+                                        let eid = (*player).turn_structures[*i];
+                                        let structure = world.game_state.get_structure(eid);
+                                        if let Some(s) = structure {
+                                            world.game_state.cursor = s.loc;
+                                            break;
+                                        }
+
+                                        *i += 1;
+                                    },
+                                    CameraJump::Unit(i) => {
+                                        dbg!(i);
+                                        println!("reset unit");
+                                        (*player).camera_jump = CameraJump::Structure(0);
+                                    }
+                                    CameraJump::Structure(i) => {
+                                        dbg!(i);
+                                        println!("reset struct");
+                                        (*player).camera_jump = CameraJump::Unit(0);
+                                    }
+                                }
+                            }
+                        }
+
                         None
                     }),
                     modifiers: Default::default(),
@@ -85,9 +125,10 @@ impl InputState {
                 Node {
                     action: Some(|world| {
                         if let Some(loc) = world.game_state.yanked_location {
-                            let source_unit = world.game_state.grid.get_mut(loc.loc).unwrap().unit.take();
+                            let source_unit = world.game_state.get_grid_mut(loc).unit.take();
                             let cursor = world.game_state.cursor;
-                            let dest = world.game_state.grid.get_mut(cursor.loc).unwrap();
+                            let dest = world.game_state.get_grid_mut(cursor);
+
                             dest.unit = source_unit;
                         }
                         None
@@ -98,7 +139,7 @@ impl InputState {
                 },
                 Node {
                     action: Some(|world| {
-                        world.game_state.cursor = world.game_state.cursor.left(&world.game_state.grid, 1);
+                        world.game_state.cursor = world.game_state.cursor.left(&world.game_state.grid, 1).0;
                         None
                     }),
                     modifiers: Default::default(),
@@ -107,7 +148,7 @@ impl InputState {
                 },
                 Node {
                     action: Some(|world| {
-                        world.game_state.cursor = world.game_state.cursor.down(&world.game_state.grid, 1);
+                        world.game_state.cursor = world.game_state.cursor.down(&world.game_state.grid, 1).0;
                         None
                     }),
                     modifiers: Default::default(),
@@ -116,7 +157,7 @@ impl InputState {
                 },
                 Node {
                     action: Some(|world| {
-                        world.game_state.cursor = world.game_state.cursor.up(&world.game_state.grid, 1);
+                        world.game_state.cursor = world.game_state.cursor.up(&world.game_state.grid, 1).0;
                         None
                     }),
                     modifiers: Default::default(),
@@ -125,7 +166,7 @@ impl InputState {
                 },
                 Node {
                     action: Some(|world| {
-                        world.game_state.cursor = world.game_state.cursor.right(&world.game_state.grid, 1);
+                        world.game_state.cursor = world.game_state.cursor.right(&world.game_state.grid, 1).0;
                         None
                     }),
                     modifiers: Default::default(),
@@ -244,6 +285,31 @@ impl InputState {
             ]
         };
 
+        fn move_one(world: &mut World, direction: Vector2<isize>) {
+            let cursor = world.game_state.cursor;
+            let (dest_i, actual_translation) = cursor.translate(&world.game_state.grid, direction);
+            let source_cell: *mut GridCell = world.game_state.get_grid_mut(cursor) as *mut _;
+            let actual_distance = (num::abs(actual_translation.x) + num::abs(actual_translation.y)) as usize;
+
+            unsafe {
+                let unit = world.game_state.get_unit_mut((*source_cell).unit.unwrap()).unwrap();
+                if unit.moves_remaining >= actual_distance {
+                    unit.loc = dest_i;
+                    unit.moves_remaining -= actual_distance;
+
+                    let dest_cell = world.game_state.get_grid_mut(dest_i);
+                    dest_cell.unit = (*source_cell).unit.take();
+
+                    world.game_state.cursor = dest_i;
+                } else if unit.moves_remaining <= 0 {
+                    println!("Unit out of moves for this turn");
+                    world.game_state.player[0].units.find(|eid| { eid ==
+                        :
+
+                }
+            }
+        }
+
         let unit = Node {
             action: None,
             modifiers: Default::default(),
@@ -251,13 +317,7 @@ impl InputState {
             children: vec![
                 Node {
                     action: Some(|world| {
-                        let cursor = world.game_state.cursor;
-                        let dest_i = cursor.left(&world.game_state.grid, 1);
-                        let source_unit = world.game_state.grid.get_mut(cursor.loc).unwrap().unit.take();
-                        let dest = world.game_state.grid.get_mut(dest_i.loc).unwrap();
-                        dest.unit = source_unit;
-
-                        world.game_state.cursor = dest_i;
+                        move_one(world, Vector2::new(-1, 0));
                         None
                     }),
                     modifiers: Default::default(),
@@ -266,13 +326,7 @@ impl InputState {
                 },
                 Node {
                     action: Some(|world| {
-                        let cursor = world.game_state.cursor;
-                        let dest_i = cursor.down(&world.game_state.grid, 1);
-                        let source_unit = world.game_state.grid.get_mut(cursor.loc).unwrap().unit.take();
-                        let dest = world.game_state.grid.get_mut(dest_i.loc).unwrap();
-                        dest.unit = source_unit;
-
-                        world.game_state.cursor = dest_i;
+                        move_one(world, Vector2::new(0, -1));
                         None
                     }),
                     modifiers: Default::default(),
@@ -281,13 +335,7 @@ impl InputState {
                 },
                 Node {
                     action: Some(|world| {
-                        let cursor = world.game_state.cursor;
-                        let dest_i = cursor.up(&world.game_state.grid, 1);
-                        let source_unit = world.game_state.grid.get_mut(cursor.loc).unwrap().unit.take();
-                        let dest = world.game_state.grid.get_mut(dest_i.loc).unwrap();
-                        dest.unit = source_unit;
-
-                        world.game_state.cursor = dest_i;
+                        move_one(world, Vector2::new(0, 1));
                         None
                     }),
                     modifiers: Default::default(),
@@ -296,13 +344,7 @@ impl InputState {
                 },
                 Node {
                     action: Some(|world| {
-                        let cursor = world.game_state.cursor;
-                        let dest_i = cursor.right(&world.game_state.grid, 1);
-                        let source_unit = world.game_state.grid.get_mut(cursor.loc).unwrap().unit.take();
-                        let dest = world.game_state.grid.get_mut(dest_i.loc).unwrap();
-                        dest.unit = source_unit;
-
-                        world.game_state.cursor = dest_i;
+                        move_one(world, Vector2::new(1, 0));
                         None
                     }),
                     modifiers: Default::default(),
@@ -313,12 +355,12 @@ impl InputState {
                     action: Some(|world| {
                         // turn settler into a structure
                         let cursor = world.game_state.cursor;
-                        let cell = world.game_state.grid.get(cursor.loc).unwrap();
+                        let cell = world.game_state.get_grid(cursor);
 
                         if cell.structure.is_none() {
                             let swap = cell.unit.as_ref().map(|uid| world.game_state.get_unit(*uid)).flatten();
 
-                            if let Some(unit) = swap {
+                           if let Some(unit) = swap {
                                 if unit.t == UnitType::Settler {
                                     let structure = Structure {
                                         next_unit_ready: world.game_state.turn + 5,
@@ -327,7 +369,7 @@ impl InputState {
                                         player: unit.player,
                                     };
 
-                                    let mut_cell = world.game_state.grid.get_mut(cursor.loc).unwrap();
+                                    let mut_cell = world.game_state.get_grid_mut(cursor);
                                     mut_cell.unit = None; // TODO: unit still not freed, this is only the eid
                                     world.game_state.add_structure(structure);
                                 }

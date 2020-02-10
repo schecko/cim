@@ -154,8 +154,8 @@ impl Renderer {
         rot_raw.rot = camera.view.rot;
         let mut disp_raw = Decomposed::<Vector3<f32>, Quaternion<f32>>::one();
         disp_raw.disp = camera.view.disp;
-        disp_raw.disp.x += game_state.cursor.loc.0 as f32 * -2.0;
-        disp_raw.disp.y += game_state.cursor.loc.1 as f32 * -2.0;
+        disp_raw.disp.x += game_state.cursor.loc.x as f32 * -2.0;
+        disp_raw.disp.y += game_state.cursor.loc.y as f32 * -2.0;
 
         let rot: Matrix4<f32> = rot_raw.into();
         let disp: Matrix4<f32> = disp_raw.into();

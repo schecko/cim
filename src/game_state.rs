@@ -43,7 +43,7 @@ pub enum UnitType {
 }
 
 impl UnitType {
-    fn moves(self) -> u32 {
+    fn moves(self) -> usize {
         match self {
             UnitType::Settler => 3,
         }
@@ -64,7 +64,7 @@ pub struct Unit {
     pub t: UnitType,
     pub loc: GridLocation,
     pub player: PlayerId,
-    pub moves_remaining: u32,
+    pub moves_remaining: usize,
 }
 
 impl Unit {
@@ -97,40 +97,55 @@ pub struct Structure {
     pub player: PlayerId,
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct GridLocation {
-    pub loc: (usize, usize),
+    pub loc: Vector2<isize>,
 }
 
-impl GridLocation {
-    pub fn left<T>(&self, grid: &Array2<T>, distance: usize) -> Self {
-        let (grid_dim_x, _grid_dim_y) = grid.dim();
-        let new_vert = self.loc.0 as isize - distance as isize;
-        GridLocation{ loc: (num::clamp(new_vert, 0, grid_dim_x as isize - 1) as usize, self.loc.1) }
+impl Default for GridLocation {
+    fn default() -> Self {
+        GridLocation {
+            loc: Vector2::new(0, 0),
+        }
     }
+}
 
-    pub fn right<T>(&self, grid: &Array2<T>, distance: usize) -> Self {
-        let (grid_dim_x, _grid_dim_y) = grid.dim();
-        let new_vert = self.loc.0 + distance;
-        GridLocation{ loc: (num::clamp(new_vert, 0, grid_dim_x - 1), self.loc.1) }
-    }
-
-    pub fn up<T>(&self, grid: &Array2<T>, distance: usize) -> Self {
-        let (_grid_dim_x, grid_dim_y) = grid.dim();
-        let new_vert = self.loc.1 + distance;
-        GridLocation{ loc: (self.loc.0, num::clamp(new_vert, 0, grid_dim_y - 1)) }
-    }
-
-    pub fn down<T>(&self, grid: &Array2<T>, distance: usize) -> Self {
-        let (_grid_dim_x, grid_dim_y) = grid.dim();
-        let new_vert = self.loc.1 as isize - distance as isize;
-        GridLocation{ loc: (self.loc.0, num::clamp(new_vert, 0, grid_dim_y as isize - 1) as usize) }
+impl From<GridLocation> for (usize, usize) {
+    fn from(loc: GridLocation) -> (usize, usize) {
+        (loc.loc.x as usize, loc.loc.y as usize)
     }
 }
 
 impl From<(usize, usize)> for GridLocation {
     fn from(other: (usize, usize)) -> Self {
-        Self { loc: other }
+        Self { loc: Vector2::new(other.0 as isize, other.1 as isize), }
+    }
+}
+
+impl GridLocation {
+    pub fn translate<T>(&self, grid: &Array2<T>, desired_distance: Vector2<isize>) -> (Self, Vector2<isize>) {
+        let (grid_dim_x, grid_dim_y) = grid.dim();
+        let new_pos = self.loc + desired_distance;
+        let clamped = Vector2::new(num::clamp(new_pos.x, 0, grid_dim_x as isize - 1), num::clamp(new_pos.y, 0, grid_dim_y as isize - 1));
+        let actual_distance = desired_distance - (new_pos - clamped);
+        let loc = GridLocation { loc: clamped };
+        (loc, actual_distance)
+    }
+
+    pub fn left<T>(&self, grid: &Array2<T>, distance: usize) -> (Self, Vector2<isize>) {
+        self.translate(grid, Vector2::new(-(distance as isize), 0))
+    }
+
+    pub fn right<T>(&self, grid: &Array2<T>, distance: usize) -> (Self, Vector2<isize>) {
+        self.translate(grid, Vector2::new(distance as isize, 0))
+    }
+
+    pub fn up<T>(&self, grid: &Array2<T>, distance: usize) -> (Self, Vector2<isize>) {
+        self.translate(grid, Vector2::new(0, distance as isize))
+    }
+
+    pub fn down<T>(&self, grid: &Array2<T>, distance: usize) -> (Self, Vector2<isize>) {
+        self.translate(grid, Vector2::new(0, -(distance as isize)))
     }
 }
 
@@ -150,10 +165,20 @@ pub struct Entity<T> {
     pub data: Option<T>,
 }
 
+#[derive(Debug, Clone, Copy)]
+pub enum CameraJump {
+    Unit(usize),
+    Structure(usize),
+}
+
 #[derive(Debug, Clone)]
 pub struct Player {
     pub units: Vec<Eid<Unit>>,
     pub structures: Vec<Eid<Structure>>,
+
+    pub camera_jump: CameraJump,
+    pub turn_units: Vec<Eid<Unit>>,
+    pub turn_structures: Vec<Eid<Structure>>,
 }
 
 #[derive(Debug, Clone)]
@@ -251,12 +276,28 @@ impl GameState {
         Ok(state)
     }
 
+    pub fn reset_turn(&mut self) {
+        self.players.iter_mut().for_each(|player| {
+            player.turn_units = player.units.clone();
+            player.turn_structures = player.structures.clone();
+            player.camera_jump = CameraJump::Unit(0);
+        });
+    }
+
+    pub fn get_grid(&self, loc: GridLocation) -> &GridCell {
+        self.grid.get::<(usize, usize)>(loc.into()).unwrap()
+    }
+
+    pub fn get_grid_mut(&mut self, loc: GridLocation) -> &mut GridCell {
+        self.grid.get_mut::<(usize, usize)>(loc.into()).unwrap()
+    }
+
     pub fn add_unit(&mut self, unit: Unit) -> Eid<Unit> {
         let id = self.units.len();
         let eid = Eid { id: id as u32, gen: 0, _phantom_data: std::marker::PhantomData };
         let loc = unit.loc;
 
-        let cell = self.grid.get_mut(loc.loc).unwrap();
+        let cell = self.get_grid_mut(loc);
         assert!(cell.unit.is_none());
         cell.unit = Some(eid.clone());
         self.players[unit.player.0].units.push(eid.clone());
@@ -273,7 +314,7 @@ impl GameState {
         let eid = Eid { id: id as u32, gen: 0, _phantom_data: std::marker::PhantomData };
         let loc = structure.loc;
 
-        let cell = self.grid.get_mut(loc.loc).unwrap();
+        let cell = self.get_grid_mut(loc);
         assert!(cell.structure.is_none());
         cell.structure = Some(eid.clone());
         self.players[structure.player.0].structures.push(eid.clone());
@@ -295,10 +336,28 @@ impl GameState {
         }
     }
 
+    pub fn get_unit_mut(&mut self, eid: Eid<Unit>) -> Option<&mut Unit> {
+        let entity = &mut self.units[eid.id as usize];
+        if entity.gen == eid.gen {
+            entity.data.as_mut()
+        } else {
+            None
+        }
+    }
+
     pub fn get_structure(&self, eid: Eid<Structure>) -> Option<&Structure> {
         let entity = &self.structures[eid.id as usize];
         if entity.gen == eid.gen {
             entity.data.as_ref()
+        } else {
+            None
+        }
+    }
+
+    pub fn get_structure_mut(&mut self, eid: Eid<Structure>) -> Option<&mut Structure> {
+        let entity = &mut self.structures[eid.id as usize];
+        if entity.gen == eid.gen {
+            entity.data.as_mut()
         } else {
             None
         }
