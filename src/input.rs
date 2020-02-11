@@ -49,7 +49,6 @@ impl InputState {
             children: vec![
                 Node {
                     action: Some(|world| {
-                        //world.game_state.turn += 1;
                         let player: *mut Player = &mut world.game_state.players[0] as *mut _;
                         for _ in 0..2 {
                             unsafe {
@@ -81,7 +80,7 @@ impl InputState {
 
                                         *i += 1;
 
-                                        if (*player).turn_units.len() > *i {
+                                        if (*player).turn_structures.len() > *i {
                                             println!("reset structure");
                                             (*player).camera_jump = CameraJump::Unit(0);
                                         }
@@ -104,6 +103,16 @@ impl InputState {
                     }),
                     modifiers: Default::default(),
                     code: KeyCode::Virtual(VirtualKeyCode::F),
+                    children: vec![ ],
+                },
+                Node {
+                    action: Some(|world| {
+                        // force end of turn for player
+                        world.game_state.check_turn_complete(true);
+                        None
+                    }),
+                    modifiers: Default::default(),
+                    code: KeyCode::Virtual(VirtualKeyCode::T),
                     children: vec![ ],
                 },
                 Node {

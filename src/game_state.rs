@@ -324,6 +324,19 @@ impl GameState {
         });
     }
 
+    pub fn check_turn_complete(&mut self, force_end_turn: bool) {
+        let player = &mut self.players[self.current_player];
+
+        if (force_end_turn && self.current_player == 0) || (player.turn_units.len() == 0 && player.turn_structures.len() == 0) {
+            self.current_player += 1;
+            if self.current_player >= self.players.len() {
+                self.turn += 1;
+                self.reset_turn();
+                self.current_player = 0;
+            }
+        }
+    }
+
     pub fn reset_turn(&mut self) {
         self.players.iter_mut().for_each(|player| {
             player.turn_units = player.units.clone();
