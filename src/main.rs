@@ -215,6 +215,20 @@ fn main() -> Result<(), String> {
             },
             Event::RedrawRequested(_) => {
                 let frame_start = std::time::Instant::now();
+                world.game_state.validate_state();
+
+                { // determine if end of turn
+                    let player = &mut world.game_state.players[world.game_state.current_player];
+                    if player.turn_units.len() == 0 && player.turn_structures.len() == 0 {
+                        world.game_state.current_player += 1;
+                        if world.game_state.current_player >= world.game_state.players.len() {
+                            world.game_state.turn += 1;
+                            world.game_state.reset_turn();
+                            world.game_state.current_player = 0;
+                        }
+                    }
+                }
+
                 let dt = (frame_start - last_frame).as_secs_f64();
                 last_frame = frame_start;
                 let fps = 1. / dt;

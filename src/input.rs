@@ -64,6 +64,11 @@ impl InputState {
                                         }
 
                                         *i += 1;
+
+                                        if (*player).turn_units.len() > *i {
+                                            println!("reset unit");
+                                            (*player).camera_jump = CameraJump::Structure(0);
+                                        }
                                     },
                                     CameraJump::Structure(i) if (*player).turn_structures.len() > *i => {
                                         println!("struct");
@@ -75,17 +80,14 @@ impl InputState {
                                         }
 
                                         *i += 1;
+
+                                        if (*player).turn_units.len() > *i {
+                                            println!("reset structure");
+                                            (*player).camera_jump = CameraJump::Unit(0);
+                                        }
                                     },
-                                    CameraJump::Unit(i) => {
-                                        dbg!(i);
-                                        println!("reset unit");
-                                        (*player).camera_jump = CameraJump::Structure(0);
-                                    }
-                                    CameraJump::Structure(i) => {
-                                        dbg!(i);
-                                        println!("reset struct");
-                                        (*player).camera_jump = CameraJump::Unit(0);
-                                    }
+                                    _ => {
+                                    },
                                 }
                             }
                         }
@@ -296,16 +298,18 @@ impl InputState {
                 if unit.moves_remaining >= actual_distance {
                     unit.loc = dest_i;
                     unit.moves_remaining -= actual_distance;
+                    if unit.moves_remaining <= 0 {
+                        println!("Unit out of moves for this turn");
+                        // this unit is finished moving for this turn, update turn_units
+                        match world.game_state.players[0].turn_units.iter().position(|&eid| { Some(eid) == (*source_cell).unit }) {
+                            Some(i) => { world.game_state.players[0].turn_units.remove(i); },
+                            None => {},
+                        }
+                    }
 
                     let dest_cell = world.game_state.get_grid_mut(dest_i);
                     dest_cell.unit = (*source_cell).unit.take();
-
                     world.game_state.cursor = dest_i;
-                } else if unit.moves_remaining <= 0 {
-                    println!("Unit out of moves for this turn");
-                    world.game_state.player[0].units.find(|eid| { eid ==
-                        :
-
                 }
             }
         }

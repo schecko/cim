@@ -149,11 +149,17 @@ impl GridLocation {
     }
 }
 
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, Eq)]
 pub struct Eid<T> {
     pub id: u32,
     pub gen: u32,
     _phantom_data: std::marker::PhantomData<T>,
+}
+
+impl <T> PartialEq for Eid<T> {
+    fn eq(&self, other: &Self) -> bool {
+        self.id == other.id && self.gen == other.gen
+    }
 }
 
 // NOTE: must manually impl Copy. see https://github.com/rust-lang/rust/issues/56008
@@ -193,6 +199,7 @@ pub struct GameState {
     pub structures: Vec<Entity<Structure>>,
 
     pub players: Vec<Player>,
+    pub current_player: usize,
 
     pub grid: Array2<GridCell>,
     pub cursor: GridLocation,
@@ -262,6 +269,7 @@ impl GameState {
             structures: Vec::new(),
 
             players: Vec::new(),
+            current_player: 0,
 
             cursor: Default::default(),
             grid,
@@ -276,11 +284,55 @@ impl GameState {
         Ok(state)
     }
 
+    pub fn validate_state(&self) {
+        self.grid.indexed_iter().for_each(|((x, y), cell)| {
+            if let Some(u) = cell.unit {
+                let unit = self.get_unit(u).unwrap();
+                assert!(unit.loc.loc == Vector2::new(x as isize, y as isize));
+            }
+
+            if let Some(u) = cell.structure {
+                let s = self.get_structure(u).unwrap();
+                assert!(s.loc.loc == Vector2::new(x as isize, y as isize));
+            }
+        });
+
+        self.units.iter().enumerate().for_each(|(i, entity)| {
+            let eid = Eid {
+                gen: entity.gen,
+                id: i as u32,
+                _phantom_data: std::marker::PhantomData,
+            };
+            if let Some(u) = &entity.data {
+                let uid = self.get_grid(u.loc).unit.unwrap();
+                assert!(uid == eid);
+            }
+        });
+
+        self.structures.iter().enumerate().for_each(|(i, entity)| {
+            let eid = Eid {
+                gen: entity.gen,
+                id: i as u32,
+                _phantom_data: std::marker::PhantomData,
+            };
+            if let Some(s) = &entity.data {
+                let sid = self.get_grid(s.loc).structure.unwrap();
+                assert!(sid == eid);
+            }
+        });
+    }
+
     pub fn reset_turn(&mut self) {
         self.players.iter_mut().for_each(|player| {
             player.turn_units = player.units.clone();
             player.turn_structures = player.structures.clone();
             player.camera_jump = CameraJump::Unit(0);
+        });
+
+        self.units.iter_mut().for_each(|unit| {
+            if let Some(u) = &mut unit.data {
+                u.moves_remaining = UnitType::moves(u.t);
+            }
         });
     }
 
