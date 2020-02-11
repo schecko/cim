@@ -223,7 +223,9 @@ impl Renderer {
         let mut unit_positions: Vec<_> = viewable_grid
             .indexed_iter()
             .filter(|(_, cell)| cell.unit.is_some())
-            .map(|((x, y), _cell)| {
+            .map(|((x_i, y_i), _cell)| {
+                let x = x_i + top_left_index.x as usize;
+                let y = y_i + bottom_left_index.y as usize;
                 let loc_x = 2. * x as f32 + 0.5;
                 let loc_y = 2. * y as f32;
                 let loc_z = match game_state.cursor == (x, y).into() {
@@ -240,7 +242,9 @@ impl Renderer {
         unit_positions.append(&mut viewable_grid
             .indexed_iter()
             .filter(|(_, cell)| cell.structure.is_some())
-            .map(|((x, y), _cell)| {
+            .map(|((x_i, y_i), _cell)| {
+                let x = x_i + top_left_index.x as usize;
+                let y = y_i + bottom_left_index.y as usize;
                 let loc_x = 2. * x as f32 + 0.5;
                 let loc_y = 2. * y as f32;
                 let loc_z = match game_state.cursor == (x, y).into() {
