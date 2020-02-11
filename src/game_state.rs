@@ -304,8 +304,9 @@ impl GameState {
                 _phantom_data: std::marker::PhantomData,
             };
             if let Some(u) = &entity.data {
-                let uid = self.get_grid(u.loc).unit.unwrap();
-                assert!(uid == eid);
+                if let Some(uid) = self.get_grid(u.loc).unit {
+                    assert!(uid == eid);
+                }
             }
         });
 
@@ -316,8 +317,9 @@ impl GameState {
                 _phantom_data: std::marker::PhantomData,
             };
             if let Some(s) = &entity.data {
-                let sid = self.get_grid(s.loc).structure.unwrap();
-                assert!(sid == eid);
+                if let Some(sid) = self.get_grid(s.loc).structure {
+                    assert!(sid == eid);
+                }
             }
         });
     }

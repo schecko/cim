@@ -108,8 +108,13 @@ impl InputState {
                 },
                 Node {
                     action: Some(|world| {
-                        world.game_state.yanked_location = Some(world.game_state.cursor);
-                        Some(InputMode::Unit)
+                        let cell = world.game_state.get_grid(world.game_state.cursor);
+                        if cell.unit.is_some() || cell.structure.is_some() {
+                            Some(InputMode::Unit)
+                        } else {
+                            println!("No unit or structure to interact with");
+                            None
+                        }
                     }),
                     modifiers: Default::default(),
                     code: KeyCode::Virtual(VirtualKeyCode::I),
@@ -294,22 +299,25 @@ impl InputState {
             let actual_distance = (num::abs(actual_translation.x) + num::abs(actual_translation.y)) as usize;
 
             unsafe {
-                let unit = world.game_state.get_unit_mut((*source_cell).unit.unwrap()).unwrap();
-                if unit.moves_remaining >= actual_distance {
-                    unit.loc = dest_i;
-                    unit.moves_remaining -= actual_distance;
-                    if unit.moves_remaining <= 0 {
-                        println!("Unit out of moves for this turn");
-                        // this unit is finished moving for this turn, update turn_units
-                        match world.game_state.players[0].turn_units.iter().position(|&eid| { Some(eid) == (*source_cell).unit }) {
-                            Some(i) => { world.game_state.players[0].turn_units.remove(i); },
-                            None => {},
+                if let Some(uid) = (*source_cell).unit {
+                    if let Some(unit) = world.game_state.get_unit_mut(uid) {
+                        if unit.moves_remaining >= actual_distance {
+                            unit.loc = dest_i;
+                            unit.moves_remaining -= actual_distance;
+                            if unit.moves_remaining <= 0 {
+                                println!("Unit out of moves for this turn");
+                                // this unit is finished moving for this turn, update turn_units
+                                match world.game_state.players[0].turn_units.iter().position(|&eid| { Some(eid) == (*source_cell).unit }) {
+                                    Some(i) => { world.game_state.players[0].turn_units.remove(i); },
+                                    None => {},
+                                }
+                            }
+
+                            let dest_cell = world.game_state.get_grid_mut(dest_i);
+                            dest_cell.unit = (*source_cell).unit.take();
+                            world.game_state.cursor = dest_i;
                         }
                     }
-
-                    let dest_cell = world.game_state.get_grid_mut(dest_i);
-                    dest_cell.unit = (*source_cell).unit.take();
-                    world.game_state.cursor = dest_i;
                 }
             }
         }
