@@ -287,13 +287,15 @@ impl GameState {
     pub fn validate_state(&self) {
         self.grid.indexed_iter().for_each(|((x, y), cell)| {
             if let Some(u) = cell.unit {
-                let unit = self.get_unit(u).unwrap();
-                assert!(unit.loc.loc == Vector2::new(x as isize, y as isize));
+                if let Some(unit) = self.get_unit(u) {
+                    assert!(unit.loc.loc == Vector2::new(x as isize, y as isize));
+                }
             }
 
             if let Some(u) = cell.structure {
-                let s = self.get_structure(u).unwrap();
-                assert!(s.loc.loc == Vector2::new(x as isize, y as isize));
+                if let Some(s) = self.get_structure(u) {
+                    assert!(s.loc.loc == Vector2::new(x as isize, y as isize));
+                }
             }
         });
 
@@ -427,6 +429,42 @@ impl GameState {
             entity.data.as_mut()
         } else {
             None
+        }
+    }
+
+    pub fn delete_unit(&mut self, eid: Eid<Unit>) {
+        let entity = &mut self.units[eid.id as usize];
+        let opt_loc = if entity.gen == eid.gen {
+            let opt_loc = if let Some(unit) = &mut entity.data {
+                Some(unit.loc)
+            } else {
+                None
+            };
+            entity.data = None;
+            opt_loc
+        } else {
+            None
+        };
+        if let Some(loc) = opt_loc {
+            self.get_grid_mut(loc).unit = None;
+        }
+    }
+
+    pub fn delete_structure(&mut self, eid: Eid<Structure>) {
+        let entity = &mut self.structures[eid.id as usize];
+        let opt_loc = if entity.gen == eid.gen {
+            let opt_loc = if let Some(s) = &mut entity.data {
+                Some(s.loc)
+            } else {
+                None
+            };
+            entity.data = None;
+            opt_loc
+        } else {
+            None
+        };
+        if let Some(loc) = opt_loc {
+            self.get_grid_mut(loc).structure = None;
         }
     }
 }

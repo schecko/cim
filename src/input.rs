@@ -54,7 +54,6 @@ impl InputState {
                             unsafe {
                                 match &mut (*player).camera_jump {
                                     CameraJump::Unit(i) if (*player).turn_units.len() > *i => {
-                                        println!("unit");
                                         let eid = (*player).turn_units[*i];
                                         let unit = &world.game_state.get_unit(eid);
                                         if let Some(u) = unit {
@@ -65,12 +64,10 @@ impl InputState {
                                         *i += 1;
 
                                         if (*player).turn_units.len() > *i {
-                                            println!("reset unit");
                                             (*player).camera_jump = CameraJump::Structure(0);
                                         }
                                     },
                                     CameraJump::Structure(i) if (*player).turn_structures.len() > *i => {
-                                        println!("struct");
                                         let eid = (*player).turn_structures[*i];
                                         let structure = world.game_state.get_structure(eid);
                                         if let Some(s) = structure {
@@ -81,7 +78,6 @@ impl InputState {
                                         *i += 1;
 
                                         if (*player).turn_structures.len() > *i {
-                                            println!("reset structure");
                                             (*player).camera_jump = CameraJump::Unit(0);
                                         }
                                     },
@@ -378,10 +374,8 @@ impl InputState {
                         let cursor = world.game_state.cursor;
                         let cell = world.game_state.get_grid(cursor);
 
-                        if cell.structure.is_none() {
-                            let swap = cell.unit.as_ref().map(|uid| world.game_state.get_unit(*uid)).flatten();
-
-                           if let Some(unit) = swap {
+                        if let (None, Some(uid)) = (cell.structure, cell.unit) {
+                           if let Some(unit) = world.game_state.get_unit(uid) {
                                 if unit.t == UnitType::Settler {
                                     let structure = Structure {
                                         next_unit_ready: world.game_state.turn + 5,
@@ -390,8 +384,7 @@ impl InputState {
                                         player: unit.player,
                                     };
 
-                                    let mut_cell = world.game_state.get_grid_mut(cursor);
-                                    mut_cell.unit = None; // TODO: unit still not freed, this is only the eid
+                                    world.game_state.delete_unit(uid);
                                     world.game_state.add_structure(structure);
                                 }
                             }
