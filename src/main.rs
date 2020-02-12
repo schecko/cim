@@ -171,15 +171,6 @@ fn main() -> Result<(), String> {
     };
     world.game_state.players.push(user);
 
-    let start_units: Vec<_> = world.game_state.players.iter().enumerate().map(|(id, _player)| {
-        Unit::new(UnitType::Settler, id.into())
-    }).collect();
-    start_units.into_iter().for_each(|unit| {
-        world.game_state.add_unit(unit);
-    });
-
-    world.game_state.reset_turn();
-
     let mut input_state = InputState::new();
     let mut renderer = Renderer::new(&world.game_state)?;
     let mut last_frame = std::time::Instant::now();

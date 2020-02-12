@@ -4,6 +4,8 @@ use ndarray::*;
 use rand::Rng;
 use rand::distributions::{ Uniform, Distribution, Standard, };
 use strum::IntoEnumIterator;
+use rand::seq::IteratorRandom;
+use rand::prelude::*;
 
 #[derive(Debug, Clone, PartialEq, Eq, EnumIter)]
 pub enum Biome {
@@ -17,7 +19,6 @@ pub enum Biome {
 
 impl Distribution<Biome> for Standard {
     fn sample<R: Rng + ?Sized>(&self, rng:&mut R) -> Biome {
-       use rand::seq::IteratorRandom; // for choose.
         Biome::iter().choose(rng).unwrap()
     }
 }
@@ -68,10 +69,10 @@ pub struct Unit {
 }
 
 impl Unit {
-    pub fn new(t: UnitType, player: PlayerId) -> Self {
+    pub fn new(t: UnitType, player: PlayerId, loc: Vector2<isize>) -> Self {
         Unit {
             t,
-            loc: (0, 0).into(),
+            loc: GridLocation { loc },
             player: player.into(),
             moves_remaining: UnitType::moves(t),
         }
@@ -119,6 +120,18 @@ impl From<GridLocation> for (usize, usize) {
 impl From<(usize, usize)> for GridLocation {
     fn from(other: (usize, usize)) -> Self {
         Self { loc: Vector2::new(other.0 as isize, other.1 as isize), }
+    }
+}
+
+impl From<Vector2<usize>> for GridLocation {
+    fn from(other: Vector2<usize>) -> Self {
+        Self { loc: Vector2::new(other.x as isize, other.y as isize), }
+    }
+}
+
+impl From<Vector2<isize>> for GridLocation {
+    fn from(other: Vector2<isize>) -> Self {
+        Self { loc: Vector2::new(other.x, other.y), }
     }
 }
 
@@ -258,13 +271,15 @@ impl GameState {
         let rand_x = Uniform::from(0..grid_dim_x);
         let rand_y = Uniform::from(0..grid_dim_y);
 
-        for _ in 0..num_continents {
-            let x = rand_x.sample(&mut rng);
-            let y = rand_y.sample(&mut rng);
-            grid_fill(&mut grid, 0, 50, (x, y));
-        }
+        let continent_seeds: Vec<_> = (0..num_continents).map(|_| {
+                let x = rand_x.sample(&mut rng);
+                let y = rand_y.sample(&mut rng);
+                grid_fill(&mut grid, 0, 50, (x, y));
+                Vector2::new(x, y)
+            })
+            .collect();
 
-        let state = GameState {
+        let mut state = GameState {
             units: Vec::new(),
             structures: Vec::new(),
 
@@ -281,7 +296,60 @@ impl GameState {
             command_text: String::new(),
         };
 
+        let user = Player {
+            units: Vec::new(),
+            structures: Vec::new(),
+
+            turn_units: Vec::new(),
+            turn_structures: Vec::new(),
+
+            camera_jump: CameraJump::Unit(0),
+        };
+        state.players.push(user);
+
+        let start_units: Vec<_> = state.players.iter().enumerate().map(|(id, _player)| {
+            let start_seed = continent_seeds.choose(&mut rng).unwrap();
+            let direction: Vector2<isize> = match rand::random::<usize>() % 4 {
+                0 => Vector2::new(1, 0),
+                1 => Vector2::new(-1, 0),
+                2 => Vector2::new(0, 1),
+                3 => Vector2::new(0, -1),
+                _ => panic!("only 4 directions are possible"),
+            };
+
+            let mut cell_location = start_seed.cast::<isize>().unwrap();
+            loop {
+                let new_loc = cell_location + direction;
+                if !state.grid_contains(new_loc) {
+                    break;
+                }
+                let grid_cell = state.get_grid(new_loc.into());
+                if grid_cell.biome == Biome::Ocean || grid_cell.biome == Biome::Mountain {
+                    break;
+                } else {
+                    cell_location += direction;
+                }
+            }
+
+            Unit::new(UnitType::Settler, id.into(), (cell_location).cast().unwrap())
+        }).collect();
+        start_units.into_iter().for_each(|unit| {
+            state.add_unit(unit);
+        });
+
+        state.reset_turn();
+
+
         Ok(state)
+    }
+
+    pub fn grid_contains(&self, loc: Vector2<isize>) -> bool {
+        let (grid_dim_x, grid_dim_y) = self.grid.dim();
+        if loc.x >= 0 && loc.x < grid_dim_x as isize && loc.y >= 0 && loc.y < grid_dim_y as isize {
+            true
+        } else {
+            false
+        }
     }
 
     pub fn validate_state(&self) {
