@@ -98,6 +98,17 @@ pub struct Structure {
     pub player: PlayerId,
 }
 
+impl Structure {
+    pub fn new(current_time: u32, player: PlayerId, loc: Vector2<isize>) -> Self {
+        Structure {
+            next_unit: UnitType::Settler,
+            next_unit_ready: current_time + 5,
+            loc: GridLocation { loc },
+            player: player.into(),
+        }
+    }
+}
+
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct GridLocation {
     pub loc: Vector2<isize>,

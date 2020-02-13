@@ -4,7 +4,7 @@ use cgmath::prelude::*;
 use crate::*;
 use crate::game_state::*;
 
-#[derive(Display, EnumCount, Clone, Copy)]
+#[derive(Display, EnumCount, Clone, Copy, PartialEq, Eq)]
 pub enum InputMode {
     Normal,
     Unit,
@@ -271,28 +271,31 @@ impl InputState {
             code: Default::default(), // root is unused
             children: vec![
                 Node {
-                    action: Some(|_| {
+                    action: Some(|world| {
+                        // check if the command command text has a valid command
+                        // execute the command if it is valid
+                        // return to normal mode, regardless of error or not
+                        match &world.game_state.command_text[1..] {
+                            "q" => world.game_state.running = false,
+                            "add unit" => {
+                                let unit = Unit::new(UnitType::Settler, 0.into(), world.game_state.cursor.loc);
+                                world.game_state.add_unit(unit);
+                            },
+                            "add structure" => {
+                                let s = Structure::new(world.game_state.turn, 0.into(), world.game_state.cursor.loc);
+                                world.game_state.add_structure(s);
+                            },
+                            _ => {
+                                println!("unknown command");
+                            }
+                        }
                         Some(InputMode::Normal)
                     }),
                     modifiers: Default::default(),
-                    code: KeyCode::Virtual(VirtualKeyCode::Escape),
+                    code: KeyCode::Virtual(VirtualKeyCode::Return),
+                    // note, do not give this node children.
+                    // command mode must parse the command_text of game_state for instruction
                     children: vec![ ],
-                },
-                Node {
-                    action: None,
-                    modifiers: Default::default(),
-                    code: KeyCode::Virtual(VirtualKeyCode::Q),
-                    children: vec![
-                        Node {
-                            action: Some(|world| {
-                                world.game_state.running = false;
-                                None
-                            }),
-                            modifiers: Default::default(),
-                            code: KeyCode::Virtual(VirtualKeyCode::Return),
-                            children: vec![ ],
-                        },
-                    ],
                 },
             ]
         };
@@ -437,14 +440,18 @@ impl InputState {
                         }
 
                         self.current = std::ptr::null_mut();
-                        world.game_state.command_text = String::new();
+                        if self.mode != InputMode::Command {
+                            world.game_state.command_text = String::new();
+                        }
                     },
                     _ => { },
                 }
             },
             None => {
                 self.current = std::ptr::null_mut();
-                world.game_state.command_text = String::new();
+                if self.mode != InputMode::Command {
+                    world.game_state.command_text = String::new();
+                }
             }
         }
     }
