@@ -39,6 +39,8 @@ pub struct InputState {
 }
 
 static CAMERA_SPEED: f32 = 0.01;
+static LONG_MOVE: usize = 5;
+static SHORT_MOVE: usize = 1;
 
 impl InputState {
     pub fn new() -> Self {
@@ -151,7 +153,7 @@ impl InputState {
                 },
                 Node {
                     action: Some(|world| {
-                        world.game_state.cursor = world.game_state.cursor.left(&world.game_state.grid, 1).0;
+                        world.game_state.cursor = world.game_state.cursor.left(&world.game_state.grid, SHORT_MOVE).0;
                         None
                     }),
                     modifiers: Default::default(),
@@ -160,7 +162,16 @@ impl InputState {
                 },
                 Node {
                     action: Some(|world| {
-                        world.game_state.cursor = world.game_state.cursor.down(&world.game_state.grid, 1).0;
+                        world.game_state.cursor = world.game_state.cursor.left(&world.game_state.grid, LONG_MOVE).0;
+                        None
+                    }),
+                    modifiers: ModifiersState::SHIFT,
+                    code: KeyCode::Virtual(VirtualKeyCode::H),
+                    children: vec![ ],
+                },
+                Node {
+                    action: Some(|world| {
+                        world.game_state.cursor = world.game_state.cursor.down(&world.game_state.grid, SHORT_MOVE).0;
                         None
                     }),
                     modifiers: Default::default(),
@@ -169,7 +180,16 @@ impl InputState {
                 },
                 Node {
                     action: Some(|world| {
-                        world.game_state.cursor = world.game_state.cursor.up(&world.game_state.grid, 1).0;
+                        world.game_state.cursor = world.game_state.cursor.down(&world.game_state.grid, LONG_MOVE).0;
+                        None
+                    }),
+                    modifiers: ModifiersState::SHIFT,
+                    code: KeyCode::Virtual(VirtualKeyCode::J),
+                    children: vec![ ],
+                },
+                Node {
+                    action: Some(|world| {
+                        world.game_state.cursor = world.game_state.cursor.up(&world.game_state.grid, SHORT_MOVE).0;
                         None
                     }),
                     modifiers: Default::default(),
@@ -178,10 +198,28 @@ impl InputState {
                 },
                 Node {
                     action: Some(|world| {
-                        world.game_state.cursor = world.game_state.cursor.right(&world.game_state.grid, 1).0;
+                        world.game_state.cursor = world.game_state.cursor.up(&world.game_state.grid, LONG_MOVE).0;
+                        None
+                    }),
+                    modifiers: ModifiersState::SHIFT,
+                    code: KeyCode::Virtual(VirtualKeyCode::K),
+                    children: vec![ ],
+                },
+                Node {
+                    action: Some(|world| {
+                        world.game_state.cursor = world.game_state.cursor.right(&world.game_state.grid, SHORT_MOVE).0;
                         None
                     }),
                     modifiers: Default::default(),
+                    code: KeyCode::Virtual(VirtualKeyCode::L),
+                    children: vec![ ],
+                },
+                Node {
+                    action: Some(|world| {
+                        world.game_state.cursor = world.game_state.cursor.right(&world.game_state.grid, LONG_MOVE).0;
+                        None
+                    }),
+                    modifiers: ModifiersState::SHIFT,
                     code: KeyCode::Virtual(VirtualKeyCode::L),
                     children: vec![ ],
                 },
