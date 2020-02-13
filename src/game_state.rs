@@ -334,6 +334,7 @@ impl GameState {
         };
         state.players.push(user);
 
+        // TODO start locations may overlap, causing a panic
         let num_ai = 1;
         (0..num_ai).for_each(|_i| {
             let ai = Player {
@@ -345,7 +346,7 @@ impl GameState {
             state.players.push(ai);
         });
 
-        let start_units: Vec<_> = state.players.iter().enumerate().map(|(id, _player)| {
+        state.players.clone().iter().enumerate().for_each(|(id, _player)| {
             let start_seed = continent_seeds.choose(&mut rng).unwrap();
             let direction: Vector2<isize> = match rand::random::<usize>() % 4 {
                 0 => Vector2::new(1, 0),
@@ -363,18 +364,15 @@ impl GameState {
                 }
                 let grid_cell = state.get_grid(new_loc.into());
                 if grid_cell.biome == Biome::Ocean || grid_cell.biome == Biome::Mountain {
+                    let unit = Unit::new(UnitType::Settler, id.into(), (cell_location).cast().unwrap());
+                    state.add_unit(unit);
                     break;
                 } else {
                     cell_location += direction;
                 }
             }
 
-            Unit::new(UnitType::Settler, id.into(), (cell_location).cast().unwrap())
-        }).collect();
-        start_units.into_iter().for_each(|unit| {
-            state.add_unit(unit);
         });
-
         state.reset_turn();
 
 
