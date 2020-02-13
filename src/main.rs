@@ -160,17 +160,6 @@ fn main() -> Result<(), String> {
         camera: Camera::new(),
     };
 
-    let user = Player {
-        units: Vec::new(),
-        structures: Vec::new(),
-
-        turn_units: Vec::new(),
-        turn_structures: Vec::new(),
-
-        camera_jump: CameraJump::Unit(0),
-    };
-    world.game_state.players.push(user);
-
     let mut input_state = InputState::new();
     let mut renderer = Renderer::new(&world.game_state)?;
     let mut last_frame = std::time::Instant::now();
@@ -248,7 +237,12 @@ fn main() -> Result<(), String> {
 
                     { // top right text
                         let mut caret = point(screen_size.width as f32 * 1., -(screen_size.height as f32) + v_metrics.ascent);
-                        let turn_text = format!("turn {}", world.game_state.turn);
+                        let current_player = if world.game_state.current_player == 0 {
+                            "U0".to_owned()
+                        } else {
+                            format!("AI{}", world.game_state.current_player)
+                        };
+                        let turn_text = format!("player {} turn {}", current_player, world.game_state.turn);
 
                         for c in turn_text.chars().rev() {
                             let base_glyph = font.glyph(c);

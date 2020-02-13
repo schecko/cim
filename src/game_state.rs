@@ -202,13 +202,20 @@ pub enum CameraJump {
 }
 
 #[derive(Debug, Clone)]
+pub enum PlayerType {
+    User{ camera_jump: CameraJump, },
+    AI{ },
+}
+
+#[derive(Debug, Clone)]
 pub struct Player {
     pub units: Vec<Eid<Unit>>,
     pub structures: Vec<Eid<Structure>>,
 
-    pub camera_jump: CameraJump,
     pub turn_units: Vec<Eid<Unit>>,
     pub turn_structures: Vec<Eid<Structure>>,
+
+    pub player_type: PlayerType,
 }
 
 #[derive(Debug, Clone)]
@@ -314,9 +321,25 @@ impl GameState {
             turn_units: Vec::new(),
             turn_structures: Vec::new(),
 
-            camera_jump: CameraJump::Unit(0),
+            player_type: PlayerType::User {
+                camera_jump: CameraJump::Unit(0),
+            },
         };
         state.players.push(user);
+
+        let num_ai = 1;
+        (0..num_ai).for_each(|_i| {
+            let ai = Player {
+                units: Vec::new(),
+                structures: Vec::new(),
+
+                turn_units: Vec::new(),
+                turn_structures: Vec::new(),
+
+                player_type: PlayerType::AI { },
+            };
+            state.players.push(ai);
+        });
 
         let start_units: Vec<_> = state.players.iter().enumerate().map(|(id, _player)| {
             let start_seed = continent_seeds.choose(&mut rng).unwrap();
@@ -422,7 +445,10 @@ impl GameState {
         self.players.iter_mut().for_each(|player| {
             player.turn_units = player.units.clone();
             player.turn_structures = player.structures.clone();
-            player.camera_jump = CameraJump::Unit(0);
+            match &mut player.player_type {
+                PlayerType::User{ camera_jump } => *camera_jump = CameraJump::Unit(0),
+                PlayerType::AI{ } => {},
+            }
         });
 
         self.units.iter_mut().for_each(|unit| {

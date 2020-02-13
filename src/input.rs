@@ -54,37 +54,40 @@ impl InputState {
                         let player: *mut Player = &mut world.game_state.players[0] as *mut _;
                         for _ in 0..2 {
                             unsafe {
-                                match &mut (*player).camera_jump {
-                                    CameraJump::Unit(i) => {
-                                        if (*player).turn_units.len() <= *i {
-                                            (*player).camera_jump = CameraJump::Structure(0);
-                                            continue;
-                                        }
+                                match &mut (*player).player_type {
+                                    PlayerType::User{ camera_jump, .. } => {
+                                        match camera_jump {
+                                            CameraJump::Unit(i) => {
+                                                if (*player).turn_units.len() <= *i {
+                                                    *camera_jump = CameraJump::Structure(0);
+                                                    continue;
+                                                }
 
-                                        let eid = (*player).turn_units[*i];
-                                        *i += 1;
-                                        let unit = &world.game_state.get_unit(eid);
-                                        if let Some(u) = unit {
-                                            world.game_state.cursor = u.loc;
-                                            break;
-                                        }
-                                    },
-                                    CameraJump::Structure(i) => {
-                                        if (*player).turn_structures.len() <= *i {
-                                            (*player).camera_jump = CameraJump::Unit(0);
-                                            continue;
-                                        }
+                                                let eid = (*player).turn_units[*i];
+                                                *i += 1;
+                                                let unit = &world.game_state.get_unit(eid);
+                                                if let Some(u) = unit {
+                                                    world.game_state.cursor = u.loc;
+                                                    break;
+                                                }
+                                            },
+                                            CameraJump::Structure(i) => {
+                                                if (*player).turn_structures.len() <= *i {
+                                                    *camera_jump = CameraJump::Unit(0);
+                                                    continue;
+                                                }
 
-                                        let eid = (*player).turn_structures[*i];
-                                        *i += 1;
-                                        let structure = world.game_state.get_structure(eid);
-                                        if let Some(s) = structure {
-                                            world.game_state.cursor = s.loc;
-                                            break;
+                                                let eid = (*player).turn_structures[*i];
+                                                *i += 1;
+                                                let structure = world.game_state.get_structure(eid);
+                                                if let Some(s) = structure {
+                                                    world.game_state.cursor = s.loc;
+                                                    break;
+                                                }
+                                            }
                                         }
                                     },
-                                    _ => {
-                                    },
+                                    _ => panic!("player 0 must be the user"),
                                 }
                             }
                         }
