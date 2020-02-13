@@ -202,18 +202,26 @@ pub enum CameraJump {
 }
 
 #[derive(Debug, Clone)]
+pub struct UserPlayer {
+    pub camera_jump: CameraJump,
+    pub turn_units: Vec<Eid<Unit>>,
+    pub turn_structures: Vec<Eid<Structure>>,
+}
+
+#[derive(Debug, Clone)]
+pub struct AiPlayer {
+}
+
+#[derive(Debug, Clone)]
 pub enum PlayerType {
-    User{ camera_jump: CameraJump, },
-    AI{ },
+    User(UserPlayer),
+    Ai(AiPlayer),
 }
 
 #[derive(Debug, Clone)]
 pub struct Player {
     pub units: Vec<Eid<Unit>>,
     pub structures: Vec<Eid<Structure>>,
-
-    pub turn_units: Vec<Eid<Unit>>,
-    pub turn_structures: Vec<Eid<Structure>>,
 
     pub player_type: PlayerType,
 }
@@ -318,12 +326,11 @@ impl GameState {
             units: Vec::new(),
             structures: Vec::new(),
 
-            turn_units: Vec::new(),
-            turn_structures: Vec::new(),
-
-            player_type: PlayerType::User {
+            player_type: PlayerType::User(UserPlayer {
                 camera_jump: CameraJump::Unit(0),
-            },
+                turn_units: Vec::new(),
+                turn_structures: Vec::new(),
+            }),
         };
         state.players.push(user);
 
@@ -333,10 +340,7 @@ impl GameState {
                 units: Vec::new(),
                 structures: Vec::new(),
 
-                turn_units: Vec::new(),
-                turn_structures: Vec::new(),
-
-                player_type: PlayerType::AI { },
+                player_type: PlayerType::Ai(AiPlayer{}),
             };
             state.players.push(ai);
         });
@@ -428,10 +432,15 @@ impl GameState {
         });
     }
 
-    pub fn check_turn_complete(&mut self, force_end_turn: bool) {
+    pub fn check_turn_complete(&mut self, allow_unmoved_objects: bool) {
         let player = &mut self.players[self.current_player];
 
-        if (force_end_turn && self.current_player == 0) || (player.turn_units.len() == 0 && player.turn_structures.len() == 0) {
+        let done = match &player.player_type {
+            PlayerType::User(u) => (allow_unmoved_objects && self.current_player == 0) || (u.turn_units.len() == 0 && u.turn_structures.len() == 0),
+            PlayerType::Ai(_ai) => true,
+        };
+
+        if done {
             self.current_player += 1;
             if self.current_player >= self.players.len() {
                 self.turn += 1;
@@ -443,11 +452,14 @@ impl GameState {
 
     pub fn reset_turn(&mut self) {
         self.players.iter_mut().for_each(|player| {
-            player.turn_units = player.units.clone();
-            player.turn_structures = player.structures.clone();
             match &mut player.player_type {
-                PlayerType::User{ camera_jump } => *camera_jump = CameraJump::Unit(0),
-                PlayerType::AI{ } => {},
+                PlayerType::User(u) => {
+                    u.turn_units = player.units.clone();
+                    u.turn_structures = player.structures.clone();
+                    u.camera_jump = CameraJump::Unit(0);
+                },
+                PlayerType::Ai(_ai) => {
+                },
             }
         });
 

@@ -55,15 +55,15 @@ impl InputState {
                         for _ in 0..2 {
                             unsafe {
                                 match &mut (*player).player_type {
-                                    PlayerType::User{ camera_jump, .. } => {
-                                        match camera_jump {
+                                    PlayerType::User(u) => {
+                                        match &mut u.camera_jump {
                                             CameraJump::Unit(i) => {
-                                                if (*player).turn_units.len() <= *i {
-                                                    *camera_jump = CameraJump::Structure(0);
+                                                if u.turn_units.len() <= *i {
+                                                    u.camera_jump = CameraJump::Structure(0);
                                                     continue;
                                                 }
 
-                                                let eid = (*player).turn_units[*i];
+                                                let eid = u.turn_units[*i];
                                                 *i += 1;
                                                 let unit = &world.game_state.get_unit(eid);
                                                 if let Some(u) = unit {
@@ -72,12 +72,12 @@ impl InputState {
                                                 }
                                             },
                                             CameraJump::Structure(i) => {
-                                                if (*player).turn_structures.len() <= *i {
-                                                    *camera_jump = CameraJump::Unit(0);
+                                                if u.turn_structures.len() <= *i {
+                                                    u.camera_jump = CameraJump::Unit(0);
                                                     continue;
                                                 }
 
-                                                let eid = (*player).turn_structures[*i];
+                                                let eid = u.turn_structures[*i];
                                                 *i += 1;
                                                 let structure = world.game_state.get_structure(eid);
                                                 if let Some(s) = structure {
@@ -357,9 +357,14 @@ impl InputState {
                             if unit.moves_remaining <= 0 {
                                 println!("Unit out of moves for this turn");
                                 // this unit is finished moving for this turn, update turn_units
-                                match world.game_state.players[0].turn_units.iter().position(|&eid| { Some(eid) == (*source_cell).unit }) {
-                                    Some(i) => { world.game_state.players[0].turn_units.remove(i); },
-                                    None => {},
+                                match &mut world.game_state.players[0].player_type {
+                                    PlayerType::User(u) => {
+                                        match u.turn_units.iter().position(|&eid| { Some(eid) == (*source_cell).unit }) {
+                                            Some(i) => { u.turn_units.remove(i); },
+                                            None => {},
+                                        }
+                                    },
+                                    _ => panic!("player 0 must be the user"),
                                 }
                             }
 
