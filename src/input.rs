@@ -53,32 +53,32 @@ impl InputState {
                         for _ in 0..2 {
                             unsafe {
                                 match &mut (*player).camera_jump {
-                                    CameraJump::Unit(i) if (*player).turn_units.len() > *i => {
+                                    CameraJump::Unit(i) => {
+                                        if (*player).turn_units.len() <= *i {
+                                            (*player).camera_jump = CameraJump::Structure(0);
+                                            continue;
+                                        }
+
                                         let eid = (*player).turn_units[*i];
+                                        *i += 1;
                                         let unit = &world.game_state.get_unit(eid);
                                         if let Some(u) = unit {
                                             world.game_state.cursor = u.loc;
                                             break;
                                         }
-
-                                        *i += 1;
-
-                                        if (*player).turn_units.len() > *i {
-                                            (*player).camera_jump = CameraJump::Structure(0);
-                                        }
                                     },
-                                    CameraJump::Structure(i) if (*player).turn_structures.len() > *i => {
+                                    CameraJump::Structure(i) => {
+                                        if (*player).turn_structures.len() <= *i {
+                                            (*player).camera_jump = CameraJump::Unit(0);
+                                            continue;
+                                        }
+
                                         let eid = (*player).turn_structures[*i];
+                                        *i += 1;
                                         let structure = world.game_state.get_structure(eid);
                                         if let Some(s) = structure {
                                             world.game_state.cursor = s.loc;
                                             break;
-                                        }
-
-                                        *i += 1;
-
-                                        if (*player).turn_structures.len() > *i {
-                                            (*player).camera_jump = CameraJump::Unit(0);
                                         }
                                     },
                                     _ => {
@@ -275,6 +275,7 @@ impl InputState {
                         // check if the command command text has a valid command
                         // execute the command if it is valid
                         // return to normal mode, regardless of error or not
+                        // NOTE: first char will always be a colon.
                         match &world.game_state.command_text[1..] {
                             "q" => world.game_state.running = false,
                             "add unit" => {
