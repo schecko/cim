@@ -2,8 +2,9 @@
 use glutin::event::{ VirtualKeyCode, KeyboardInput, ModifiersState, ScanCode, };
 use cgmath::prelude::*;
 use crate::*;
+use crate::game_state::*;
 
-#[derive(Display, EnumCount, Clone, Copy)]
+#[derive(Display, EnumCount, Clone, Copy, PartialEq, Eq)]
 pub enum InputMode {
     Normal,
     Unit,
@@ -38,6 +39,8 @@ pub struct InputState {
 }
 
 static CAMERA_SPEED: f32 = 0.01;
+static LONG_MOVE: usize = 5;
+static SHORT_MOVE: usize = 1;
 
 impl InputState {
     pub fn new() -> Self {
@@ -48,7 +51,47 @@ impl InputState {
             children: vec![
                 Node {
                     action: Some(|world| {
-                        world.game_state.turn += 1;
+                        let player: *mut Player = &mut world.game_state.players[0] as *mut _;
+                        for _ in 0..2 {
+                            unsafe {
+                                match &mut (*player).player_type {
+                                    PlayerType::User{ camera_jump, .. } => {
+                                        match camera_jump {
+                                            CameraJump::Unit(i) => {
+                                                if (*player).turn_units.len() <= *i {
+                                                    *camera_jump = CameraJump::Structure(0);
+                                                    continue;
+                                                }
+
+                                                let eid = (*player).turn_units[*i];
+                                                *i += 1;
+                                                let unit = &world.game_state.get_unit(eid);
+                                                if let Some(u) = unit {
+                                                    world.game_state.cursor = u.loc;
+                                                    break;
+                                                }
+                                            },
+                                            CameraJump::Structure(i) => {
+                                                if (*player).turn_structures.len() <= *i {
+                                                    *camera_jump = CameraJump::Unit(0);
+                                                    continue;
+                                                }
+
+                                                let eid = (*player).turn_structures[*i];
+                                                *i += 1;
+                                                let structure = world.game_state.get_structure(eid);
+                                                if let Some(s) = structure {
+                                                    world.game_state.cursor = s.loc;
+                                                    break;
+                                                }
+                                            }
+                                        }
+                                    },
+                                    _ => panic!("player 0 must be the user"),
+                                }
+                            }
+                        }
+
                         None
                     }),
                     modifiers: Default::default(),
@@ -65,8 +108,23 @@ impl InputState {
                 },
                 Node {
                     action: Some(|world| {
-                        world.game_state.yanked_location = Some(world.game_state.cursor);
-                        Some(InputMode::Unit)
+                        // force end of turn for player
+                        world.game_state.check_turn_complete(true);
+                        None
+                    }),
+                    modifiers: Default::default(),
+                    code: KeyCode::Virtual(VirtualKeyCode::T),
+                    children: vec![ ],
+                },
+                Node {
+                    action: Some(|world| {
+                        let cell = world.game_state.get_grid(world.game_state.cursor);
+                        if cell.unit.is_some() || cell.structure.is_some() {
+                            Some(InputMode::Unit)
+                        } else {
+                            println!("No unit or structure to interact with");
+                            None
+                        }
                     }),
                     modifiers: Default::default(),
                     code: KeyCode::Virtual(VirtualKeyCode::I),
@@ -84,9 +142,10 @@ impl InputState {
                 Node {
                     action: Some(|world| {
                         if let Some(loc) = world.game_state.yanked_location {
-                            let source_unit = world.game_state.grid.get_mut(loc.loc).unwrap().unit.take();
+                            let source_unit = world.game_state.get_grid_mut(loc).unit.take();
                             let cursor = world.game_state.cursor;
-                            let dest = world.game_state.grid.get_mut(cursor.loc).unwrap();
+                            let dest = world.game_state.get_grid_mut(cursor);
+
                             dest.unit = source_unit;
                         }
                         None
@@ -97,7 +156,7 @@ impl InputState {
                 },
                 Node {
                     action: Some(|world| {
-                        world.game_state.cursor = world.game_state.cursor.left(&world.game_state.grid, 1);
+                        world.game_state.cursor = world.game_state.cursor.left(&world.game_state.grid, SHORT_MOVE).0;
                         None
                     }),
                     modifiers: Default::default(),
@@ -106,7 +165,16 @@ impl InputState {
                 },
                 Node {
                     action: Some(|world| {
-                        world.game_state.cursor = world.game_state.cursor.down(&world.game_state.grid, 1);
+                        world.game_state.cursor = world.game_state.cursor.left(&world.game_state.grid, LONG_MOVE).0;
+                        None
+                    }),
+                    modifiers: ModifiersState::SHIFT,
+                    code: KeyCode::Virtual(VirtualKeyCode::H),
+                    children: vec![ ],
+                },
+                Node {
+                    action: Some(|world| {
+                        world.game_state.cursor = world.game_state.cursor.down(&world.game_state.grid, SHORT_MOVE).0;
                         None
                     }),
                     modifiers: Default::default(),
@@ -115,7 +183,16 @@ impl InputState {
                 },
                 Node {
                     action: Some(|world| {
-                        world.game_state.cursor = world.game_state.cursor.up(&world.game_state.grid, 1);
+                        world.game_state.cursor = world.game_state.cursor.down(&world.game_state.grid, LONG_MOVE).0;
+                        None
+                    }),
+                    modifiers: ModifiersState::SHIFT,
+                    code: KeyCode::Virtual(VirtualKeyCode::J),
+                    children: vec![ ],
+                },
+                Node {
+                    action: Some(|world| {
+                        world.game_state.cursor = world.game_state.cursor.up(&world.game_state.grid, SHORT_MOVE).0;
                         None
                     }),
                     modifiers: Default::default(),
@@ -124,10 +201,28 @@ impl InputState {
                 },
                 Node {
                     action: Some(|world| {
-                        world.game_state.cursor = world.game_state.cursor.right(&world.game_state.grid, 1);
+                        world.game_state.cursor = world.game_state.cursor.up(&world.game_state.grid, LONG_MOVE).0;
+                        None
+                    }),
+                    modifiers: ModifiersState::SHIFT,
+                    code: KeyCode::Virtual(VirtualKeyCode::K),
+                    children: vec![ ],
+                },
+                Node {
+                    action: Some(|world| {
+                        world.game_state.cursor = world.game_state.cursor.right(&world.game_state.grid, SHORT_MOVE).0;
                         None
                     }),
                     modifiers: Default::default(),
+                    code: KeyCode::Virtual(VirtualKeyCode::L),
+                    children: vec![ ],
+                },
+                Node {
+                    action: Some(|world| {
+                        world.game_state.cursor = world.game_state.cursor.right(&world.game_state.grid, LONG_MOVE).0;
+                        None
+                    }),
+                    modifiers: ModifiersState::SHIFT,
                     code: KeyCode::Virtual(VirtualKeyCode::L),
                     children: vec![ ],
                 },
@@ -217,31 +312,65 @@ impl InputState {
             code: Default::default(), // root is unused
             children: vec![
                 Node {
-                    action: Some(|_| {
+                    action: Some(|world| {
+                        // check if the command command text has a valid command
+                        // execute the command if it is valid
+                        // return to normal mode, regardless of error or not
+                        // NOTE: first char will always be a colon.
+                        match &world.game_state.command_text[1..] {
+                            "q" => world.game_state.running = false,
+                            "add unit" => {
+                                let unit = Unit::new(UnitType::Settler, 0.into(), world.game_state.cursor.loc);
+                                world.game_state.add_unit(unit);
+                            },
+                            "add structure" => {
+                                let s = Structure::new(world.game_state.turn, 0.into(), world.game_state.cursor.loc);
+                                world.game_state.add_structure(s);
+                            },
+                            _ => {
+                                println!("unknown command");
+                            }
+                        }
                         Some(InputMode::Normal)
                     }),
                     modifiers: Default::default(),
-                    code: KeyCode::Virtual(VirtualKeyCode::Escape),
+                    code: KeyCode::Virtual(VirtualKeyCode::Return),
+                    // note, do not give this node children.
+                    // command mode must parse the command_text of game_state for instruction
                     children: vec![ ],
-                },
-                Node {
-                    action: None,
-                    modifiers: Default::default(),
-                    code: KeyCode::Virtual(VirtualKeyCode::Q),
-                    children: vec![
-                        Node {
-                            action: Some(|world| {
-                                world.game_state.running = false;
-                                None
-                            }),
-                            modifiers: Default::default(),
-                            code: KeyCode::Virtual(VirtualKeyCode::Return),
-                            children: vec![ ],
-                        },
-                    ],
                 },
             ]
         };
+
+        fn move_one(world: &mut World, direction: Vector2<isize>) {
+            let cursor = world.game_state.cursor;
+            let (dest_i, actual_translation) = cursor.translate(&world.game_state.grid, direction);
+            let source_cell: *mut GridCell = world.game_state.get_grid_mut(cursor) as *mut _;
+            let actual_distance = (num::abs(actual_translation.x) + num::abs(actual_translation.y)) as usize;
+
+            unsafe {
+                if let Some(uid) = (*source_cell).unit {
+                    if let Some(unit) = world.game_state.get_unit_mut(uid) {
+                        if unit.moves_remaining >= actual_distance {
+                            unit.loc = dest_i;
+                            unit.moves_remaining -= actual_distance;
+                            if unit.moves_remaining <= 0 {
+                                println!("Unit out of moves for this turn");
+                                // this unit is finished moving for this turn, update turn_units
+                                match world.game_state.players[0].turn_units.iter().position(|&eid| { Some(eid) == (*source_cell).unit }) {
+                                    Some(i) => { world.game_state.players[0].turn_units.remove(i); },
+                                    None => {},
+                                }
+                            }
+
+                            let dest_cell = world.game_state.get_grid_mut(dest_i);
+                            dest_cell.unit = (*source_cell).unit.take();
+                            world.game_state.cursor = dest_i;
+                        }
+                    }
+                }
+            }
+        }
 
         let unit = Node {
             action: None,
@@ -250,13 +379,7 @@ impl InputState {
             children: vec![
                 Node {
                     action: Some(|world| {
-                        let cursor = world.game_state.cursor;
-                        let dest_i = cursor.left(&world.game_state.grid, 1);
-                        let source_unit = world.game_state.grid.get_mut(cursor.loc).unwrap().unit.take();
-                        let dest = world.game_state.grid.get_mut(dest_i.loc).unwrap();
-                        dest.unit = source_unit;
-
-                        world.game_state.cursor = dest_i;
+                        move_one(world, Vector2::new(-1, 0));
                         None
                     }),
                     modifiers: Default::default(),
@@ -265,13 +388,7 @@ impl InputState {
                 },
                 Node {
                     action: Some(|world| {
-                        let cursor = world.game_state.cursor;
-                        let dest_i = cursor.down(&world.game_state.grid, 1);
-                        let source_unit = world.game_state.grid.get_mut(cursor.loc).unwrap().unit.take();
-                        let dest = world.game_state.grid.get_mut(dest_i.loc).unwrap();
-                        dest.unit = source_unit;
-
-                        world.game_state.cursor = dest_i;
+                        move_one(world, Vector2::new(0, -1));
                         None
                     }),
                     modifiers: Default::default(),
@@ -280,13 +397,7 @@ impl InputState {
                 },
                 Node {
                     action: Some(|world| {
-                        let cursor = world.game_state.cursor;
-                        let dest_i = cursor.up(&world.game_state.grid, 1);
-                        let source_unit = world.game_state.grid.get_mut(cursor.loc).unwrap().unit.take();
-                        let dest = world.game_state.grid.get_mut(dest_i.loc).unwrap();
-                        dest.unit = source_unit;
-
-                        world.game_state.cursor = dest_i;
+                        move_one(world, Vector2::new(0, 1));
                         None
                     }),
                     modifiers: Default::default(),
@@ -295,13 +406,7 @@ impl InputState {
                 },
                 Node {
                     action: Some(|world| {
-                        let cursor = world.game_state.cursor;
-                        let dest_i = cursor.right(&world.game_state.grid, 1);
-                        let source_unit = world.game_state.grid.get_mut(cursor.loc).unwrap().unit.take();
-                        let dest = world.game_state.grid.get_mut(dest_i.loc).unwrap();
-                        dest.unit = source_unit;
-
-                        world.game_state.cursor = dest_i;
+                        move_one(world, Vector2::new(1, 0));
                         None
                     }),
                     modifiers: Default::default(),
@@ -310,20 +415,23 @@ impl InputState {
                 },
                 Node {
                     action: Some(|world| {
+                        // turn settler into a structure
                         let cursor = world.game_state.cursor;
-                        let cell = world.game_state.grid.get_mut(cursor.loc).unwrap();
-                        if cell.structure.is_none() {
-                            let swap = match &cell.unit {
-                                Some(unit) if unit.t == UnitType::Settler => true,
-                                _ => false,
-                            };
+                        let cell = world.game_state.get_grid(cursor);
 
-                            if swap {
-                                cell.unit.take();
-                                cell.structure = Some(Structure {
-                                    next_unit: UnitType::Settler,
-                                    next_unit_ready: world.game_state.turn + 5,
-                                });
+                        if let (None, Some(uid)) = (cell.structure, cell.unit) {
+                           if let Some(unit) = world.game_state.get_unit(uid) {
+                                if unit.t == UnitType::Settler {
+                                    let structure = Structure {
+                                        next_unit_ready: world.game_state.turn + 5,
+                                        next_unit: UnitType::Settler,
+                                        loc: unit.loc,
+                                        player: unit.player,
+                                    };
+
+                                    world.game_state.delete_unit(uid);
+                                    world.game_state.add_structure(structure);
+                                }
                             }
                         }
                         None
@@ -374,14 +482,18 @@ impl InputState {
                         }
 
                         self.current = std::ptr::null_mut();
-                        world.game_state.command_text = String::new();
+                        if self.mode != InputMode::Command {
+                            world.game_state.command_text = String::new();
+                        }
                     },
                     _ => { },
                 }
             },
             None => {
                 self.current = std::ptr::null_mut();
-                world.game_state.command_text = String::new();
+                if self.mode != InputMode::Command {
+                    world.game_state.command_text = String::new();
+                }
             }
         }
     }
