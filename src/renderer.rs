@@ -200,6 +200,7 @@ impl Renderer {
         // TODO: perspective projection onto the grid shouldnt be a perfect square. slight speed
         // improvment?
         let viewable_grid = game_state.grid.slice(s![top_left_index.x..top_right_index.x, bottom_left_index.y..top_right_index.y]);
+        let player_colors: Vec<_> = game_state.players.iter().map(|player| player.color).collect();
 
         let mut rect_positions: Vec<_> = viewable_grid
             .indexed_iter()
@@ -222,8 +223,9 @@ impl Renderer {
 
         let mut unit_positions: Vec<_> = viewable_grid
             .indexed_iter()
-            .filter(|(_, cell)| cell.unit.is_some())
-            .map(|((x_i, y_i), _cell)| {
+            .filter_map(|(xy, cell)| cell.unit.map(|u| (xy, u)))
+            .map(|((x_i, y_i), uid)| {
+                let unit = game_state.get_unit(uid).unwrap();
                 let x = x_i + top_left_index.x as usize;
                 let y = y_i + bottom_left_index.y as usize;
                 let loc_x = 2. * x as f32 + 0.5;
@@ -235,7 +237,7 @@ impl Renderer {
 
                 [
                     Vector3::new(loc_x, loc_y, loc_z),
-                    Vector3::new(0.5, 0.5, 0.5),
+                    player_colors[usize::from(unit.player)],
                 ]
             }).collect();
 

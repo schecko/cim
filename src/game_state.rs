@@ -36,6 +36,47 @@ impl Biome {
     }
 }
 
+#[derive(Debug, Clone, PartialEq, Eq, EnumIter)]
+enum Color {
+    Black,
+    Blue,
+    Cyan,
+    Green,
+    Grey,
+    Lime,
+    Magenta,
+    Maroon,
+    Navy,
+    Olive,
+    Purple,
+    Red,
+    Teal,
+    White,
+    Yellow,
+}
+
+impl Color {
+    fn color(&self) -> Vector3<f32> {
+        match *self {
+            Color::Black => Vector3::new(0.1, 0.1, 0.1),
+            Color::Blue => Vector3::new(0., 0., 1.),
+            Color::Cyan => Vector3::new(0., 1., 1.),
+            Color::Green => Vector3::new(0., 0.5, 0.),
+            Color::Grey => Vector3::new(0.5, 0.5, 0.5),
+            Color::Lime => Vector3::new(0., 1., 0.),
+            Color::Magenta => Vector3::new(1., 0., 1.),
+            Color::Maroon => Vector3::new(0.5, 0., 0.),
+            Color::Navy => Vector3::new(0., 0., 0.5),
+            Color::Olive => Vector3::new(0.5, 0.5, 0.),
+            Color::Purple => Vector3::new(0.5, 0., 0.5),
+            Color::Red => Vector3::new(1., 0., 0.),
+            Color::Teal => Vector3::new(0., 0.5, 0.5),
+            Color::White => Vector3::new(1., 1., 1.),
+            Color::Yellow => Vector3::new(1., 1., 0.),
+        }
+    }
+}
+
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum UnitType {
     Settler,
@@ -57,6 +98,12 @@ pub struct PlayerId(usize);
 impl From<usize> for PlayerId {
     fn from(other: usize) -> Self {
         Self(other)
+    }
+}
+
+impl From<PlayerId> for usize {
+    fn from(other: PlayerId) -> Self {
+        other.0
     }
 }
 
@@ -222,6 +269,7 @@ pub enum PlayerType {
 pub struct Player {
     pub units: Vec<Eid<Unit>>,
     pub structures: Vec<Eid<Structure>>,
+    pub color: Vector3<f32>,
 
     pub player_type: PlayerType,
 }
@@ -322,9 +370,11 @@ impl GameState {
             command_text: String::new(),
         };
 
+        let mut color_iter = Color::iter();
         let user = Player {
             units: Vec::new(),
             structures: Vec::new(),
+            color: color_iter.next().unwrap().color(),
 
             player_type: PlayerType::User(UserPlayer {
                 camera_jump: CameraJump::Unit(0),
@@ -340,6 +390,7 @@ impl GameState {
             let ai = Player {
                 units: Vec::new(),
                 structures: Vec::new(),
+                color: color_iter.next().unwrap().color(),
 
                 player_type: PlayerType::Ai(AiPlayer{}),
             };
