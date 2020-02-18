@@ -141,12 +141,33 @@ impl InputState {
                 },
                 Node {
                     action: Some(|world| {
-                        if let Some(loc) = world.game_state.yanked_location {
-                            let source_unit = world.game_state.get_grid_mut(loc).unit.take();
-                            let cursor = world.game_state.cursor;
-                            let dest = world.game_state.get_grid_mut(cursor);
+                        // get the yanked location
+                        // get the uid from the yanked location
+                        // get the unit from the uid
+                        // make sure the unit belongs to the correct player
+                        // update the unit with the new location
+                        // swap the grid source and dest cells
 
-                            dest.unit = source_unit;
+                        let mut swap = false;
+                        let cursor = world.game_state.cursor;
+                        let current_player = world.game_state.current_player;
+                        unsafe {
+                            if let Some(loc) = world.game_state.yanked_location {
+                                let grid_cell = world.game_state.get_grid_mut(loc) as *mut GridCell;
+                                if let Some(uid) = (*grid_cell).unit {
+                                    if let Some(unit) = world.game_state.get_unit_mut(uid) {
+                                        if usize::from(unit.player) == current_player {
+                                            unit.loc = cursor;
+                                            swap = true;
+                                        }
+                                    }
+                                }
+
+                                if swap {
+                                    let dest = world.game_state.get_grid_mut(cursor);
+                                    dest.unit = (*grid_cell).unit.take();
+                                }
+                            }
                         }
                         None
                     }),
@@ -345,12 +366,19 @@ impl InputState {
         fn move_one(world: &mut World, direction: Vector2<isize>) {
             let cursor = world.game_state.cursor;
             let (dest_i, actual_translation) = cursor.translate(&world.game_state.grid, direction);
+            let current_player = world.game_state.current_player;
             let source_cell: *mut GridCell = world.game_state.get_grid_mut(cursor) as *mut _;
             let actual_distance = (num::abs(actual_translation.x) + num::abs(actual_translation.y)) as usize;
 
             unsafe {
                 if let Some(uid) = (*source_cell).unit {
                     if let Some(unit) = world.game_state.get_unit_mut(uid) {
+
+                        if usize::from(unit.player) != current_player {
+                            println!("You cannot move another player's unit.");
+                            return;
+                        }
+
                         if unit.moves_remaining >= actual_distance {
                             unit.loc = dest_i;
                             unit.moves_remaining -= actual_distance;
