@@ -363,11 +363,20 @@ impl InputState {
             ]
         };
 
-        fn move_one(world: &mut World, direction: Vector2<isize>) {
-            let cursor = world.game_state.cursor;
-            let (dest_i, actual_translation) = cursor.translate(&world.game_state.grid, direction);
+        enum TryMove {
+            Success,
+            OccupyingUnit(Eid<Unit>),
+            Bounds,
+            InvalidBiome(Biome),
+        }
+
+        fn try_move_unit(world: &mut World, uid: Eid<Unit>, direction: Vector2<isize>) -> TryMove {
+        }
+
+        fn move_unit_at(location: GridLocation, world: &mut World, direction: Vector2<isize>) {
+            let (dest_i, actual_translation) = location.translate(&world.game_state.grid, direction);
             let current_player = world.game_state.current_player;
-            let source_cell: *mut GridCell = world.game_state.get_grid_mut(cursor) as *mut _;
+            let source_cell: *mut GridCell = world.game_state.get_grid_mut(location) as *mut _;
             let actual_distance = (num::abs(actual_translation.x) + num::abs(actual_translation.y)) as usize;
 
             unsafe {
@@ -412,7 +421,7 @@ impl InputState {
             children: vec![
                 Node {
                     action: Some(|world| {
-                        move_one(world, Vector2::new(-1, 0));
+                        move_unit_at(world.game_state.cursor, world, Vector2::new(-1, 0));
                         None
                     }),
                     modifiers: Default::default(),
@@ -421,7 +430,7 @@ impl InputState {
                 },
                 Node {
                     action: Some(|world| {
-                        move_one(world, Vector2::new(0, -1));
+                        move_unit_at(world.game_state.cursor, world, Vector2::new(0, -1));
                         None
                     }),
                     modifiers: Default::default(),
@@ -430,7 +439,7 @@ impl InputState {
                 },
                 Node {
                     action: Some(|world| {
-                        move_one(world, Vector2::new(0, 1));
+                        move_unit_at(world.game_state.cursor, world, Vector2::new(0, 1));
                         None
                     }),
                     modifiers: Default::default(),
@@ -439,7 +448,7 @@ impl InputState {
                 },
                 Node {
                     action: Some(|world| {
-                        move_one(world, Vector2::new(1, 0));
+                        move_unit_at(world.game_state.cursor, world, Vector2::new(1, 0));
                         None
                     }),
                     modifiers: Default::default(),

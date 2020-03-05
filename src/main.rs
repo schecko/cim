@@ -197,6 +197,28 @@ fn main() -> Result<(), String> {
                 let frame_start = std::time::Instant::now();
                 world.game_state.validate_state();
 
+                if world.game_state.current_player != 0 { // ai player, move their units
+                    let player = &mut world.game_state.players[world.game_state.current_player] as *mut Player;
+                    (*player).units.iter().for_each(|uid| {
+                        let u = rand::random::<usize>();
+                        let dirs = [
+                            Vector2::new(1, 0),
+                            Vector2::new(-1, 0),
+                            Vector2::new(0, 1),
+                            Vector2::new(0, -1),
+                        ];
+
+                        match world.game_state.get_unit_mut(uid) {
+                            Some(unit) => {
+                                let dest = unit.loc + dirs[u % dirs.len()];
+                                if (world.game_state.grid_contains(dest)) {
+                                }
+                            },
+                            None => return,
+                        }
+                    });
+                }
+
                 world.game_state.check_turn_complete(false);
 
                 let dt = (frame_start - last_frame).as_secs_f64();

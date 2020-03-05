@@ -430,6 +430,97 @@ impl GameState {
         Ok(state)
     }
 
+    enum TryMove {
+        Success,
+        OccupyingUnit(Eid<Unit>),
+        Bounds,
+        InvalidBiome(Biome),
+        InvalidUnit,
+        UnitOwnedByAnotherPlayer,
+        InsufficientMoves,
+    }
+
+    fn try_move_unit(&mut self, uid: Eid<Unit>, direction: Vector2<isize>) -> TryMove {
+        let (dest_i, actual_translation) = location.translate(&game_state.grid, direction);
+        let current_player = game_state.current_player;
+        let source_cell: *mut GridCell = game_state.get_grid_mut(location) as *mut _;
+        let actual_distance = (num::abs(actual_translation.x) + num::abs(actual_translation.y)) as usize;
+
+        if let Some(unit) = self.get_unit_mut(uid) {
+            if usize::from(unit.player) != current_player {
+                println!("You cannot move another player's unit.");
+                return TryMove::UnitOwnedByAnotherPlayer;
+            }
+
+            if unit.moves_remaining >= actual_distance {
+                unit.loc = dest_i;
+                unit.moves_remaining -= actual_distance;
+                if unit.moves_remaining <= 0 {
+                    println!("Unit out of moves for this turn");
+                    // this unit is finished moving for this turn, update turn_units
+                    let unit_matches_player = match &mut game_state.players[current_player].player_type {
+                        PlayerType::User(u) => {
+                            match u.turn_units.iter().position(|&eid| { Some(eid) == (*source_cell).unit }) {
+                                Some(i) => { u.turn_units.remove(i); true },
+                                None => { false },
+                            }
+                        },
+                        _ => { false },
+                    }
+                }
+
+                let dest_cell = game_state.get_grid_mut(dest_i);
+                dest_cell.unit = (*source_cell).unit.take();
+                game_state.cursor = dest_i;
+            } else {
+                TryMove::InsufficientMoves
+            }
+        else {
+            TryMove::InvalidUnit
+        }
+    }
+
+    fn move_unit_at(location: GridLocation, world: &mut World, direction: Vector2<isize>) {
+        let (dest_i, actual_translation) = location.translate(&world.game_state.grid, direction);
+        let current_player = world.game_state.current_player;
+        let source_cell: *mut GridCell = world.game_state.get_grid_mut(location) as *mut _;
+        let actual_distance = (num::abs(actual_translation.x) + num::abs(actual_translation.y)) as usize;
+
+        unsafe {
+            if let Some(uid) = (*source_cell).unit {
+                if let Some(unit) = world.game_state.get_unit_mut(uid) {
+
+                    if usize::from(unit.player) != current_player {
+                        println!("You cannot move another player's unit.");
+                        return;
+                    }
+
+                    if unit.moves_remaining >= actual_distance {
+                        unit.loc = dest_i;
+                        unit.moves_remaining -= actual_distance;
+                        if unit.moves_remaining <= 0 {
+                            println!("Unit out of moves for this turn");
+                            // this unit is finished moving for this turn, update turn_units
+                            match &mut world.game_state.players[0].player_type {
+                                PlayerType::User(u) => {
+                                    match u.turn_units.iter().position(|&eid| { Some(eid) == (*source_cell).unit }) {
+                                        Some(i) => { u.turn_units.remove(i); },
+                                        None => {},
+                                    }
+                                },
+                                _ => panic!("player 0 must be the user"),
+                            }
+                        }
+
+                        let dest_cell = world.game_state.get_grid_mut(dest_i);
+                        dest_cell.unit = (*source_cell).unit.take();
+                        world.game_state.cursor = dest_i;
+                    }
+                }
+            }
+        }
+    }
+
     pub fn grid_contains(&self, loc: Vector2<isize>) -> bool {
         let (grid_dim_x, grid_dim_y) = self.grid.dim();
         if loc.x >= 0 && loc.x < grid_dim_x as isize && loc.y >= 0 && loc.y < grid_dim_y as isize {
