@@ -8,38 +8,72 @@ use rand::Rng;
 
 #[derive(Clone, Eq, PartialEq, Debug, Hash)]
 enum GameState {
+    MainMenu,
     Playing,
     GameOver,
 }
+
+struct ScoreBoardText;
 
 fn main() {
     App::build()
         .insert_resource(Msaa { samples: 4 })
         .init_resource::<Game>()
         .add_plugins(DefaultPlugins)
-        .add_state(GameState::Playing)
+        .add_state(GameState::MainMenu)
+
         .add_startup_system(setup_cameras.system())
-        .add_system_set(SystemSet::on_enter(GameState::Playing).with_system(setup.system()))
+
+        // main menu
+        .add_system_set(
+            SystemSet::on_enter(GameState::MainMenu)
+                .with_system(display_mainmenu.system())
+        )
+        .add_system_set(
+            SystemSet::on_update(GameState::MainMenu)
+                .with_system(enter_game.system())
+        )
+        .add_system_set(
+            SystemSet::on_exit(GameState::MainMenu)
+                .with_system(teardown.system())
+        )
+
+        // playing
+        .add_system_set(
+            SystemSet::on_enter(GameState::Playing)
+                .with_system(setup.system())
+        )
         .add_system_set(
             SystemSet::on_update(GameState::Playing)
                 .with_system(move_player.system())
                 .with_system(focus_camera.system())
                 .with_system(rotate_bonus.system())
-                .with_system(scoreboard_system.system()),
-        )
-        .add_system_set(SystemSet::on_exit(GameState::Playing).with_system(teardown.system()))
-        .add_system_set(
-            SystemSet::on_enter(GameState::GameOver).with_system(display_score.system()),
+                .with_system(scoreboard_system.system())
         )
         .add_system_set(
-            SystemSet::on_update(GameState::GameOver).with_system(gameover_keyboard.system()),
-        )
-        .add_system_set(SystemSet::on_exit(GameState::GameOver).with_system(teardown.system()))
-        .add_system_set(
-            SystemSet::new()
+            SystemSet::on_update(GameState::Playing)
                 .with_run_criteria(FixedTimestep::step(5.0))
-                .with_system(spawn_bonus.system()),
+                .with_system(spawn_bonus.system())
         )
+        .add_system_set(
+            SystemSet::on_exit(GameState::Playing)
+                .with_system(teardown.system())
+        )
+
+        // gameover
+        .add_system_set(
+            SystemSet::on_enter(GameState::GameOver)
+                .with_system(display_score.system())
+        )
+        .add_system_set(
+            SystemSet::on_update(GameState::GameOver)
+                .with_system(gameover_keyboard.system())
+        )
+        .add_system_set(
+            SystemSet::on_exit(GameState::GameOver)
+                .with_system(teardown.system())
+        )
+
         .run();
 }
 
@@ -175,7 +209,8 @@ fn setup(mut commands: Commands, asset_server: Res<AssetServer>, mut game: ResMu
             ..Default::default()
         },
         ..Default::default()
-    });
+    })
+    .insert(ScoreBoardText);
 }
 
 // remove all entities that are not a camera
@@ -350,13 +385,19 @@ fn rotate_bonus(game: Res<Game>, time: Res<Time>, mut transforms: Query<&mut Tra
 }
 
 // update the score displayed during the game
-fn scoreboard_system(game: Res<Game>, mut query: Query<&mut Text>) {
+fn scoreboard_system(game: Res<Game>, mut query: Query<&mut Text, With<ScoreBoardText>>) {
     let mut text = query.single_mut().unwrap();
     text.sections[0].value = format!("Sugar Rush: {}", game.score);
 }
 
-// restart the game when pressing spacebar
 fn gameover_keyboard(mut state: ResMut<State<GameState>>, keyboard_input: Res<Input<KeyCode>>) {
+    if keyboard_input.just_pressed(KeyCode::Space) {
+        state.set(GameState::Playing).unwrap();
+    }
+}
+
+// restart the game when pressing spacebar
+fn enter_game(mut state: ResMut<State<GameState>>, keyboard_input: Res<Input<KeyCode>>) {
     if keyboard_input.just_pressed(KeyCode::Space) {
         state.set(GameState::Playing).unwrap();
     }
@@ -385,7 +426,39 @@ fn display_score(
                 text: Text::with_section(
                     format!("Cake eaten: {}", game.cake_eaten),
                     TextStyle {
-                        font: asset_server.load("fonts/FiraSans-Bold.ttf"),
+                        font: asset_server.load("fonts/arialbd.ttf"),
+                        font_size: 80.0,
+                        color: Color::rgb(0.5, 0.5, 1.0),
+                    },
+                    Default::default(),
+                ),
+                ..Default::default()
+            });
+        });
+}
+
+fn display_mainmenu(
+    mut commands: Commands,
+    asset_server: Res<AssetServer>,
+    mut materials: ResMut<Assets<ColorMaterial>>,
+) {
+    commands
+        .spawn_bundle(NodeBundle {
+            style: Style {
+                margin: Rect::all(Val::Auto),
+                justify_content: JustifyContent::Center,
+                align_items: AlignItems::Center,
+                ..Default::default()
+            },
+            material: materials.add(Color::NONE.into()),
+            ..Default::default()
+        })
+        .with_children(|parent| {
+            parent.spawn_bundle(TextBundle {
+                text: Text::with_section(
+                    "Hello World",
+                    TextStyle {
+                        font: asset_server.load("fonts/arialbd.ttf"),
                         font_size: 80.0,
                         color: Color::rgb(0.5, 0.5, 1.0),
                     },
