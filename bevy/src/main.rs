@@ -49,6 +49,7 @@ fn main() {
                 .with_system(move_active_unit.system())
                 .with_system(focus_camera.system())
                 .with_system(scoreboard_system.system())
+                .with_system(settlement_tick.system())
         )
         .add_system_set(
             SystemSet::on_exit(GameState::Playing)
@@ -84,7 +85,8 @@ struct BoardUnit {
 
 #[derive(Default)]
 struct Settlement {
-    handle: Handle<Scene>,
+    production_per_turn: usize, 
+    current_production: usize,
 }
 
 #[derive(Default)]
@@ -106,7 +108,13 @@ const RESET_FOCUS: [f32; 3] = [
     BOARD_SIZE_J as f32 / 2.0 - 0.5,
 ];
 
+use std::env;
+
+
 fn setup_cameras(mut commands: Commands, mut game: ResMut<Game>) {
+    let path = env::current_dir().unwrap();
+    println!("current dir {:?}", path );
+
     game.camera_should_focus = Vec3::from(RESET_FOCUS);
     game.camera_is_focus = game.camera_should_focus;
     commands.spawn_bundle(PerspectiveCameraBundle {
@@ -217,6 +225,7 @@ fn move_active_unit(
     keyboard_input: Res<Input<KeyCode>>,
     mut game: ResMut<Game>,
     mut board_unit_transforms: Query<(&mut Transform, &mut BoardUnit), With<Controllable>>,
+    asset_server: Res<AssetServer>,
 ) {
     let active_unit = if let Some(id) = game.active_unit {
         id
@@ -240,26 +249,51 @@ fn move_active_unit(
         rotation = -std::f32::consts::FRAC_PI_2;
         moved = true;
     }
-    if keyboard_input.just_pressed(KeyCode::Down) {
+    else if keyboard_input.just_pressed(KeyCode::Down) {
         if board_unit.i > 0 {
             board_unit.i -= 1;
         }
         rotation = std::f32::consts::FRAC_PI_2;
         moved = true;
     }
-    if keyboard_input.just_pressed(KeyCode::Right) {
+    else if keyboard_input.just_pressed(KeyCode::Right) {
         if board_unit.j < BOARD_SIZE_J - 1 {
             board_unit.j += 1;
         }
         rotation = std::f32::consts::PI;
         moved = true;
     }
-    if keyboard_input.just_pressed(KeyCode::Left) {
+    else if keyboard_input.just_pressed(KeyCode::Left) {
         if board_unit.j > 0 {
             board_unit.j -= 1;
         }
         rotation = 0.0;
         moved = true;
+    } else if keyboard_input.just_pressed(KeyCode::S) {
+        let old_settler_id = game.active_unit.take().unwrap();
+        
+        commands
+            .entity(old_settler_id)
+            .despawn_recursive();
+        let settlement_bu = BoardUnit{ i: board_unit.i, j: board_unit.j };
+         commands
+            .spawn_bundle((
+                Transform {
+                    translation: Vec3::new(
+                        settlement_bu.i as f32,
+                        game.board[settlement_bu.j][settlement_bu.i].height,
+                        settlement_bu.j as f32,
+                    ),
+                    rotation: Quat::from_rotation_y(-std::f32::consts::FRAC_PI_2),
+                    ..Default::default()
+                },
+                GlobalTransform::identity(),
+            ))
+            .with_children(|cell| {
+                cell.spawn_scene( asset_server.load("models/AlienCake/cakeBirthday.glb#Scene0") );
+            })
+            .insert(settlement_bu)
+            .insert(Settlement{production_per_turn: 5, current_production: 0}); 
     }
 
     // move on the board
@@ -280,6 +314,46 @@ fn move_active_unit(
             ..Default::default()
         };*/
     }
+}
+
+fn settlement_tick(
+    mut game: ResMut<Game>,
+    mut commands: Commands,
+    mut query: Query<(&BoardUnit, &mut Settlement)>,
+    asset_server: Res<AssetServer>,
+) {
+
+    if game.active_unit.is_some() { return; }
+
+    for ( board_unit, mut settlement ) in query.iter_mut() {
+        settlement.current_production += settlement.production_per_turn; 
+
+        if settlement.current_production > 50 {
+            let settler_unit = BoardUnit{ i: board_unit.i, j: board_unit.j };
+            game.active_unit = Some(
+                commands
+                    .spawn_bundle((
+                        Transform {
+                            translation: Vec3::new(
+                                settler_unit.i as f32,
+                                game.board[settler_unit.j][settler_unit.i].height,
+                                settler_unit.j as f32,
+                            ),
+                            rotation: Quat::from_rotation_y(-std::f32::consts::FRAC_PI_2),
+                            ..Default::default()
+                        },
+                        GlobalTransform::identity(),
+                    ))
+                    .with_children(|cell| {
+                        cell.spawn_scene(asset_server.load("models/AlienCake/alien.glb#Scene0"));
+                    })
+                    .insert(settler_unit)
+                    .insert(Controllable{})
+                    .id()
+            ); 
+        }
+    }
+
 }
 
 // change the focus of the camera
