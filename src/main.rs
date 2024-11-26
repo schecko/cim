@@ -4,7 +4,8 @@ use bevy::
     prelude::*,
 };
 
-fn hello_world() {
+fn hello_world()
+{
     println!("hello world!");
 }
 
@@ -19,7 +20,8 @@ impl Plugin for HelloPlugin
     }
 }
 
-fn setup_camera(mut commands: Commands) {
+fn setup_camera(mut commands: Commands)
+{
     commands.spawn
     (
         Camera2dBundle
@@ -28,6 +30,23 @@ fn setup_camera(mut commands: Commands) {
             ..default()
         }
     );
+}
+
+fn setup_sprite(mut commands: Commands)
+{
+    commands.spawn
+    ((
+        SpriteBundle
+        {
+            sprite: Sprite
+            {
+                color: Color::srgb(0.5, 0.5, 1.0),
+                custom_size: Some(Vec2::new(100.0, 50.0)),
+                ..Default::default()
+            },
+            ..default()
+        },
+    ));
 }
 
 fn main()
@@ -48,5 +67,6 @@ fn main()
             },
         })
         .add_systems(Startup, setup_camera)
+        .add_systems(Startup, setup_sprite)
         .run();
 }
