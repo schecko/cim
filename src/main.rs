@@ -6,6 +6,7 @@ use bevy::reflect::TypePath;
 use bevy::render::render_resource::AsBindGroup;
 use bevy::render::render_resource::ShaderRef;
 use bevy::render::{settings::WgpuSettings, RenderPlugin, settings::Backends};
+use bevy::sprite::*;
 
 const BEVY_ASSETS_FOLDER: &str = "assets";
 const BEVY_ASSET_ROOT_ENV: &str = "BEVY_ASSET_ROOT";
@@ -14,11 +15,11 @@ fn setup_camera(mut commands: Commands)
 {
     commands.spawn
     (
-        Camera2dBundle
-        {
+        Camera2dBundle::default()
+        /*{
             transform: Transform::from_xyz(100.0, 200.0, 0.0),
             ..default()
-        }
+        }*/
     );
 }
 
@@ -39,7 +40,6 @@ fn setup_sprite(mut commands: Commands)
     ));
 }
 
-// #[derive(AsBindGroup, Debug, Clone, Asset, TypePath)]
 #[derive(Asset, TypePath, AsBindGroup, Debug, Clone)]
 pub struct CustomMaterial
 {
@@ -50,7 +50,7 @@ pub struct CustomMaterial
     color_texture: Handle<Image>,
 }
 
-impl Material for CustomMaterial
+impl Material2d for CustomMaterial
 {
     fn fragment_shader() -> ShaderRef
     {
@@ -66,47 +66,48 @@ fn setup_material
     asset_server: Res<AssetServer>,
 )
 {
-    // Load a texture for the sprite
-    let texture_handle = asset_server.load("textures/sample.png");
-
-    // Create a quad mesh
-    let quad = Mesh::from(Rectangle::new(2.0, 2.0));
-
     // Create a custom material using the texture
     let custom_material = materials.add
     (
         CustomMaterial
         {
             color: Color::WHITE.into(), // Tint color
-            color_texture: texture_handle.clone(),
+            color_texture: asset_server.load("textures/sample.png"),
         }
     );
 
     // Spawn the entity with the quad and custom material
-    commands.spawn(MaterialMeshBundle
+    commands.spawn(MaterialMesh2dBundle
     {
-        mesh: meshes.add(quad),
+        mesh: meshes.add(Rectangle::default()).into(),
         material: custom_material,
+        visibility: Visibility::Visible,
+        transform: Transform::default().with_scale(Vec3::splat(128.)),
         ..default()
     });
+    /*commands.spawn(Camera2dBundle::default());
+    commands.spawn(MaterialMesh2dBundle {
+        mesh: meshes.add(Rectangle::default()).into(),
+        transform: Transform::default().with_scale(Vec3::splat(128.)),
+        material: materials.add(Color::from(PURPLE)),
+        ..default()
+    });
+    */
 }
 
-fn find_assets_folder() -> Result<(), std::io::Error> {
-    // Start with the current working directory
+fn find_assets_folder() -> Result<(), std::io::Error>
+{
     let mut current_dir = std::env::current_dir()?;
 
-    // Traverse up the directory tree
     while !current_dir.as_os_str().is_empty()
     {
         let assets_path = current_dir.join(BEVY_ASSETS_FOLDER);
         if assets_path.is_dir()
         {
-            // Set the current directory to the one containing the 'assets' folder
             std::env::set_current_dir(&current_dir)?;
             std::env::set_var(BEVY_ASSET_ROOT_ENV, &current_dir);
             return Ok(());
         }
-        // Move to the parent directory
         current_dir = match current_dir.parent()
         {
             Some(inner) => inner.to_path_buf(),
@@ -144,7 +145,7 @@ fn main()
                 },
             },
         })
-        .add_plugins(MaterialPlugin::<CustomMaterial>::default())
+        .add_plugins(Material2dPlugin::<CustomMaterial>::default())
         .add_systems(Startup, setup_camera)
         // .add_systems(Startup, setup_sprite)
         .add_systems(Startup, setup_material)
