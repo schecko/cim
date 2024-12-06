@@ -16,28 +16,7 @@ fn setup_camera(mut commands: Commands)
     commands.spawn
     (
         Camera2dBundle::default()
-        /*{
-            transform: Transform::from_xyz(100.0, 200.0, 0.0),
-            ..default()
-        }*/
     );
-}
-
-fn setup_sprite(mut commands: Commands)
-{
-    commands.spawn
-    ((
-        SpriteBundle
-        {
-            sprite: Sprite
-            {
-                color: Color::srgb(0.5, 0.5, 1.0),
-                custom_size: Some(Vec2::new(100.0, 50.0)),
-                ..Default::default()
-            },
-            ..default()
-        },
-    ));
 }
 
 #[derive(Asset, TypePath, AsBindGroup, Debug, Clone)]
@@ -85,14 +64,6 @@ fn setup_material
         transform: Transform::default().with_scale(Vec3::splat(128.)),
         ..default()
     });
-    /*commands.spawn(Camera2dBundle::default());
-    commands.spawn(MaterialMesh2dBundle {
-        mesh: meshes.add(Rectangle::default()).into(),
-        transform: Transform::default().with_scale(Vec3::splat(128.)),
-        material: materials.add(Color::from(PURPLE)),
-        ..default()
-    });
-    */
 }
 
 fn find_assets_folder() -> Result<(), std::io::Error>
@@ -147,7 +118,6 @@ fn main()
         })
         .add_plugins(Material2dPlugin::<CustomMaterial>::default())
         .add_systems(Startup, setup_camera)
-        // .add_systems(Startup, setup_sprite)
         .add_systems(Startup, setup_material)
         .run();
 }
