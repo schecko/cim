@@ -65,19 +65,24 @@ impl Extents
     }
 
     pub fn indices_row_major(
-        &self,
-    ) -> impl DoubleEndedIterator<Item = (usize, usize)> + Clone
+        self,
+    ) -> impl DoubleEndedIterator<Item = usize> + Clone
     {
-        let width = self.width;
-        (0..self.height).flat_map(move |y| (0..width).map(move |x| (x, y)))
+        0..self.num_elements()
     }
 
-    pub fn indices_column_major(
-        &self,
+    pub fn positions_row_major(
+        self,
     ) -> impl DoubleEndedIterator<Item = (usize, usize)> + Clone
     {
-        let height = self.height;
-        (0..self.width).flat_map(move |x| (0..height).map(move |y| (x, y)))
+        (0..self.height).flat_map(move |y| (0..self.width).map(move |x| (x, y)))
+    }
+
+    pub fn positions_column_major(
+        self,
+    ) -> impl DoubleEndedIterator<Item = (usize, usize)> + Clone
+    {
+        (0..self.width).flat_map(move |x| (0..self.height).map(move |y| (x, y)))
     }
 
     pub fn neighbours<const FLAGS: u8>(
@@ -151,7 +156,7 @@ mod tests
     {
         let size = Extents::new( 2, 2 );
         check_iterators(
-            size.indices_column_major(),
+            size.positions_column_major(),
             [(0_usize, 0_usize), (1, 0), (1, 0), (1, 1)].into_iter() // wrong pos
         );
     }
@@ -162,28 +167,28 @@ mod tests
     {
         let size = Extents::new( 2, 2 );
         check_iterators(
-            size.indices_column_major(),
+            size.positions_column_major(),
             [(0_usize, 0_usize), (1, 1)].into_iter() // too short
         );
     }
 
 
     #[test]
-    fn test_indices_row_major()
+    fn test_positions_row_major()
     {
         let size = Extents::new( 2, 2 );
         check_iterators(
-            size.indices_row_major(),
+            size.positions_row_major(),
             [(0_usize, 0_usize), (1, 0), (0, 1), (1, 1)].into_iter()
         );
     }
 
     #[test]
-    fn test_indices_column_major()
+    fn test_positions_column_major()
     {
         let size = Extents::new( 2, 2 );
         check_iterators(
-            size.indices_column_major(),
+            size.positions_column_major(),
             [(0_usize, 0_usize), (0, 1), (1, 0), (1, 1)].into_iter()
         );
     }

@@ -3,6 +3,7 @@ mod array2;
 mod extents;
 
 use array2::*;
+use extents::*;
 
 use bevy::asset::{Assets, Asset};
 use bevy::dev_tools::fps_overlay::{FpsOverlayConfig, FpsOverlayPlugin};
@@ -46,10 +47,17 @@ bitflags!
     }
 }
 
-    #[derive(Debug, Clone, Resource)]
+#[derive(Debug, Clone, Resource)]
 struct BoardVis
 {
     cell_type: Array2<CellType>,
+}
+
+#[derive(Debug, Clone, Copy, Component)]
+struct VisCell
+{
+    index: usize,
+    pos: (usize, usize),
 }
 
 fn setup
@@ -65,10 +73,12 @@ fn setup
         Camera2dBundle::default()
     );
 
-    commands.insert_resource(BoardVis
-                             {
-                                 cell_type: Array2::<CellType>::new(10, 10),
-                             });
+
+    let size = Extents::new(10, 10);
+    let mut vis = BoardVis
+    {
+        cell_type: Array2::<CellType>::from_size(size),
+    };
 
     // Create a custom material using the texture
     let custom_material = materials.add
@@ -80,15 +90,27 @@ fn setup
         }
     );
 
-    // Spawn the entity with the quad and custom material
-    commands.spawn(MaterialMesh2dBundle
+    let mesh = meshes.add(Rectangle::default());
+
+    for pos in size.positions_row_major()
     {
-        mesh: meshes.add(Rectangle::default()).into(),
-        material: custom_material,
-        visibility: Visibility::Visible,
-        transform: Transform::default().with_scale(Vec3::splat(128.)),
-        ..default()
-    });
+        // Spawn the entity with the quad and custom material
+        commands
+            .spawn
+            (
+                MaterialMesh2dBundle
+                {
+                    mesh: mesh.clone().into(),
+                    material: custom_material.clone(),
+                    visibility: Visibility::Visible,
+                    transform: Transform::default()
+                        .with_translation(Vec3::splat(128.))
+                        .with_scale(Vec3::splat(128.)),
+                    ..default()
+                } 
+            )
+            .insert(VisCell{ index: size.get_index_row_major(pos.0, pos.1).unwrap(), pos });
+    }
 }
 
 fn find_assets_folder() -> Result<(), std::io::Error>

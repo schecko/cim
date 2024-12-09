@@ -52,6 +52,17 @@ impl<T> Array2<T>
         }
     }
 
+    pub fn from_size(size: Extents) -> Self
+    where
+        T: Clone + Default,
+    {
+        let array = vec![T::default(); size.num_elements()];
+        Array2 {
+            array,
+            size,
+        }
+    }
+
     pub fn from_rows(values: &[Vec<T>]) -> Result<Self, Error>
     where
         T: Clone,
@@ -77,7 +88,7 @@ impl<T> Array2<T>
             return Err(Error::DimensionMismatch);
         }
         let size = Extents::new( values.len(), column_len );
-        let array = size.indices_row_major()
+        let array = size.positions_row_major()
             .map(|(x, y)| values[y][x].clone())
             .collect();
         Ok(Array2 {
@@ -117,7 +128,7 @@ impl<T> Array2<T>
             return Err(Error::DimensionMismatch);
         }
         let size = Extents{ width, height };
-        let array = size.indices_row_major()
+        let array = size.positions_row_major()
             .map(|(x, y)| {
                 let index = y * height + x;
                 values[index].clone()
@@ -188,15 +199,23 @@ impl<T> Array2<T>
             .map_err(|_| Error::NotEnoughValues)
     }
 
-    pub fn height(&self) -> usize {
+    pub fn height(&self) -> usize
+    {
         self.size.height
     }
 
-    pub fn width(&self) -> usize {
+    pub fn width(&self) -> usize
+    {
         self.size.width
     }
 
-    pub fn num_values(&self) -> usize {
+    pub fn size(&self) -> Extents
+    {
+        self.size
+    }
+
+    pub fn num_values(&self) -> usize
+    {
         self.size.height * self.size.width
     }
 
@@ -335,21 +354,21 @@ impl<T> Array2<T>
         self.elements_column_major_iter().cloned().collect()
     }
 
-    pub fn indices_row_major(&self) -> impl DoubleEndedIterator<Item = (usize, usize)> + Clone
+    pub fn positions_row_major(&self) -> impl DoubleEndedIterator<Item = (usize, usize)> + Clone
     {
-        self.size.indices_row_major()
+        self.size.positions_row_major()
     }
 
     pub fn indices_column_major(&self) -> impl DoubleEndedIterator<Item = (usize, usize)> + Clone
     {
-        self.size.indices_column_major()
+        self.size.positions_column_major()
     }
 
     pub fn enumerate_row_major(
         &self,
     ) -> impl DoubleEndedIterator<Item = ((usize, usize), &T)> + Clone
     {
-        self.indices_row_major().map(move |i| (i, &self[i]))
+        self.positions_row_major().map(move |i| (i, &self[i]))
     }
 
     pub fn enumerate_column_major(
