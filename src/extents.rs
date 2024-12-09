@@ -88,16 +88,29 @@ impl Extents
     {
         let mut neigh = ArrayVec::<(usize, usize), 8>::new();
 
-        if Neighbours::from_bits_retain( FLAGS ) & Neighbours::TopLeft != Neighbours::None && self.is_valid_pos( x - 1, y - 1 ) { neigh.push( (x - 1, y - 1) ); }
-        if Neighbours::from_bits_retain( FLAGS ) & Neighbours::Top != Neighbours::None && self.is_valid_pos( x, y - 1 ) { neigh.push( (x, y - 1) ); }
-        if Neighbours::from_bits_retain( FLAGS ) & Neighbours::TopRight != Neighbours::None && self.is_valid_pos( x + 1, y - 1 ) { neigh.push( (x + 1, y - 1) ); }
+        let can_add = |neighbour_position: Neighbours| -> bool
+        {
+            Neighbours::from_bits_retain( FLAGS ) & neighbour_position != Neighbours::None
+        };
 
-        if Neighbours::from_bits_retain( FLAGS ) & Neighbours::Left != Neighbours::None && self.is_valid_pos( x - 1, y ) { neigh.push( (x - 1, y) ); }
-        if Neighbours::from_bits_retain( FLAGS ) & Neighbours::Right != Neighbours::None && self.is_valid_pos( x + 1, y ) { neigh.push( (x + 1, y) ); }
+        let mut try_add = |x: usize, y: usize|
+        {
+            if self.is_valid_pos( x, y )
+            {
+                neigh.push((x, y));
+            }
+        };
 
-        if Neighbours::from_bits_retain( FLAGS ) & Neighbours::BottomLeft != Neighbours::None && self.is_valid_pos( x - 1, y + 1 ) { neigh.push( (x - 1, y + 1) ); }
-        if Neighbours::from_bits_retain( FLAGS ) & Neighbours::Bottom != Neighbours::None && self.is_valid_pos( x, y + 1 ) { neigh.push( (x, y + 1) ); }
-        if Neighbours::from_bits_retain( FLAGS ) & Neighbours::BottomRight != Neighbours::None && self.is_valid_pos( x + 1, y + 1 ) { neigh.push( (x + 1, y + 1) ); }
+        if can_add(Neighbours::TopLeft) { try_add( x.wrapping_sub(1), y.wrapping_sub(1) ); }
+        if can_add(Neighbours::Top) { try_add( x, y.wrapping_sub(1) ); }
+        if can_add(Neighbours::TopRight) { try_add( x.wrapping_add(1), y.wrapping_sub(1) ); }
+
+        if can_add(Neighbours::Left) { try_add( x.wrapping_sub(1), y ); }
+        if can_add(Neighbours::Right) { try_add( x.wrapping_add(1), y ); }
+
+        if can_add(Neighbours::BottomLeft) { try_add( x.wrapping_sub(1), y.wrapping_add(1) ); }
+        if can_add(Neighbours::Bottom) { try_add( x, y.wrapping_add(1) ); }
+        if can_add(Neighbours::BottomRight) { try_add( x.wrapping_add(1), y.wrapping_add(1) ); }
 
         neigh.into_iter()
     }
