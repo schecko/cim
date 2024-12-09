@@ -206,4 +206,23 @@ mod tests
             ].into_iter()
         );
     }
+
+    #[test]
+    fn test_neighbours_wrapping()
+    {
+        let size = Extents::new( 2, 2 );
+        check_iterators(
+            size.neighbours::<{ Neighbours::All.bits() }>(0, 0),
+            [
+                (1, 0), (0, 1), (1, 1)
+            ].into_iter()
+        );
+
+        check_iterators(
+            size.neighbours::<{ Neighbours::All.bits() }>(1, 1),
+            [
+                (0, 0), (1, 0), (0, 1)
+            ].into_iter()
+        );
+    }
 }
