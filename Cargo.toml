@@ -4,7 +4,9 @@ version = "0.1.0"
 edition = "2021"
 
 [dependencies]
+arrayvec = "0.7.6"
 bevy = { version = "0.14.2", features = ["default", "bevy_dev_tools"] }
+bitflags = "2.6.0"
 
 # Enable optimizations for dependencies
 [profile.dev.package."*"]

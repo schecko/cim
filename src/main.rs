@@ -1,5 +1,10 @@
+
+mod array2;
+mod extents;
+
+use array2::*;
+
 use bevy::asset::{Assets, Asset};
-// use bevy::color::Color;
 use bevy::dev_tools::fps_overlay::{FpsOverlayConfig, FpsOverlayPlugin};
 use bevy::prelude::*;
 use bevy::reflect::TypePath;
@@ -7,17 +12,10 @@ use bevy::render::render_resource::AsBindGroup;
 use bevy::render::render_resource::ShaderRef;
 use bevy::render::{settings::WgpuSettings, RenderPlugin, settings::Backends};
 use bevy::sprite::*;
+use bitflags::bitflags;
 
 const BEVY_ASSETS_FOLDER: &str = "assets";
 const BEVY_ASSET_ROOT_ENV: &str = "BEVY_ASSET_ROOT";
-
-fn setup_camera(mut commands: Commands)
-{
-    commands.spawn
-    (
-        Camera2dBundle::default()
-    );
-}
 
 #[derive(Asset, TypePath, AsBindGroup, Debug, Clone)]
 pub struct CustomMaterial
@@ -37,7 +35,24 @@ impl Material2d for CustomMaterial
     }
 }
 
-fn setup_material
+bitflags!
+{
+    #[repr(transparent)]
+    #[derive(Debug, Default, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
+    pub struct CellType: u8
+    {
+        const None = 0 << 0;
+        const Land = 1 << 0;
+    }
+}
+
+    #[derive(Debug, Clone, Resource)]
+struct BoardVis
+{
+    cell_type: Array2<CellType>,
+}
+
+fn setup
 (
     mut commands: Commands,
     mut meshes: ResMut<Assets<Mesh>>,
@@ -45,6 +60,16 @@ fn setup_material
     asset_server: Res<AssetServer>,
 )
 {
+    commands.spawn
+    (
+        Camera2dBundle::default()
+    );
+
+    commands.insert_resource(BoardVis
+                             {
+                                 cell_type: Array2::<CellType>::new(10, 10),
+                             });
+
     // Create a custom material using the texture
     let custom_material = materials.add
     (
@@ -91,6 +116,9 @@ fn find_assets_folder() -> Result<(), std::io::Error>
 
 fn main()
 {
+    let ext = crate::extents::Extents{ width: 10, height: 10 };
+    let _arr = ext.neighbours::<{ crate::extents::Neighbours::Top.bits() }>( 0, 0 );
+    let _arr = ext.neighbours::<{ crate::extents::Neighbours::Top.union(crate::extents::Neighbours::Bottom).bits() }>( 0, 0 );
     let _ = find_assets_folder();
 
     App::new()
@@ -117,7 +145,6 @@ fn main()
             },
         })
         .add_plugins(Material2dPlugin::<CustomMaterial>::default())
-        .add_systems(Startup, setup_camera)
-        .add_systems(Startup, setup_material)
+        .add_systems(Startup, setup)
         .run();
 }
