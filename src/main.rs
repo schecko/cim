@@ -73,7 +73,6 @@ fn setup
         Camera2dBundle::default()
     );
 
-
     let size = Extents::new(10, 10);
     let mut vis = BoardVis
     {
@@ -95,6 +94,8 @@ fn setup
     for pos in size.positions_row_major()
     {
         // Spawn the entity with the quad and custom material
+        let scale = Vec3::splat(28.0);
+        let translation = Vec2::new(pos.0 as f32, -(pos.1 as f32)).extend(0.0) * scale;
         commands
             .spawn
             (
@@ -104,8 +105,8 @@ fn setup
                     material: custom_material.clone(),
                     visibility: Visibility::Visible,
                     transform: Transform::default()
-                        .with_translation(Vec3::splat(128.))
-                        .with_scale(Vec3::splat(128.)),
+                        .with_translation(translation)
+                        .with_scale(scale),
                     ..default()
                 } 
             )
