@@ -13,10 +13,17 @@ use bevy::render::render_resource::AsBindGroup;
 use bevy::render::render_resource::ShaderRef;
 use bevy::render::{settings::WgpuSettings, RenderPlugin, settings::Backends};
 use bevy::sprite::*;
+use bevy_common_assets::json::JsonAssetPlugin;
 use bitflags::bitflags;
 
 const BEVY_ASSETS_FOLDER: &str = "assets";
 const BEVY_ASSET_ROOT_ENV: &str = "BEVY_ASSET_ROOT";
+
+#[derive(serde::Deserialize, Asset, TypePath)]
+struct BoardVisTuning
+{
+    cell_size: Vec2,
+}
 
 #[derive(Asset, TypePath, AsBindGroup, Debug, Clone)]
 pub struct CustomMaterial
@@ -79,21 +86,23 @@ fn setup
         cell_type: Array2::<CellType>::from_size(size),
     };
 
-    // Create a custom material using the texture
     let custom_material = materials.add
     (
         CustomMaterial
         {
-            color: Color::WHITE.into(), // Tint color
+            color: Color::WHITE.into(),
             color_texture: asset_server.load("textures/sample.png"),
         }
     );
+
+    // TODO load directly? just instantitate instead?
+    // can't load sync?
+    let _board_vis_tuning = asset_server.load::<BoardVisTuning>("tuning/board_vis.json");
 
     let mesh = meshes.add(Rectangle::default());
 
     for pos in size.positions_row_major()
     {
-        // Spawn the entity with the quad and custom material
         let scale = Vec3::splat(28.0);
         let translation = Vec2::new(pos.0 as f32, -(pos.1 as f32)).extend(0.0) * scale;
         commands
@@ -155,6 +164,7 @@ fn main()
                 ..default()
             }),
         )
+        .add_plugins(JsonAssetPlugin::<BoardVisTuning>::new(&["json"]))
         .add_plugins(FpsOverlayPlugin
         {
             config: FpsOverlayConfig
