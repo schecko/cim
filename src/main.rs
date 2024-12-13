@@ -2,6 +2,7 @@
 mod array2;
 mod extents;
 mod ron;
+mod bevy_helper;
 
 use array2::*;
 use extents::*;
@@ -17,10 +18,7 @@ use bevy::render::{settings::WgpuSettings, RenderPlugin, settings::Backends};
 use bevy::sprite::*;
 use bitflags::bitflags;
 
-const BEVY_ASSETS_FOLDER: &str = "assets";
-const BEVY_ASSET_ROOT_ENV: &str = "BEVY_ASSET_ROOT";
-
-#[derive(serde::Deserialize, Asset, TypePath)]
+#[derive(serde::Deserialize, serde::Serialize, Asset, TypePath, Default)]
 struct BoardVisTuning
 {
     cell_size: Vec2,
@@ -96,6 +94,8 @@ fn setup
         }
     );
 
+    let error = ron::write_sync(&BoardVisTuning::default(), &std::path::Path::new("tuning/board_vis.ron"));
+    println!("write result: {:?}", error);
     // TODO load directly? just instantitate instead?
     // can't load sync?
     let _board_vis_tuning = asset_server.load::<BoardVisTuning>("tuning/board_vis.ron");
@@ -125,11 +125,11 @@ fn find_assets_folder() -> Result<(), std::io::Error>
 
     while !current_dir.as_os_str().is_empty()
     {
-        let assets_path = current_dir.join(BEVY_ASSETS_FOLDER);
+        let assets_path = current_dir.join(crate::bevy_helper::ASSETS_FOLDER);
         if assets_path.is_dir()
         {
             std::env::set_current_dir(&current_dir)?;
-            std::env::set_var(BEVY_ASSET_ROOT_ENV, &current_dir);
+            std::env::set_var(crate::bevy_helper::ASSET_ROOT_ENV, &current_dir);
             return Ok(());
         }
         current_dir = match current_dir.parent()
