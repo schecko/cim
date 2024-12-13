@@ -5,11 +5,10 @@ edition = "2021"
 
 [dependencies]
 arrayvec = "0.7.6"
-bevy = { version = "0.14.2", features = ["default", "bevy_dev_tools"] }
-bevy_common_assets = { version = "0.11.0", features = ["json"] }
+bevy = { version = "0.15.0", features = ["default", "bevy_dev_tools"] }
 bitflags = "2.6.0"
+ron = "0.8.1"
 serde = "1.0.215"
-serde_json = "1.0.133"
 thiserror = "2.0.6"
 
 # Enable optimizations for dependencies

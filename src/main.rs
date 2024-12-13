@@ -1,9 +1,11 @@
 
 mod array2;
 mod extents;
+mod ron;
 
 use array2::*;
 use extents::*;
+use ron::*;
 
 use bevy::asset::{Assets, Asset};
 use bevy::dev_tools::fps_overlay::{FpsOverlayConfig, FpsOverlayPlugin};
@@ -13,7 +15,6 @@ use bevy::render::render_resource::AsBindGroup;
 use bevy::render::render_resource::ShaderRef;
 use bevy::render::{settings::WgpuSettings, RenderPlugin, settings::Backends};
 use bevy::sprite::*;
-use bevy_common_assets::json::JsonAssetPlugin;
 use bitflags::bitflags;
 
 const BEVY_ASSETS_FOLDER: &str = "assets";
@@ -77,7 +78,7 @@ fn setup
 {
     commands.spawn
     (
-        Camera2dBundle::default()
+        Camera2d::default()
     );
 
     let size = Extents::new(10, 10);
@@ -97,7 +98,7 @@ fn setup
 
     // TODO load directly? just instantitate instead?
     // can't load sync?
-    let _board_vis_tuning = asset_server.load::<BoardVisTuning>("tuning/board_vis.json");
+    let _board_vis_tuning = asset_server.load::<BoardVisTuning>("tuning/board_vis.ron");
 
     let mesh = meshes.add(Rectangle::default());
 
@@ -107,18 +108,13 @@ fn setup
         let translation = Vec2::new(pos.0 as f32, -(pos.1 as f32)).extend(0.0) * scale;
         commands
             .spawn
-            (
-                MaterialMesh2dBundle
-                {
-                    mesh: mesh.clone().into(),
-                    material: custom_material.clone(),
-                    visibility: Visibility::Visible,
-                    transform: Transform::default()
-                        .with_translation(translation)
-                        .with_scale(scale),
-                    ..default()
-                } 
-            )
+            ((
+                Mesh2d(mesh.clone().into()),
+                MeshMaterial2d(custom_material.clone().into()),
+                Transform::default()
+                    .with_translation(translation)
+                    .with_scale(scale),
+            ))
             .insert(VisCell{ index: size.get_index_row_major(pos.0, pos.1).unwrap(), pos });
     }
 }
@@ -164,17 +160,18 @@ fn main()
                 ..default()
             }),
         )
-        .add_plugins(JsonAssetPlugin::<BoardVisTuning>::new(&["json"]))
+        .add_plugins(RonAssetPlugin::<BoardVisTuning>::default())
         .add_plugins(FpsOverlayPlugin
         {
             config: FpsOverlayConfig
             {
-                text_config: TextStyle
+                enabled: true,
+                text_config: TextFont
                 {
                     font_size: 20.0,
-                    color: Color::srgb(1.0, 1.0, 1.0),
-                    font: default(),
+                    ..default()
                 },
+                ..default()
             },
         })
         .add_plugins(Material2dPlugin::<CustomMaterial>::default())
