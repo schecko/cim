@@ -9,7 +9,6 @@ use bevy::render::render_asset::*;
 use bevy::render::render_resource::*;
 use bevy::render::render_resource::AsBindGroup;
 use bevy::render::render_resource::ShaderRef;
-use bevy::render::RenderPlugin;
 use bevy::sprite::*;
 use bitflags::bitflags;
 

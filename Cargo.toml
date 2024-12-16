@@ -25,7 +25,6 @@ opt-level = 3
 
 [dependencies]
 bevy = { workspace = true }
-bitflags = { workspace = true }
 ron = { workspace = true }
 serde = { workspace = true }
 thiserror = { workspace = true }

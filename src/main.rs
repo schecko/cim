@@ -1,14 +1,9 @@
 
-use base::extents::*;
-use base::array2::*;
 use ron::*;
 
-use bevy::asset::{Assets, Asset};
 use bevy::dev_tools::fps_overlay::{FpsOverlayConfig, FpsOverlayPlugin};
 use bevy::prelude::*;
 use bevy::render::{settings::WgpuSettings, RenderPlugin, settings::Backends};
-use bevy::sprite::*;
-use bitflags::bitflags;
 
 fn find_assets_folder() -> Result<(), std::io::Error>
 {
