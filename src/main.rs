@@ -187,6 +187,7 @@ fn main()
 
     sim::hello_sim();
     vis::hello_vis();
+    base::hello_base();
 
     App::new()
         .add_plugins(

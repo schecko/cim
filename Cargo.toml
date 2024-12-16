@@ -3,22 +3,32 @@ name = "cim"
 version = "0.1.0"
 edition = "2021"
 
-[dependencies]
+[workspace]
+members = [
+	"vis",
+	"sim",
+	"base",
+]
+
+[workspace.dependencies]
 arrayvec = "0.7.6"
 bevy = { version = "0.15.0", features = ["default", "bevy_dev_tools"] }
 bitflags = "2.6.0"
 ron = "0.8.1"
 serde = "1.0.215"
 thiserror = "2.0.6"
-sim = { path = "sim" }
-vis = { path = "vis" }
 
 # Enable optimizations for dependencies
 [profile.dev.package."*"]
 opt-level = 3
 
-[workspace]
-members = [
-	"vis",
-	"sim",
-]
+[dependencies]
+arrayvec = { workspace = true }
+bevy = { workspace = true }
+bitflags = { workspace = true }
+ron = { workspace = true }
+serde = { workspace = true }
+thiserror = { workspace = true }
+sim = { path = "sim" }
+vis = { path = "vis" }
+base = { path = "base" }

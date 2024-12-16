@@ -1,0 +1,11 @@
+[package]
+name = "base"
+version = "0.1.0"
+edition = "2021"
+
+
+# ******************************************************
+# DO NOT ADD BEVY AS A DEPENDENCY HERE
+# ******************************************************
+
+[dependencies]
