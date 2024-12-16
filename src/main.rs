@@ -185,6 +185,9 @@ fn main()
     let _arr = ext.neighbours::<{ crate::extents::Neighbours::Top.union(crate::extents::Neighbours::Bottom).bits() }>( 0, 0 );
     let _ = find_assets_folder();
 
+    sim::hello_sim();
+    vis::hello_vis();
+
     App::new()
         .add_plugins(
             DefaultPlugins.set(RenderPlugin {
