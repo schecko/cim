@@ -4,5 +4,11 @@ version = "0.1.0"
 edition = "2021"
 
 [dependencies]
+bevyx = { path = "../bevyx" }
 sim = { path = "../sim" }
+base = { path = "../base" }
+
 bevy = { workspace = true }
+serde = { workspace = true }
+bitflags = { workspace = true }
+

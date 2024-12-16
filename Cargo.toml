@@ -8,6 +8,7 @@ members = [
 	"vis",
 	"sim",
 	"base",
+	"bevyx",
 ]
 
 [workspace.dependencies]
@@ -31,3 +32,4 @@ thiserror = { workspace = true }
 sim = { path = "sim" }
 vis = { path = "vis" }
 base = { path = "base" }
+bevyx = { path = "bevyx" }
