@@ -9,3 +9,5 @@ edition = "2021"
 # ******************************************************
 
 [dependencies]
+arrayvec = { workspace = true }
+bitflags = { workspace = true }

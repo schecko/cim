@@ -1,11 +1,9 @@
 
-mod array2;
-mod extents;
 mod ron;
 mod bevy_helper;
 
-use array2::*;
-use extents::*;
+use base::extents::*;
+use base::array2::*;
 use ron::*;
 
 use bevy::asset::{Assets, Asset};
@@ -180,9 +178,9 @@ fn find_assets_folder() -> Result<(), std::io::Error>
 
 fn main()
 {
-    let ext = crate::extents::Extents{ width: 10, height: 10 };
-    let _arr = ext.neighbours::<{ crate::extents::Neighbours::Top.bits() }>( 0, 0 );
-    let _arr = ext.neighbours::<{ crate::extents::Neighbours::Top.union(crate::extents::Neighbours::Bottom).bits() }>( 0, 0 );
+    let ext = base::extents::Extents{ width: 10, height: 10 };
+    let _arr = ext.neighbours::<{ base::extents::Neighbours::Top.bits() }>( 0, 0 );
+    let _arr = ext.neighbours::<{ base::extents::Neighbours::Top.union(base::extents::Neighbours::Bottom).bits() }>( 0, 0 );
     let _ = find_assets_folder();
 
     sim::hello_sim();
