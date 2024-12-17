@@ -45,28 +45,32 @@ fn setup
 
 fn camera_pan
 (
-    mut camera_query: Query<&mut Transform, With<Camera2d>>,
+    mut camera_query: Query<(&mut Transform, &Camera, &GlobalTransform)>,
     mouse_buttons: Res<ButtonInput<MouseButton>>,
-    mut previous_mouse_position: Local<Option<Vec2>>,
+    mut previous_mouse_position: Local<Option<Vec3>>,
     windows: Query<&Window>,
 )
 {
     let window = windows.single();
-    let mut camera_transform = camera_query.single_mut();
-    let current_mouse_position = window.cursor_position();
+    let (mut camera_transform, camera, camera_global_transform) = camera_query.single_mut();
+    let current_mouse_position = match window.cursor_position()
+    {
+        Some(current_mouse_pos) => camera.viewport_to_world(camera_global_transform, current_mouse_pos),
+        None => return,
+    };
 
     if mouse_buttons.pressed(MouseButton::Right)
     {
-        if let (Some(current_pos), Some(previous_pos)) = (current_mouse_position, *previous_mouse_position)
+        if let (Ok(current_mouse_pos), Some(previous_mouse_pos)) = (current_mouse_position, *previous_mouse_position)
         {
-            let delta = current_pos - previous_pos;
+            let delta = current_mouse_pos.get_point(0.0) - previous_mouse_pos;
 
-            camera_transform.translation.x -= delta.x;
+            camera_transform.translation.x += delta.x;
             camera_transform.translation.y += delta.y; // Y is inverted in screen space
         }
 
         // Update the previous mouse position
-        *previous_mouse_position = current_mouse_position;
+        *previous_mouse_position = current_mouse_position.ok().map( |ray| ray.get_point(0.0) );
     }
     else
     {
