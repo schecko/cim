@@ -2,9 +2,19 @@
 use bevy::prelude::*;
 use bevy::reflect::TypePath;
 
-#[derive(serde::Deserialize, serde::Serialize, Asset, TypePath, Default)]
+#[derive(serde::Deserialize, serde::Serialize, Asset, TypePath)]
 pub struct BoardVisTuning
 {
-    cell_size: Vec2,
+    pub cell_size: Vec2,
 }
 
+impl Default for BoardVisTuning
+{
+    fn default() -> Self
+    {
+        Self
+        {
+            cell_size: Vec2::splat(28.0),
+        }
+    }
+}

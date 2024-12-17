@@ -132,18 +132,19 @@ fn setup
 
     let mesh_id = meshes.add(mesh);
 
+    let tuning = BoardVisTuning::default();
     for pos in size.positions_row_major()
     {
-        let scale = Vec3::splat(28.0);
-        let translation = Vec2::new(pos.0 as f32, -(pos.1 as f32)).extend(0.0) * scale;
+        let scale = tuning.cell_size;
+        let translation = Vec2::new(pos.0 as f32, -(pos.1 as f32)) * scale; 
         commands
             .spawn
             ((
                 Mesh2d(mesh_id.clone().into()),
                 MeshMaterial2d(custom_material.clone().into()),
                 Transform::default()
-                    .with_translation(translation)
-                    .with_scale(scale),
+                    .with_translation(translation.extend(0.0))
+                    .with_scale(scale.extend(0.0)),
             ))
             .insert(VisCell{ index: size.get_index_row_major(pos.0, pos.1).unwrap(), pos });
     }
