@@ -70,11 +70,6 @@ fn setup
     asset_server: Res<AssetServer>,
 )
 {
-    commands.spawn
-    (
-        Camera2d::default()
-    );
-
     let size = Extents::new(10, 10);
     let mut vis = BoardVis
     {
