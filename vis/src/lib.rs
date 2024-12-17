@@ -1,4 +1,7 @@
 
+mod board_vis_tuning;
+
+use board_vis_tuning::*;
 use base::array2::*;
 use base::extents::*;
 use bevyx::ron::*;
@@ -15,12 +18,6 @@ use bitflags::bitflags;
 pub fn hello_vis()
 {
     println!("Hello, vis!");
-}
-
-#[derive(serde::Deserialize, serde::Serialize, Asset, TypePath, Default)]
-struct BoardVisTuning
-{
-    cell_size: Vec2,
 }
 
 #[derive(Asset, TypePath, AsBindGroup, Debug, Clone)]
