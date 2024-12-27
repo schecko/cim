@@ -47,15 +47,22 @@ fn camera_pan
 (
     mut camera_query: Query<(&mut Transform, &Camera, &GlobalTransform)>,
     mouse_buttons: Res<ButtonInput<MouseButton>>,
-    mut previous_mouse_position: Local<Option<Vec3>>,
+    mut previous_mouse_position: Local<Option<Vec2>>,
     windows: Query<&Window>,
 )
 {
-    let window = windows.single();
-    let (mut camera_transform, camera, camera_global_transform) = camera_query.single_mut();
+    let Ok(window) = windows.get_single() else
+    {
+        return;
+    };
+    let Ok((mut camera_transform, camera, camera_global_transform)) = camera_query.get_single_mut() else
+    {
+        return;
+    };
+
     let current_mouse_position = match window.cursor_position()
     {
-        Some(current_mouse_pos) => camera.viewport_to_world(camera_global_transform, current_mouse_pos),
+        Some(current_mouse_pos) => camera.viewport_to_world_2d(camera_global_transform, current_mouse_pos),
         None => return,
     };
 
@@ -63,14 +70,18 @@ fn camera_pan
     {
         if let (Ok(current_mouse_pos), Some(previous_mouse_pos)) = (current_mouse_position, *previous_mouse_position)
         {
-            let delta = current_mouse_pos.get_point(0.0) - previous_mouse_pos;
+            println!("current {} {}", current_mouse_pos.x, current_mouse_pos.y);
+            println!("previous {} {}", previous_mouse_pos.x, previous_mouse_pos.y);
+            let delta = current_mouse_pos - previous_mouse_pos;
+            println!("delta {} {}", delta.x, delta.y);
 
-            camera_transform.translation.x += delta.x;
-            camera_transform.translation.y += delta.y; // Y is inverted in screen space
+            camera_transform.translation.x -= delta.x;
+            camera_transform.translation.y -= delta.y; // Y is inverted in screen space
         }
 
         // Update the previous mouse position
-        *previous_mouse_position = current_mouse_position.ok().map( |ray| ray.get_point(0.0) );
+        println!("is some {}", current_mouse_position.is_ok());
+        *previous_mouse_position = current_mouse_position.ok();
     }
     else
     {
