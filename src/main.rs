@@ -1,6 +1,4 @@
 
-use ron::*;
-
 use bevy::dev_tools::fps_overlay::FpsOverlayConfig;
 use bevy::dev_tools::fps_overlay::FpsOverlayPlugin;
 use bevy::input::mouse::MouseWheel;
@@ -73,12 +71,10 @@ fn camera_pan
             camera_transform.translation.y += delta.y * projection.scale; // Y is inverted in screen space
         }
 
-        // Update the previous mouse position
         *previous_mouse_position = Some(current_mouse_pos);
     }
     else
     {
-        // Reset previous mouse position when the button is released
         *previous_mouse_position = None;
     }
 }
