@@ -3,7 +3,6 @@ name = "base"
 version = "0.1.0"
 edition = "2021"
 
-
 # ******************************************************
 # DO NOT ADD BEVY AS A DEPENDENCY HERE
 # ******************************************************
@@ -11,3 +10,6 @@ edition = "2021"
 [dependencies]
 arrayvec = { workspace = true }
 bitflags = { workspace = true }
+serde = { workspace = true }
+ron = { workspace = true }
+

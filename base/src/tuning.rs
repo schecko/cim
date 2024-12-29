@@ -1,13 +1,13 @@
 
+use crate::debug_name;
+
 pub trait Tuning
 {
     fn path() -> &'static std::path::Path;
 
-    // TODO easy load?
-    /*
-    fn load() -> Self
+    fn load() -> Self where Self: Sized + Default, for<'de> Self: serde::Deserialize<'de>
     {
-        let tuning = match bevyx::ron::read_sync(&std::path::Path::new("tuning/board_vis.ron"))
+        match crate::ronx::read_sync(Self::path())
         {
             Ok(tuning) =>
             {
@@ -15,11 +15,10 @@ pub trait Tuning
             },
             Err(err) =>
             {
-                eprintln!("vis::pre_startup -- Failed to load board_vis_tuning");
-                debug_assert!(false, "Failed to load board_vis_tuning");
-                BoardVisTuning::default()
+                eprintln!("{} -- Failed to load {}", debug_name!(), Self::path().display());
+                debug_assert!(false, "Failed to load {}", Self::path().display());
+                Self::default()
             }
-        };
+        }
     }
-    */
 }

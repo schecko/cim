@@ -1,10 +1,11 @@
 
 mod board_vis_tuning;
 
-use board_vis_tuning::*;
 use base::array2::*;
 use base::extents::*;
-use bevyx::ron::*;
+use base::ronx::*;
+use bevyx::ron::RonAssetPlugin;
+use board_vis_tuning::*;
 
 use base::tuning::Tuning;
 use bevy::prelude::*;
@@ -68,21 +69,7 @@ fn pre_startup
     mut commands: Commands,
 )
 {
-    let tuning = match bevyx::ron::read_sync(BoardVisTuning::path())
-    {
-        Ok(tuning) =>
-        {
-            tuning
-        },
-        Err(err) =>
-        {
-            eprintln!("vis::pre_startup -- Failed to load board_vis_tuning");
-            debug_assert!(false, "Failed to load board_vis_tuning");
-            BoardVisTuning::default()
-        }
-    };
-
-    commands.insert_resource(tuning);
+    commands.insert_resource(BoardVisTuning::load());
 }
 
 fn startup

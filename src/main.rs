@@ -13,7 +13,7 @@ fn find_assets_folder() -> Result<(), std::io::Error>
 
     while !current_dir.as_os_str().is_empty()
     {
-        let assets_path = current_dir.join(bevyx::helper::ASSETS_FOLDER);
+        let assets_path = current_dir.join(base::assets::ASSETS_FOLDER);
         if assets_path.is_dir()
         {
             std::env::set_current_dir(&current_dir)?;
