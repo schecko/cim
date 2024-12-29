@@ -68,11 +68,7 @@ fn camera_pan
     {
         if let Some(previous_mouse_pos) = *previous_mouse_position
         {
-            println!("current {} {}", current_mouse_pos.x, current_mouse_pos.y);
-            println!("previous {} {}", previous_mouse_pos.x, previous_mouse_pos.y);
             let delta = current_mouse_pos - previous_mouse_pos;
-            println!("delta {} {}", delta.x, delta.y);
-
             camera_transform.translation.x -= delta.x * projection.scale;
             camera_transform.translation.y += delta.y * projection.scale; // Y is inverted in screen space
         }
