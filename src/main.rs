@@ -45,8 +45,8 @@ fn setup
 
 fn camera_pan
 (
-    mut camera_query: Query<&mut Transform, With<Camera>>,
     mouse_buttons: Res<ButtonInput<MouseButton>>,
+    mut camera_query: Query<(&mut Transform, &mut OrthographicProjection), With<Camera2d>>,
     mut previous_mouse_position: Local<Option<Vec2>>,
     windows: Query<&Window>,
 )
@@ -55,11 +55,10 @@ fn camera_pan
     {
         return;
     };
-    let Ok(mut camera_transform) = camera_query.get_single_mut() else
+    let Ok((mut camera_transform, projection)) = camera_query.get_single_mut() else
     {
         return;
     };
-
     let Some(current_mouse_pos) = window.cursor_position() else
     {
         return;
@@ -74,8 +73,8 @@ fn camera_pan
             let delta = current_mouse_pos - previous_mouse_pos;
             println!("delta {} {}", delta.x, delta.y);
 
-            camera_transform.translation.x -= delta.x;
-            camera_transform.translation.y += delta.y; // Y is inverted in screen space
+            camera_transform.translation.x -= delta.x * projection.scale;
+            camera_transform.translation.y += delta.y * projection.scale; // Y is inverted in screen space
         }
 
         // Update the previous mouse position
@@ -95,7 +94,11 @@ fn camera_zoom
 )
 {
     use bevy::input::mouse::MouseScrollUnit;
-    let mut ortho = ortho_query.single_mut();
+    let Ok(mut ortho) = ortho_query.get_single_mut() else
+    {
+        return;
+    };
+
     for event in scroll_events.read()
     {
         match event.unit
