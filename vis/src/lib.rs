@@ -62,11 +62,34 @@ struct VisCell
     pos: (usize, usize),
 }
 
-fn setup
+fn pre_startup
+(
+    mut commands: Commands,
+)
+{
+    let tuning = match bevyx::ron::read_sync(&std::path::Path::new("tuning/board_vis.ron"))
+    {
+        Ok(tuning) =>
+        {
+            tuning
+        },
+        Err(err) =>
+        {
+            eprintln!("vis::pre_startup -- Failed to load board_vis_tuning");
+            debug_assert!(false, "Failed to load board_vis_tuning");
+            BoardVisTuning::default()
+        }
+    };
+
+    commands.insert_resource(tuning);
+}
+
+fn startup
 (
     mut commands: Commands,
     mut meshes: ResMut<Assets<Mesh>>,
     mut materials: ResMut<Assets<CustomMaterial>>,
+    vis_tuning: Res<BoardVisTuning>,
     asset_server: Res<AssetServer>,
 )
 {
@@ -84,12 +107,6 @@ fn setup
             color_texture: asset_server.load("textures/sample.png"),
         }
     );
-
-    let error = bevyx::ron::write_sync(&BoardVisTuning::default(), &std::path::Path::new("tuning/board_vis.ron"));
-    println!("write result: {:?}", error);
-    // TODO load directly? just instantitate instead?
-    // can't load sync?
-    let _board_vis_tuning = asset_server.load::<BoardVisTuning>("tuning/board_vis.ron");
 
     let v_pos = vec!
     [
@@ -127,10 +144,9 @@ fn setup
 
     let mesh_id = meshes.add(mesh);
 
-    let tuning = BoardVisTuning::default();
     for pos in size.positions_row_major()
     {
-        let scale = tuning.cell_size;
+        let scale = vis_tuning.cell_size;
         let translation = Vec2::new(pos.0 as f32, -(pos.1 as f32)) * scale; 
         commands
             .spawn
@@ -154,6 +170,7 @@ impl Plugin for GameVisPlugin
         app
             .add_plugins(RonAssetPlugin::<BoardVisTuning>::default())
             .add_plugins(Material2dPlugin::<CustomMaterial>::default())
-            .add_systems(Startup, setup);
+            .add_systems(PreStartup, pre_startup)
+            .add_systems(Startup, startup);
     }
 }

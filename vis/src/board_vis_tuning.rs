@@ -2,7 +2,7 @@
 use bevy::prelude::*;
 use bevy::reflect::TypePath;
 
-#[derive(serde::Deserialize, serde::Serialize, Asset, TypePath)]
+#[derive(serde::Deserialize, serde::Serialize, Asset, Resource, TypePath)]
 pub struct BoardVisTuning
 {
     pub cell_size: Vec2,
