@@ -6,6 +6,7 @@ use base::array2::*;
 use base::extents::*;
 use bevyx::ron::*;
 
+use base::tuning::Tuning;
 use bevy::prelude::*;
 use bevy::reflect::TypePath;
 use bevy::render::render_asset::*;
@@ -67,7 +68,7 @@ fn pre_startup
     mut commands: Commands,
 )
 {
-    let tuning = match bevyx::ron::read_sync(&std::path::Path::new("tuning/board_vis.ron"))
+    let tuning = match bevyx::ron::read_sync(BoardVisTuning::path())
     {
         Ok(tuning) =>
         {
