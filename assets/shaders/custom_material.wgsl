@@ -8,13 +8,13 @@
 @group(2) @binding(1) var elevation_texture: texture_2d<f32>;
 @group(2) @binding(2) var elevation_sampler: sampler;
 
-@group(2) @binding(3) var color_palette: texture_1d<f32>;
+@group(2) @binding(3) var color_palette: texture_2d<f32>; // bevy can't load 1d images natively, ugh
 @group(2) @binding(4) var palette_sampler: sampler;
 
 @fragment
 fn fragment(vert: VertexOutput) -> @location(0) vec4<f32>
 {
 	let elevation = textureSample(elevation_texture, elevation_sampler, vert.uv).r;
-	let color = textureSample(color_palette, palette_sampler, elevation);
+	let color = textureSample(color_palette, palette_sampler, vec2(elevation, 0.0));
     return tint * color;
 }

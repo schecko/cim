@@ -32,7 +32,8 @@ struct CustomMaterial
     #[sampler(2, sampler_type="filtering")]
     elevation: Handle<Image>,
 
-    #[texture(3, sample_type="float", dimension="1d")]
+    // should be 1d, but bevy can't load png as 1d
+    #[texture(3, sample_type="float", dimension="2d")]
     #[sampler(4, sampler_type="filtering")]
     color_palette: Handle<Image>,
 }
@@ -136,46 +137,13 @@ fn startup
         images.add(elevation_image)
     };
 
-    let palette_handle = {
-        let mut palette: Vec<u8> = vec![];
-        palette.resize(10 * size_of::<[f32; 4]>(), 0);
-        let palette_slice = bytemuck::cast_slice_mut::<u8, [f32; 4]>(&mut palette);
-        for i in 0..10
-        {
-            palette_slice[i] = bevy::color::Srgba::WHITE.to_vec4()
-                .lerp(bevy::color::Srgba::BLACK.to_vec4(), i as f32 / 9.0)
-                .to_array();
-        }
-        let mut palette_image = Image::new
-        (
-            Extent3d{ width: 10 as u32, height: 1, depth_or_array_layers: 1 },
-            TextureDimension::D1,
-            palette,
-            TextureFormat::Rgba32Float,
-            RenderAssetUsages::RENDER_WORLD
-        );
-        palette_image.sampler = bevy::image::ImageSampler::Descriptor
-        (
-            bevy::image::ImageSamplerDescriptor {
-                label: Some("palette".to_owned()),
-                mag_filter: bevy::image::ImageFilterMode::Nearest,
-                min_filter: bevy::image::ImageFilterMode::Nearest,
-                mipmap_filter: bevy::image::ImageFilterMode::Nearest,
-                ..Default::default()
-            }
-        );
-
-        images.add(palette_image)
-    };
-
     let custom_material = materials.add
     (
         CustomMaterial
         {
             color: Color::WHITE.into(),
             elevation: elevation_handle,
-            color_palette: palette_handle,
-                // asset_server.load("textures/sample.png"),
+            color_palette: asset_server.load("textures/palette.png"),
         }
     );
 
