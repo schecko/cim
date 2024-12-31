@@ -9,6 +9,7 @@ sim = { path = "../sim" }
 base = { path = "../base" }
 
 bevy = { workspace = true }
-serde = { workspace = true }
 bitflags = { workspace = true }
+bytemuck = { workspace = true }
+serde = { workspace = true }
 

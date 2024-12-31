@@ -27,8 +27,8 @@ struct CustomMaterial
 {
     #[uniform(0)]
     color: LinearRgba,
-    #[texture(1)]
-    #[sampler(2)]
+    #[texture(1, sample_type="float")]
+    #[sampler(2, sampler_type="filtering")]
     color_texture: Handle<Image>,
 }
 
@@ -72,36 +72,79 @@ fn pre_startup
     commands.insert_resource(BoardVisTuning::load());
 }
 
+#[derive(Debug, Resource)]
+struct TerrainData
+{
+
+}
+
 fn startup
 (
     mut commands: Commands,
     mut meshes: ResMut<Assets<Mesh>>,
     mut materials: ResMut<Assets<CustomMaterial>>,
+    mut images: ResMut<Assets<Image>>,
     vis_tuning: Res<BoardVisTuning>,
     asset_server: Res<AssetServer>,
 )
 {
-    let size = Extents::new(10, 10);
+    let size = Extents::new(20, 20);
     let mut vis = BoardVis
     {
         cell_type: Array2::<CellType>::from_size(size),
     };
+
+    let mut elevation: Vec<u8> = vec![];
+    elevation.resize(size.width * size.height * size_of::<u32>(), 0);
+    let elevation_slice = bytemuck::cast_slice_mut::<u8, u32>(&mut elevation);
+    for i in 0..(size.width * size.height)
+    {
+        elevation_slice[i] = if i & 1 != 0
+        {
+            0xFF
+        }
+        else
+        {
+            0x0
+        };
+    }
+    let mut elevation_image = Image::new
+    (
+        Extent3d{ width: size.width as u32, height: size.height as u32, depth_or_array_layers: 1 },
+        TextureDimension::D2,
+        elevation,
+        TextureFormat::Rgba8Unorm,
+        RenderAssetUsages::RENDER_WORLD
+    );
+    elevation_image.sampler = bevy::image::ImageSampler::Descriptor
+    (
+        bevy::image::ImageSamplerDescriptor {
+            label: Some("elevation".to_owned()),
+            mag_filter: bevy::image::ImageFilterMode::Nearest,
+            min_filter: bevy::image::ImageFilterMode::Nearest,
+            mipmap_filter: bevy::image::ImageFilterMode::Nearest,
+            ..Default::default()
+        }
+    );
+    let elevation_handle = images.add(elevation_image);
 
     let custom_material = materials.add
     (
         CustomMaterial
         {
             color: Color::WHITE.into(),
-            color_texture: asset_server.load("textures/sample.png"),
+            color_texture: elevation_handle,
+                // asset_server.load("textures/sample.png"),
         }
     );
 
+    let scale = vis_tuning.cell_size * Vec2::new(size.width as f32, size.height as f32);
     let v_pos = vec!
     [
-        [0.0, 0.0, 0.0], // TL
-        [1.0, 0.0, 0.0], // TR
-        [0.0, 1.0, 0.0], // BL
-        [1.0, 1.0, 0.0], // BR
+        [0.0 * scale.x, 0.0 * scale.y, 0.0], // TL
+        [1.0 * scale.x, 0.0 * scale.y, 0.0], // TR
+        [0.0 * scale.x, 1.0 * scale.y, 0.0], // BL
+        [1.0 * scale.x, 1.0 * scale.y, 0.0], // BR
     ];
     let v_color: Vec<[f32; 4]> = vec![LinearRgba::WHITE.to_f32_array(); 4];
     let v_uv: Vec<[f32; 2]> = vec!
@@ -132,21 +175,13 @@ fn startup
 
     let mesh_id = meshes.add(mesh);
 
-    for pos in size.positions_row_major()
-    {
-        let scale = vis_tuning.cell_size;
-        let translation = Vec2::new(pos.0 as f32, -(pos.1 as f32)) * scale; 
-        commands
-            .spawn
-            ((
-                Mesh2d(mesh_id.clone().into()),
-                MeshMaterial2d(custom_material.clone().into()),
-                Transform::default()
-                    .with_translation(translation.extend(0.0))
-                    .with_scale(scale.extend(0.0)),
-            ))
-            .insert(VisCell{ index: size.get_index_row_major(pos.0, pos.1).unwrap(), pos });
-    }
+    commands
+        .spawn
+        ((
+            Mesh2d(mesh_id.into()),
+            MeshMaterial2d(custom_material.into()),
+            Transform::default(),
+        ));
 }
 
 pub struct GameVisPlugin;

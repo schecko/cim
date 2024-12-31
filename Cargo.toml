@@ -18,6 +18,7 @@ bitflags = "2.6.0"
 ron = "0.8.1"
 serde = "1.0.215"
 thiserror = "2.0.6"
+bytemuck = "1.21.0"
 
 # Enable optimizations for dependencies
 [profile.dev.package."*"]
