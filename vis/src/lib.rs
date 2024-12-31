@@ -94,30 +94,34 @@ fn startup
     asset_server: Res<AssetServer>,
 )
 {
-    let size = Extents::new(20, 20);
+    let size = Extents::new(5, 5);
     let mut vis = BoardVis
     {
         cell_type: Array2::<CellType>::from_size(size),
     };
+    *vis.cell_type.get_mut(0, 0).unwrap() = CellType::Land;
+    *vis.cell_type.get_mut(4, 4).unwrap() = CellType::Land;
 
     let elevation_handle = {
+        const height_map_scale: u32 = 4;
+        let elevation_size = Extents::new(size.width * height_map_scale as usize, size.height * height_map_scale as usize);
         let mut elevation: Vec<u8> = vec![];
-        elevation.resize(size.width * size.height * size_of::<u32>(), 0);
+        elevation.resize(elevation_size.width * elevation_size.height * size_of::<u32>(), 0);
         let elevation_slice = bytemuck::cast_slice_mut::<u8, u32>(&mut elevation);
-        for i in 0..(size.width * size.height)
+        for y in 0..(elevation_size.height as usize)
         {
-            elevation_slice[i] = if i & 1 != 0
+            for x in 0..(elevation_size.width as usize)
             {
-                0xFF
+                let cell = vis.cell_type.get(x / height_map_scale as usize, y / height_map_scale as usize).unwrap();
+                elevation_slice[y * elevation_size.width + x] = if *cell == CellType::Land { 0xFF } else { 0x0 };
             }
-            else
-            {
-                0x0
-            };
         }
         let mut elevation_image = Image::new
         (
-            Extent3d{ width: size.width as u32, height: size.height as u32, depth_or_array_layers: 1 },
+            Extent3d{
+                width: size.width as u32 * height_map_scale as u32,
+                height: size.height as u32 * height_map_scale as u32,
+                depth_or_array_layers: 1 },
             TextureDimension::D2,
             elevation,
             TextureFormat::Rgba8Unorm,

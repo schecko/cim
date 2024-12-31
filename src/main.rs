@@ -105,7 +105,7 @@ fn camera_zoom
             }
         }
     }
-    ortho.scale = ortho.scale.clamp(0.5, 5.0);
+    ortho.scale = ortho.scale.clamp(0.01, 5.0);
 }
 
 fn main()
