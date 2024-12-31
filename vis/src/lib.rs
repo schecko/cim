@@ -4,10 +4,11 @@ mod board_vis_tuning;
 use base::array2::*;
 use base::extents::*;
 use base::ronx::*;
+use base::tuning::Tuning;
 use bevyx::ron::RonAssetPlugin;
 use board_vis_tuning::*;
 
-use base::tuning::Tuning;
+use bevy::math::VectorSpace;
 use bevy::prelude::*;
 use bevy::reflect::TypePath;
 use bevy::render::render_asset::*;
@@ -29,7 +30,11 @@ struct CustomMaterial
     color: LinearRgba,
     #[texture(1, sample_type="float")]
     #[sampler(2, sampler_type="filtering")]
-    color_texture: Handle<Image>,
+    elevation: Handle<Image>,
+
+    #[texture(3, sample_type="float", dimension="1d")]
+    #[sampler(4, sampler_type="filtering")]
+    color_palette: Handle<Image>,
 }
 
 impl Material2d for CustomMaterial
@@ -94,46 +99,82 @@ fn startup
         cell_type: Array2::<CellType>::from_size(size),
     };
 
-    let mut elevation: Vec<u8> = vec![];
-    elevation.resize(size.width * size.height * size_of::<u32>(), 0);
-    let elevation_slice = bytemuck::cast_slice_mut::<u8, u32>(&mut elevation);
-    for i in 0..(size.width * size.height)
-    {
-        elevation_slice[i] = if i & 1 != 0
+    let elevation_handle = {
+        let mut elevation: Vec<u8> = vec![];
+        elevation.resize(size.width * size.height * size_of::<u32>(), 0);
+        let elevation_slice = bytemuck::cast_slice_mut::<u8, u32>(&mut elevation);
+        for i in 0..(size.width * size.height)
         {
-            0xFF
+            elevation_slice[i] = if i & 1 != 0
+            {
+                0xFF
+            }
+            else
+            {
+                0x0
+            };
         }
-        else
+        let mut elevation_image = Image::new
+        (
+            Extent3d{ width: size.width as u32, height: size.height as u32, depth_or_array_layers: 1 },
+            TextureDimension::D2,
+            elevation,
+            TextureFormat::Rgba8Unorm,
+            RenderAssetUsages::RENDER_WORLD
+        );
+        elevation_image.sampler = bevy::image::ImageSampler::Descriptor
+        (
+            bevy::image::ImageSamplerDescriptor {
+                label: Some("elevation".to_owned()),
+                mag_filter: bevy::image::ImageFilterMode::Nearest,
+                min_filter: bevy::image::ImageFilterMode::Nearest,
+                mipmap_filter: bevy::image::ImageFilterMode::Nearest,
+                ..Default::default()
+            }
+        );
+
+        images.add(elevation_image)
+    };
+
+    let palette_handle = {
+        let mut palette: Vec<u8> = vec![];
+        palette.resize(10 * size_of::<[f32; 4]>(), 0);
+        let palette_slice = bytemuck::cast_slice_mut::<u8, [f32; 4]>(&mut palette);
+        for i in 0..10
         {
-            0x0
-        };
-    }
-    let mut elevation_image = Image::new
-    (
-        Extent3d{ width: size.width as u32, height: size.height as u32, depth_or_array_layers: 1 },
-        TextureDimension::D2,
-        elevation,
-        TextureFormat::Rgba8Unorm,
-        RenderAssetUsages::RENDER_WORLD
-    );
-    elevation_image.sampler = bevy::image::ImageSampler::Descriptor
-    (
-        bevy::image::ImageSamplerDescriptor {
-            label: Some("elevation".to_owned()),
-            mag_filter: bevy::image::ImageFilterMode::Nearest,
-            min_filter: bevy::image::ImageFilterMode::Nearest,
-            mipmap_filter: bevy::image::ImageFilterMode::Nearest,
-            ..Default::default()
+            palette_slice[i] = bevy::color::Srgba::WHITE.to_vec4()
+                .lerp(bevy::color::Srgba::BLACK.to_vec4(), i as f32 / 9.0)
+                .to_array();
         }
-    );
-    let elevation_handle = images.add(elevation_image);
+        let mut palette_image = Image::new
+        (
+            Extent3d{ width: 10 as u32, height: 1, depth_or_array_layers: 1 },
+            TextureDimension::D1,
+            palette,
+            TextureFormat::Rgba32Float,
+            RenderAssetUsages::RENDER_WORLD
+        );
+        palette_image.sampler = bevy::image::ImageSampler::Descriptor
+        (
+            bevy::image::ImageSamplerDescriptor {
+                label: Some("palette".to_owned()),
+                mag_filter: bevy::image::ImageFilterMode::Nearest,
+                min_filter: bevy::image::ImageFilterMode::Nearest,
+                mipmap_filter: bevy::image::ImageFilterMode::Nearest,
+                ..Default::default()
+            }
+        );
+
+        images.add(palette_image)
+    };
 
     let custom_material = materials.add
     (
         CustomMaterial
         {
             color: Color::WHITE.into(),
-            color_texture: elevation_handle,
+            elevation: elevation_handle,
+            color_palette: palette_handle,
                 // asset_server.load("textures/sample.png"),
         }
     );
