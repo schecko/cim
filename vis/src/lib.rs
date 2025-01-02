@@ -120,7 +120,9 @@ fn blur<T, const N: usize>(data: &mut Array2<T>, kernel: &[T; N], passes: u32)
 
 fn guassian_blur(data: &mut Array2<f32>, passes: u32)
 {
-    blur(data, &[0.25, 0.5, 0.25], passes)
+    // blur(data, &[0.25, 0.5, 0.25], passes)
+    // blur(data, &[0.27406862, 0.45186276, 0.27406862], passes)
+    blur(data, &[0.06136, 0.24477, 0.38774, 0.24477, 0.06136], passes)
 }
 
 fn startup
@@ -158,7 +160,7 @@ fn startup
                 { 0.0 };
         }
 
-        guassian_blur(&mut height_map, 1);
+        guassian_blur(&mut height_map, 2);
 
         let elevation_size = height_map.size();
         let mut elevation: Vec<u8> = vec![];
