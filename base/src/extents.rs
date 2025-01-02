@@ -26,37 +26,39 @@ bitflags!
     }
 }
 
+pub type Point = (isize, isize);
 
 #[derive(Debug, Clone, Copy, Eq, PartialEq, Hash)]
 pub struct Extents
 {
-    pub width: usize,
-    pub height: usize,
+    pub width: isize,
+    pub height: isize,
 }
 
 #[allow(dead_code)]
 impl Extents
 {
-    pub fn new(width: usize, height: usize) -> Self
+    pub fn new(width: isize, height: isize) -> Self
     {
+        assert!(width > 0 && height > 0);
         Extents{ width, height }
     }
 
     pub fn num_elements(&self) -> usize
     {
-        self.width * self.height
+        (self.width * self.height) as usize
     }
 
-    pub fn is_valid_pos(&self, x: usize, y: usize) -> bool
+    pub fn is_valid_pos(&self, x: isize, y: isize) -> bool
     {
-        return y < self.height && x < self.width;
+        return y >= 0 && y < self.height && x >= 0 && x < self.width;
     }
 
-    pub fn get_index_row_major(&self, x: usize, y: usize) -> Option<usize>
+    pub fn get_index_row_major(&self, x: isize, y: isize) -> Option<usize>
     {
         if self.is_valid_pos(x, y)
         {
-            Some(y * self.width + x)
+            Some((y * self.width + x) as usize)
         }
         else
         {
@@ -73,34 +75,34 @@ impl Extents
 
     pub fn positions_row_major(
         self,
-    ) -> impl DoubleEndedIterator<Item = (usize, usize)> + Clone
+    ) -> impl DoubleEndedIterator<Item = Point> + Clone
     {
         (0..self.height).flat_map(move |y| (0..self.width).map(move |x| (x, y)))
     }
 
     pub fn positions_column_major(
         self,
-    ) -> impl DoubleEndedIterator<Item = (usize, usize)> + Clone
+    ) -> impl DoubleEndedIterator<Item = Point> + Clone
     {
         (0..self.width).flat_map(move |x| (0..self.height).map(move |y| (x, y)))
     }
 
     pub fn neighbours<const FLAGS: u8>(
         &self,
-        x: usize,
-        y: usize,
-    ) -> impl DoubleEndedIterator<Item = (usize, usize)> + Clone
+        x: isize,
+        y: isize,
+    ) -> impl DoubleEndedIterator<Item = Point> + Clone
     {
-        let mut neigh = ArrayVec::<(usize, usize), 8>::new();
+        let mut neigh = ArrayVec::<(isize, isize), 8>::new();
 
         let can_add = |neighbour_position: Neighbours| -> bool
         {
             Neighbours::from_bits_retain( FLAGS ) & neighbour_position != Neighbours::None
         };
 
-        let mut try_add = |x: usize, y: usize|
+        let mut try_add = |x: isize, y: isize|
         {
-            if self.is_valid_pos( x, y )
+            if self.is_valid_pos(x, y)
             {
                 neigh.push((x, y));
             }
@@ -121,9 +123,9 @@ impl Extents
     }
 }
 
-impl From<(usize, usize)> for Extents
+impl From<(isize, isize)> for Extents
 {
-    fn from(tuple: (usize, usize)) -> Self
+    fn from(tuple: (isize, isize)) -> Self
     {
         Self {
             width: tuple.0,
@@ -138,8 +140,8 @@ mod tests
     use super::*;
 
     fn check_iterators(
-        a: impl DoubleEndedIterator<Item = (usize, usize)> + Clone,
-        b: impl DoubleEndedIterator<Item = (usize, usize)> + Clone
+        a: impl DoubleEndedIterator<Item = Point> + Clone,
+        b: impl DoubleEndedIterator<Item = Point> + Clone
     )
     {
         assert_eq!(a.clone().count(), b.clone().count());
@@ -157,7 +159,7 @@ mod tests
         let size = Extents::new( 2, 2 );
         check_iterators(
             size.positions_column_major(),
-            [(0_usize, 0_usize), (1, 0), (1, 0), (1, 1)].into_iter() // wrong pos
+            [(0_isize, 0_isize), (1, 0), (1, 0), (1, 1)].into_iter() // wrong pos
         );
     }
 
@@ -168,7 +170,7 @@ mod tests
         let size = Extents::new( 2, 2 );
         check_iterators(
             size.positions_column_major(),
-            [(0_usize, 0_usize), (1, 1)].into_iter() // too short
+            [(0_isize, 0_isize), (1, 1)].into_iter() // too short
         );
     }
 
@@ -179,7 +181,7 @@ mod tests
         let size = Extents::new( 2, 2 );
         check_iterators(
             size.positions_row_major(),
-            [(0_usize, 0_usize), (1, 0), (0, 1), (1, 1)].into_iter()
+            [(0_isize, 0_isize), (1, 0), (0, 1), (1, 1)].into_iter()
         );
     }
 
@@ -189,7 +191,7 @@ mod tests
         let size = Extents::new( 2, 2 );
         check_iterators(
             size.positions_column_major(),
-            [(0_usize, 0_usize), (0, 1), (1, 0), (1, 1)].into_iter()
+            [(0_isize, 0_isize), (0, 1), (1, 0), (1, 1)].into_iter()
         );
     }
 

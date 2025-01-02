@@ -1,4 +1,5 @@
 use crate::extents::Extents;
+use crate::extents::Point;
 
 use std::fmt::Display;
 use std::fmt::Formatter;
@@ -15,7 +16,7 @@ pub struct Array2<T>
 #[derive(Debug, Eq, PartialEq)]
 pub enum Error
 {
-    IndicesOutOfBounds(usize, usize),
+    IndicesOutOfBounds(isize, isize),
     IndexOutOfBounds(usize),
     DimensionMismatch,
     NotEnoughValues,
@@ -40,12 +41,12 @@ impl std::error::Error for Error {}
 #[allow(dead_code)]
 impl<T> Array2<T>
 {
-    pub fn new(width: usize, height: usize) -> Self
+    pub fn new(width: isize, height: isize) -> Self
     where
         T: Clone + Default,
     {
         let total_len = width * height;
-        let array = vec![T::default(); total_len];
+        let array = vec![T::default(); total_len as usize];
         Array2 {
             array,
             size: (width, height).into(),
@@ -61,40 +62,6 @@ impl<T> Array2<T>
             array,
             size,
         }
-    }
-
-    pub fn from_rows(values: &[Vec<T>]) -> Result<Self, Error>
-    where
-        T: Clone,
-    {
-        let width = values.get(0).map(Vec::len).unwrap_or(0);
-        if values.iter().any(|row| row.len() != width)
-        {
-            return Err(Error::DimensionMismatch);
-        }
-        Ok(Array2 {
-            array: flatten(values),
-            size: (width, values.len()).into(),
-        })
-    }
-
-    pub fn from_columns(values: &[Vec<T>]) -> Result<Self, Error>
-    where
-        T: Clone,
-    {
-        let column_len = values.get(0).map(Vec::len).unwrap_or(0);
-        if !values.iter().all(|column| column.len() == column_len)
-        {
-            return Err(Error::DimensionMismatch);
-        }
-        let size = Extents::new( values.len(), column_len );
-        let array = size.positions_row_major()
-            .map(|(x, y)| values[y][x].clone())
-            .collect();
-        Ok(Array2 {
-            array,
-            size,
-        })
     }
 
     pub fn from_row_major(
@@ -116,21 +83,18 @@ impl<T> Array2<T>
 
     pub fn from_column_major(
         values: &[T],
-        width: usize,
-        height: usize,
+        size: Extents,
     ) -> Result<Self, Error>
     where
         T: Clone,
     {
-        let total_len = width * height;
-        if total_len != values.len()
+        if size.num_elements() != values.len()
         {
             return Err(Error::DimensionMismatch);
         }
-        let size = Extents{ width, height };
         let array = size.positions_row_major()
             .map(|(x, y)| {
-                let index = y * height + x;
+                let index = (y * size.height + x) as usize;
                 values[index].clone()
             })
             .collect();
@@ -140,71 +104,65 @@ impl<T> Array2<T>
         })
     }
 
-    pub fn filled_with(element: T, width: usize, height: usize) -> Self
+    pub fn filled_with(element: T, size: Extents) -> Self
     where
         T: Clone,
     {
-        let total_len = width * height;
-        let array = vec![element; total_len];
+        let array = vec![element; size.num_elements()];
         Array2 {
             array,
-            size: (width, height).into(),
+            size
         }
     }
 
-    pub fn filled_by<F>(mut generator: F, width: usize, height: usize) -> Self
+    pub fn filled_by<F>(mut generator: F, size: Extents) -> Self
     where
         F: FnMut() -> T,
     {
-        let total_len = width * height;
-        let array = (0..total_len).map(|_| generator()).collect();
+        let array = (0..size.num_elements()).map(|_| generator()).collect();
         Array2 {
             array,
-            size: (width, height).into(),
+            size
         }
     }
 
     pub fn from_iter_row_major<I>(
         iterator: I,
-        width: usize,
-        height: usize,
+        size: Extents,
     ) -> Result<Self, Error>
     where
         I: Iterator<Item = T>,
     {
-        let total_len = width * height;
-        let array = iterator.take(total_len).collect::<Vec<_>>();
-        if array.len() != total_len
+        let array = iterator.take(size.num_elements()).collect::<Vec<_>>();
+        if array.len() != size.num_elements()
         {
             return Err(Error::NotEnoughValues);
         }
         Ok(Array2 {
             array,
-            size: (width, height).into(),
+            size
         })
     }
 
     pub fn from_iter_column_major<I>(
         iterator: I,
-        width: usize,
-        height: usize,
+        size: Extents
     ) -> Result<Self, Error>
     where
         I: Iterator<Item = T>,
         T: Clone,
     {
-        let total_len = width * height;
-        let array_column_major = iterator.take(total_len).collect::<Vec<_>>();
-        Array2::from_column_major(&array_column_major, width, height)
+        let array_column_major = iterator.take(size.num_elements()).collect::<Vec<_>>();
+        Array2::from_column_major(&array_column_major, size)
             .map_err(|_| Error::NotEnoughValues)
     }
 
-    pub fn height(&self) -> usize
+    pub fn height(&self) -> isize
     {
         self.size.height
     }
 
-    pub fn width(&self) -> usize
+    pub fn width(&self) -> isize
     {
         self.size.width
     }
@@ -214,17 +172,12 @@ impl<T> Array2<T>
         self.size
     }
 
-    pub fn num_values(&self) -> usize
-    {
-        self.size.height * self.size.width
-    }
-
-    pub fn get(&self, x: usize, y: usize) -> Option<&T>
+    pub fn get(&self, x: isize, y: isize) -> Option<&T>
     {
         self.size.get_index_row_major(x, y).map(|index| &self.array[index])
     }
 
-    pub fn get_index(&self, x: usize, y: usize) -> Option<usize>
+    pub fn get_index(&self, x: isize, y: isize) -> Option<usize>
     {
         self.size.get_index_row_major(x, y)
     }
@@ -236,12 +189,12 @@ impl<T> Array2<T>
 
     pub fn get_column_major(&self, index: usize) -> Option<&T>
     {
-        let x = dbg!(index % self.size.height);
-        let y = dbg!(dbg!(index) / self.size.height);
+        let x = dbg!(index as isize % self.size.height);
+        let y = dbg!(dbg!(index as isize) / self.size.height);
         self.get(x, y)
     }
 
-    pub fn get_mut(&mut self, x: usize, y: usize) -> Option<&mut T>
+    pub fn get_mut(&mut self, x: isize, y: isize) -> Option<&mut T>
     {
         self.get_index(x, y)
             .map(move |index| &mut self.array[index])
@@ -254,12 +207,12 @@ impl<T> Array2<T>
 
     pub fn get_mut_column_major(&mut self, index: usize) -> Option<&mut T>
     {
-        let x = index % self.size.height;
-        let y = index / self.size.height;
+        let x = index as isize % self.size.height;
+        let y = index as isize / self.size.height;
         self.get_mut(x, y)
     }
 
-    pub fn set(&mut self, x: usize, y: usize, element: T) -> Result<(), Error>
+    pub fn set(&mut self, x: isize, y: isize, element: T) -> Result<(), Error>
     {
         self.get_mut(x, y)
             .map(|e|
@@ -297,18 +250,18 @@ impl<T> Array2<T>
         self.indices_column_major().map(move |i| &self[i])
     }
 
-    pub fn row_iter(&self, y: usize) -> Result<impl DoubleEndedIterator<Item = &T> + Clone, Error>
+    pub fn row_iter(&self, y: isize) -> Result<impl DoubleEndedIterator<Item = &T> + Clone, Error>
     {
         let start = self
             .get_index(0, y)
             .ok_or(Error::IndicesOutOfBounds(0, y))?;
-        let end = start + self.size.width;
+        let end = start + (self.size.width as usize);
         Ok(self.array[start..end].iter())
     }
 
     pub fn column_iter(
         &self,
-        x: usize,
+        x: isize,
     ) -> Result<impl DoubleEndedIterator<Item = &T> + Clone, Error>
     {
         if x >= self.size.width
@@ -354,45 +307,45 @@ impl<T> Array2<T>
         self.elements_column_major_iter().cloned().collect()
     }
 
-    pub fn positions_row_major(&self) -> impl DoubleEndedIterator<Item = (usize, usize)> + Clone
+    pub fn positions_row_major(&self) -> impl DoubleEndedIterator<Item = Point> + Clone
     {
         self.size.positions_row_major()
     }
 
-    pub fn indices_column_major(&self) -> impl DoubleEndedIterator<Item = (usize, usize)> + Clone
+    pub fn indices_column_major(&self) -> impl DoubleEndedIterator<Item = Point> + Clone
     {
         self.size.positions_column_major()
     }
 
     pub fn enumerate_row_major(
         &self,
-    ) -> impl DoubleEndedIterator<Item = ((usize, usize), &T)> + Clone
+    ) -> impl DoubleEndedIterator<Item = (Point, &T)> + Clone
     {
         self.positions_row_major().map(move |i| (i, &self[i]))
     }
 
     pub fn enumerate_column_major(
         &self,
-    ) -> impl DoubleEndedIterator<Item = ((usize, usize), &T)> + Clone
+    ) -> impl DoubleEndedIterator<Item = (Point, &T)> + Clone
     {
         self.indices_column_major().map(move |i| (i, &self[i]))
     }
 }
 
-impl<T> Index<(usize, usize)> for Array2<T>
+impl<T> Index<Point> for Array2<T>
 {
     type Output = T;
 
-    fn index(&self, (x, y): (usize, usize)) -> &Self::Output
+    fn index(&self, (x, y): Point) -> &Self::Output
     {
         self.get(x, y)
             .unwrap_or_else(|| panic!("Array2 -- Index indices {}, {} out of bounds", x, y))
     }
 }
 
-impl<T> IndexMut<(usize, usize)> for Array2<T>
+impl<T> IndexMut<Point> for Array2<T>
 {
-    fn index_mut(&mut self, (x, y): (usize, usize)) -> &mut Self::Output
+    fn index_mut(&mut self, (x, y): Point) -> &mut Self::Output
     {
         self.get_mut(x, y)
             .unwrap_or_else(|| panic!("Array2 -- Index mut indices {}, {} out of bounds", x, y))

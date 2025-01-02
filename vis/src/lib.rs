@@ -77,6 +77,52 @@ struct TerrainData
 
 }
 
+fn blur<T, const N: usize>(data: &mut Array2<T>, kernel: &[T; N], passes: u32)
+    where T: Default + Copy + std::ops::AddAssign + std::ops::Mul<Output = T>
+{
+    assert!(N & 1 != 0); // N must be odd
+
+    let size = data.size();
+    let mut temp = Array2::<T>::from_size(size);
+    let delta = N as isize / 2;
+
+    for _ in 0..passes
+    {
+        // hori pass
+        for (x, y) in data.positions_row_major()
+        {
+            let mut acc = T::default();
+            for d in -delta..=delta
+            {
+                if let Some(&read) = data.get(x+d, y)
+                {
+                    acc += read * kernel[(delta + d) as usize];
+                }
+            }
+            temp[(x,y)] = acc;
+        }
+
+        // vert pass
+        for (x, y) in data.positions_row_major()
+        {
+            let mut acc = T::default();
+            for d in -delta..=delta
+            {
+                if let Some(&read) = temp.get(x, y+d)
+                {
+                    acc += read * kernel[(delta + d) as usize];
+                }
+            }
+            data[(x,y)] = acc;
+        }
+    }
+}
+
+fn guassian_blur(data: &mut Array2<f32>, passes: u32)
+{
+    blur(data, &[0.25, 0.5, 0.25], passes)
+}
+
 fn startup
 (
     mut commands: Commands,
@@ -93,37 +139,40 @@ fn startup
         cell_type: Array2::<CellType>::from_size(size),
     };
     *vis.cell_type.get_mut(0, 0).unwrap() = CellType::Land;
+    *vis.cell_type.get_mut(2, 2).unwrap() = CellType::Land;
     *vis.cell_type.get_mut(4, 4).unwrap() = CellType::Land;
 
     let elevation_handle = {
-        const height_map_scale: usize = 4;
-        let mut height_map = Array2::<u8>::new
+        const height_map_scale: isize = 4;
+        let mut height_map = Array2::<f32>::new
         (
-            size.width * height_map_scale as usize,
-            size.height * height_map_scale as usize
+            size.width * height_map_scale,
+            size.height * height_map_scale
         );
 
         for (x, y) in height_map.positions_row_major()
         {
             height_map[(x, y)] = if vis.cell_type[(x / height_map_scale, y / height_map_scale)] == CellType::Land
-                { 0xFF }
+                { 1.0 }
                 else
-                { 0x00 };
+                { 0.0 };
         }
+
+        guassian_blur(&mut height_map, 1);
 
         let elevation_size = height_map.size();
         let mut elevation: Vec<u8> = vec![];
-        elevation.resize(elevation_size.width * elevation_size.height * size_of::<u32>(), 0);
+        elevation.resize(elevation_size.width as usize * elevation_size.height as usize * size_of::<u32>(), 0);
         let elevation_slice = bytemuck::cast_slice_mut::<u8, u32>(&mut elevation);
         for i in 0..elevation_size.num_elements()
         {
-            elevation_slice[i] = height_map[i] as u32;
+            elevation_slice[i] = (height_map[i].clamp(0.0, 1.0) * 255.0) as u32;
         }
         let mut elevation_image = Image::new
         (
             Extent3d{
-                width: size.width as u32 * height_map_scale as u32,
-                height: size.height as u32 * height_map_scale as u32,
+                width: elevation_size.width as u32,
+                height: elevation_size.height as u32,
                 depth_or_array_layers: 1 },
             TextureDimension::D2,
             elevation,
