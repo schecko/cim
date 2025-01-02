@@ -399,6 +399,24 @@ impl<T> IndexMut<(usize, usize)> for Array2<T>
     }
 }
 
+impl<T> Index<usize> for Array2<T>
+{
+    type Output = T;
+
+    fn index(&self, i: usize) -> &Self::Output
+    {
+        &self.array[i]
+    }
+}
+
+impl<T> IndexMut<usize> for Array2<T>
+{
+    fn index_mut(&mut self, i: usize) -> &mut Self::Output
+    {
+        &mut self.array[i]
+    }
+}
+
 fn flatten<T: Clone>(nested: &[Vec<T>]) -> Vec<T>
 {
     nested.iter().flat_map(|row| row.clone()).collect()

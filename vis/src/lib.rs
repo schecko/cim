@@ -63,13 +63,6 @@ struct BoardVis
     cell_type: Array2<CellType>,
 }
 
-#[derive(Debug, Clone, Copy, Component)]
-struct VisCell
-{
-    index: usize,
-    pos: (usize, usize),
-}
-
 fn pre_startup
 (
     mut commands: Commands,
@@ -103,18 +96,28 @@ fn startup
     *vis.cell_type.get_mut(4, 4).unwrap() = CellType::Land;
 
     let elevation_handle = {
-        const height_map_scale: u32 = 4;
-        let elevation_size = Extents::new(size.width * height_map_scale as usize, size.height * height_map_scale as usize);
+        const height_map_scale: usize = 4;
+        let mut height_map = Array2::<u8>::new
+        (
+            size.width * height_map_scale as usize,
+            size.height * height_map_scale as usize
+        );
+
+        for (x, y) in height_map.positions_row_major()
+        {
+            height_map[(x, y)] = if vis.cell_type[(x / height_map_scale, y / height_map_scale)] == CellType::Land
+                { 0xFF }
+                else
+                { 0x00 };
+        }
+
+        let elevation_size = height_map.size();
         let mut elevation: Vec<u8> = vec![];
         elevation.resize(elevation_size.width * elevation_size.height * size_of::<u32>(), 0);
         let elevation_slice = bytemuck::cast_slice_mut::<u8, u32>(&mut elevation);
-        for y in 0..(elevation_size.height as usize)
+        for i in 0..elevation_size.num_elements()
         {
-            for x in 0..(elevation_size.width as usize)
-            {
-                let cell = vis.cell_type.get(x / height_map_scale as usize, y / height_map_scale as usize).unwrap();
-                elevation_slice[y * elevation_size.width + x] = if *cell == CellType::Land { 0xFF } else { 0x0 };
-            }
+            elevation_slice[i] = height_map[i] as u32;
         }
         let mut elevation_image = Image::new
         (
