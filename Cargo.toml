@@ -14,12 +14,13 @@ members = [
 [workspace.dependencies]
 arrayvec = "0.7.6"
 bevy = { version = "0.15.0", features = ["default", "bevy_dev_tools"] }
+bevy_egui = "0.31.1"
 bitflags = "2.6.0"
+bytemuck = "1.21.0"
+num-traits = "0.2.19"
 ron = "0.8.1"
 serde = "1.0.215"
 thiserror = "2.0.6"
-bytemuck = "1.21.0"
-num-traits = "0.2.19"
 
 # Enable optimizations for dependencies
 [profile.dev.package."*"]
@@ -27,10 +28,12 @@ opt-level = 3
 
 [dependencies]
 bevy = { workspace = true }
+bevy_egui = { workspace = true }
 ron = { workspace = true }
 serde = { workspace = true }
 thiserror = { workspace = true }
-sim = { path = "sim" }
-vis = { path = "vis" }
+
 base = { path = "base" }
 bevyx = { path = "bevyx" }
+sim = { path = "sim" }
+vis = { path = "vis" }

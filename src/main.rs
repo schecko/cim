@@ -4,8 +4,14 @@ use bevy::dev_tools::fps_overlay::FpsOverlayPlugin;
 use bevy::input::mouse::MouseWheel;
 use bevy::prelude::*;
 use bevy::render::RenderPlugin;
+use bevy::render::camera::RenderTarget;
 use bevy::render::settings::Backends;
 use bevy::render::settings::WgpuSettings;
+use bevy::window::PrimaryWindow;
+use bevy::window::WindowRef;
+use bevy_egui::EguiContext;
+use bevy_egui::EguiPlugin;
+use bevy_egui::egui;
 
 fn find_assets_folder() -> Result<(), std::io::Error>
 {
@@ -46,7 +52,7 @@ fn camera_pan
     mouse_buttons: Res<ButtonInput<MouseButton>>,
     mut camera_query: Query<(&mut Transform, &mut OrthographicProjection), With<Camera2d>>,
     mut previous_mouse_position: Local<Option<Vec2>>,
-    windows: Query<&Window>,
+    windows: Query<&Window, With<PrimaryWindow>>,
 )
 {
     let Ok(window) = windows.get_single() else
@@ -85,12 +91,12 @@ fn camera_zoom
     mut scroll_events: EventReader<MouseWheel>,
 )
 {
-    use bevy::input::mouse::MouseScrollUnit;
     let Ok(mut ortho) = ortho_query.get_single_mut() else
     {
         return;
     };
 
+    use bevy::input::mouse::MouseScrollUnit;
     for event in scroll_events.read()
     {
         match event.unit
@@ -106,6 +112,56 @@ fn camera_zoom
         }
     }
     ortho.scale = ortho.scale.clamp(0.01, 5.0);
+}
+
+fn create_new_window_system(mut commands: Commands)
+{
+    let second_window_id = commands
+        .spawn(Window {
+            title: "Dev window".to_owned(),
+            // resolution: WindowResolution::new(800.0, 600.0),
+            // present_mode: PresentMode::AutoVsync,
+            ..Default::default()
+        })
+        .id();
+
+    commands.spawn((
+        Camera3d::default(),
+        Camera {
+            target: RenderTarget::Window(WindowRef::Entity(second_window_id)),
+            ..Default::default()
+        },
+        Transform::from_xyz(6.0, 0.0, 0.0).looking_at(Vec3::ZERO, Vec3::Y),
+    ));
+}
+
+fn primary_ui
+(
+    mut egui_ctx: Query<&mut EguiContext, With<PrimaryWindow>>,
+)
+{
+    let Ok(mut ctx) = egui_ctx.get_single_mut() else {
+        return;
+    };
+    egui::TopBottomPanel::top("top_panel")
+        .resizable(false)
+        .show(ctx.get_mut(), |ui| {
+            ui.label("Top panel");
+            // ui.allocate_rect(ui.available_rect_before_wrap(), egui::Sense::hover());
+        });
+}
+
+fn dev_ui
+(
+    mut egui_ctx: Query<&mut EguiContext, Without<PrimaryWindow>>,
+)
+{
+    let Ok(mut ctx) = egui_ctx.get_single_mut() else {
+        return;
+    };
+    egui::Window::new("Hello").show(ctx.get_mut(), |ui| {
+        ui.label("world");
+    });
 }
 
 fn main()
@@ -144,9 +200,13 @@ fn main()
                 ..default()
             },
         })
+        .add_plugins(EguiPlugin)
         .add_plugins(vis::GameVisPlugin)
         .add_systems(Startup, setup)
+        .add_systems(Startup, create_new_window_system)
         .add_systems(Update, camera_pan)
         .add_systems(Update, camera_zoom)
+        // .add_systems(Update, (primary_ui, dev_ui))
+        .add_systems(Update, dev_ui)
         .run();
 }
