@@ -146,8 +146,13 @@ fn primary_ui
     egui::TopBottomPanel::top("top_panel")
         .resizable(false)
         .show(ctx.get_mut(), |ui| {
-            ui.label("Top panel");
-            // ui.allocate_rect(ui.available_rect_before_wrap(), egui::Sense::hover());
+            ui.horizontal(|ui| {
+                ui.label("Cim Debug");
+                if ui.button("Hello").clicked()
+                {
+                    println!("Hello debug");
+                }
+            });
         });
 }
 
@@ -206,7 +211,6 @@ fn main()
         .add_systems(Startup, create_new_window_system)
         .add_systems(Update, camera_pan)
         .add_systems(Update, camera_zoom)
-        // .add_systems(Update, (primary_ui, dev_ui))
-        .add_systems(Update, dev_ui)
+        .add_systems(Update, (primary_ui, dev_ui))
         .run();
 }
