@@ -1,10 +1,11 @@
 
+mod debug;
+
 use bevy::dev_tools::fps_overlay::FpsOverlayConfig;
 use bevy::dev_tools::fps_overlay::FpsOverlayPlugin;
 use bevy::input::mouse::MouseWheel;
 use bevy::prelude::*;
 use bevy::render::RenderPlugin;
-use bevy::render::camera::RenderTarget;
 use bevy::render::settings::Backends;
 use bevy::render::settings::WgpuSettings;
 use bevy::window::PrimaryWindow;
@@ -114,61 +115,6 @@ fn camera_zoom
     ortho.scale = ortho.scale.clamp(0.01, 5.0);
 }
 
-fn create_new_window_system(mut commands: Commands)
-{
-    let second_window_id = commands
-        .spawn(Window {
-            title: "Dev window".to_owned(),
-            // resolution: WindowResolution::new(800.0, 600.0),
-            // present_mode: PresentMode::AutoVsync,
-            ..Default::default()
-        })
-        .id();
-
-    commands.spawn((
-        Camera3d::default(),
-        Camera {
-            target: RenderTarget::Window(WindowRef::Entity(second_window_id)),
-            ..Default::default()
-        },
-        Transform::from_xyz(6.0, 0.0, 0.0).looking_at(Vec3::ZERO, Vec3::Y),
-    ));
-}
-
-fn primary_ui
-(
-    mut egui_ctx: Query<&mut EguiContext, With<PrimaryWindow>>,
-)
-{
-    let Ok(mut ctx) = egui_ctx.get_single_mut() else {
-        return;
-    };
-    egui::TopBottomPanel::top("top_panel")
-        .resizable(false)
-        .show(ctx.get_mut(), |ui| {
-            ui.horizontal(|ui| {
-                ui.label("Cim Debug");
-                if ui.button("Hello").clicked()
-                {
-                    println!("Hello debug");
-                }
-            });
-        });
-}
-
-fn dev_ui
-(
-    mut egui_ctx: Query<&mut EguiContext, Without<PrimaryWindow>>,
-)
-{
-    let Ok(mut ctx) = egui_ctx.get_single_mut() else {
-        return;
-    };
-    egui::Window::new("Hello").show(ctx.get_mut(), |ui| {
-        ui.label("world");
-    });
-}
-
 fn main()
 {
     let ext = base::extents::Extents{ width: 10, height: 10 };
@@ -205,12 +151,11 @@ fn main()
                 ..default()
             },
         })
+        .add_plugins(crate::debug::DebugPlugin)
         .add_plugins(EguiPlugin)
         .add_plugins(vis::GameVisPlugin)
         .add_systems(Startup, setup)
-        .add_systems(Startup, create_new_window_system)
         .add_systems(Update, camera_pan)
         .add_systems(Update, camera_zoom)
-        .add_systems(Update, (primary_ui, dev_ui))
         .run();
 }
