@@ -29,6 +29,11 @@ impl Material2d for GridMaterial
     {
         "shaders/grid.wgsl".into()
     }
+
+    fn alpha_mode(&self) -> AlphaMode2d
+    {
+        AlphaMode2d::Blend
+    }
 }
 
 #[derive(Default, Debug, Clone)]
@@ -151,6 +156,8 @@ fn startup
     };
 
     let mut geo = GeoBuilder::default();
+
+    // intersection points
     for y in 0..=size.height
     {
         for x in 0..=size.width
