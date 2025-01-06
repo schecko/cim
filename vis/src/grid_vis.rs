@@ -76,27 +76,24 @@ struct GeoBuilder<Vert>
 
 impl<Vert: PartialEq> GeoBuilder<Vert>
 {
-    fn insert(&mut self, vert: Vert)
+    fn insert_vert(&mut self, vert: Vert) -> u32
     {
-        let mut existing_index = Option::default();
         for (index, staged_vert) in self.staged.iter().enumerate()
         {
             if *staged_vert == vert
             {
-                existing_index = Some(index);
-                break;
+                return index as u32;
             }
         }
 
-        if let Some(existing) = existing_index
-        {
-            self.indices.push(existing as u32);
-        }
-        else
-        {
-            self.indices.push(self.staged.len() as u32);
-            self.staged.push(vert);
-        }
+        let index = self.staged.len() as u32;
+        self.staged.push(vert);
+        index
+    }
+
+    fn insert_index(&mut self, index: u32)
+    {
+        self.indices.push(index);
     }
 
     fn drain(self) -> (Vec<Vert>, Vec<u32>)
@@ -159,10 +156,19 @@ fn startup
         for x in 0..=size.width
         {
             let cell_intersection = Vec2::new(x as f32, y as f32);
-            geo.insert(tl.from_pos(cell_intersection * vis_tuning.cell_size + tl.pos * vis_tuning.cell_size * 0.5));
-            geo.insert(tr.from_pos(cell_intersection * vis_tuning.cell_size + tr.pos * vis_tuning.cell_size * 0.5));
-            geo.insert(br.from_pos(cell_intersection * vis_tuning.cell_size + br.pos * vis_tuning.cell_size * 0.5));
-            geo.insert(bl.from_pos(cell_intersection * vis_tuning.cell_size + bl.pos * vis_tuning.cell_size * 0.5));
+            let tli = geo.insert_vert(tl.from_pos(cell_intersection * vis_tuning.cell_size + tl.pos * vis_tuning.cell_size * 0.5));
+            let tri = geo.insert_vert(tr.from_pos(cell_intersection * vis_tuning.cell_size + tr.pos * vis_tuning.cell_size * 0.5));
+            let bri = geo.insert_vert(br.from_pos(cell_intersection * vis_tuning.cell_size + br.pos * vis_tuning.cell_size * 0.5));
+            let bli = geo.insert_vert(bl.from_pos(cell_intersection * vis_tuning.cell_size + bl.pos * vis_tuning.cell_size * 0.5));
+
+            geo.insert_index(tli);
+            geo.insert_index(tri);
+            geo.insert_index(bli);
+
+
+            geo.insert_index(tri);
+            geo.insert_index(bri);
+            geo.insert_index(bli);
         }
     }
 
