@@ -129,14 +129,20 @@ fn main()
 
     App::new()
         .add_plugins(
-            DefaultPlugins.set(RenderPlugin {
-                render_creation: WgpuSettings {
+            DefaultPlugins.set(RenderPlugin
+            {
+                render_creation: WgpuSettings
+                {
                     backends: Some(Backends::DX12),
                     ..default()
-                }
-                .into(),
+                }.into(),
                 ..default()
-            }),
+            })
+            .set(WindowPlugin
+             {
+                 exit_condition: bevy::window::ExitCondition::OnPrimaryClosed,
+                ..default()
+             }),
         )
         .add_plugins(FpsOverlayPlugin
         {
