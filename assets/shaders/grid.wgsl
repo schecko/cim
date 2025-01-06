@@ -6,8 +6,8 @@
 @fragment
 fn fragment(vert: VertexOutput) -> @location(0) vec4<f32>
 {
-	let diff = vert.uv - vec2(0.5, 0.5);
+	let diff = abs(vert.uv - vec2(0.5, 0.5));
 	let distanceSq = dot(diff, diff);
-	let alpha = 0.5 - distanceSq;
-    return tint * vert.color * vec4(1.0, 1.0, 1.0, alpha );
+	let quantized = 1.0 - step(0.5 - distanceSq, 0.4);
+    return tint * vert.color * vec4(1.0, 1.0, 1.0, quantized);
 }

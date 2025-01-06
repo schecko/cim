@@ -104,7 +104,7 @@ fn camera_zoom
         {
             MouseScrollUnit::Line =>
             {
-                ortho.scale -= event.y * 0.1;
+                ortho.scale -= event.y * 0.1 * ortho.scale;
             },
             MouseScrollUnit::Pixel =>
             {
