@@ -21,4 +21,19 @@ pub trait Tuning
             }
         }
     }
+
+    fn save(&self) where Self: Sized + Default + serde::Serialize
+    {
+        match crate::ronx::write_sync(&self, Self::path())
+        {
+            Ok(_) =>
+            {
+            },
+            Err(err) =>
+            {
+                eprintln!("{} -- Failed to write {}", debug_name!(), Self::path().display());
+                debug_assert!(false, "Failed to write {}", Self::path().display());
+            }
+        }
+    }
 }

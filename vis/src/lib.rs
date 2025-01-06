@@ -30,6 +30,7 @@ fn pre_startup
     mut commands: Commands,
 )
 {
+    BoardVisTuning::default().save();
     commands.insert_resource(BoardVisTuning::load());
 }
 
