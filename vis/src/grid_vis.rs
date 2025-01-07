@@ -1,12 +1,7 @@
 
-use base::array2::*;
 use base::extents::*;
-use base::ronx::*;
-use base::tuning::Tuning;
-use bevyx::ron::RonAssetPlugin;
 use crate::board_vis_tuning::*;
 
-use bevy::math::VectorSpace;
 use bevy::prelude::*;
 use bevy::reflect::TypePath;
 use bevy::render::render_asset::*;
@@ -14,7 +9,6 @@ use bevy::render::render_resource::*;
 use bevy::render::render_resource::AsBindGroup;
 use bevy::render::render_resource::ShaderRef;
 use bevy::sprite::*;
-use bitflags::bitflags;
 
 #[derive(Asset, TypePath, AsBindGroup, Debug, Clone)]
 struct GridMaterial
@@ -113,7 +107,6 @@ fn startup
     mut meshes: ResMut<Assets<Mesh>>,
     mut materials: ResMut<Assets<GridMaterial>>,
     vis_tuning: Res<BoardVisTuning>,
-    asset_server: Res<AssetServer>,
 )
 {
     let size = Extents::new(5, 5);

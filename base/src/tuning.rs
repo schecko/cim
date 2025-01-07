@@ -15,8 +15,8 @@ pub trait Tuning
             },
             Err(err) =>
             {
-                eprintln!("{} -- Failed to load {}", debug_name!(), Self::path().display());
-                debug_assert!(false, "Failed to load {}", Self::path().display());
+                eprintln!("{} -- Failed to load [{}] with error [{}]", debug_name!(), Self::path().display(), err);
+                debug_assert!(false, "Failed to load [{}]", Self::path().display());
                 Self::default()
             }
         }
@@ -31,7 +31,7 @@ pub trait Tuning
             },
             Err(err) =>
             {
-                eprintln!("{} -- Failed to write {}", debug_name!(), Self::path().display());
+                eprintln!("{} -- Failed to write [{}] with error [{}]", debug_name!(), Self::path().display(), err);
                 debug_assert!(false, "Failed to write {}", Self::path().display());
             }
         }

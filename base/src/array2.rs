@@ -369,9 +369,3 @@ impl<T> IndexMut<usize> for Array2<T>
         &mut self.array[i]
     }
 }
-
-fn flatten<T: Clone>(nested: &[Vec<T>]) -> Vec<T>
-{
-    nested.iter().flat_map(|row| row.clone()).collect()
-}
-

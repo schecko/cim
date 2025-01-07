@@ -4,7 +4,6 @@ use bevy::render::camera::RenderTarget;
 use bevy::window::PrimaryWindow;
 use bevy::window::WindowRef;
 use bevy_egui::EguiContext;
-use bevy_egui::EguiPlugin;
 use bevy_egui::egui;
 
 #[derive(Resource, Default)]
@@ -77,8 +76,8 @@ fn primary_window_ui
 
 fn dev_window_ui
 (
-    keys: Res<ButtonInput<KeyCode>>,
-    mut debug_state: ResMut<DebugState>,
+    _keys: Res<ButtonInput<KeyCode>>,
+    _debug_state: ResMut<DebugState>,
     mut egui_ctx: Query<&mut EguiContext, Without<PrimaryWindow>>,
 )
 {

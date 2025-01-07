@@ -9,10 +9,7 @@ use bevy::render::RenderPlugin;
 use bevy::render::settings::Backends;
 use bevy::render::settings::WgpuSettings;
 use bevy::window::PrimaryWindow;
-use bevy::window::WindowRef;
-use bevy_egui::EguiContext;
 use bevy_egui::EguiPlugin;
-use bevy_egui::egui;
 
 fn find_assets_folder() -> Result<(), std::io::Error>
 {

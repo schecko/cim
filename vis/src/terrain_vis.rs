@@ -1,10 +1,8 @@
 
 use base::array2::*;
 use base::extents::*;
-use bevyx::ron::RonAssetPlugin;
 use crate::board_vis_tuning::*;
 
-use bevy::math::VectorSpace;
 use bevy::prelude::*;
 use bevy::reflect::TypePath;
 use bevy::render::render_asset::*;
@@ -122,16 +120,16 @@ fn startup
     *vis.cell_type.get_mut(4, 4).unwrap() = CellType::Land;
 
     let elevation_handle = {
-        const height_map_scale: isize = 4;
+        const HEIGHT_MAP_SCALE: isize = 4;
         let mut height_map = Array2::<f32>::new
         (
-            size.width * height_map_scale,
-            size.height * height_map_scale
+            size.width * HEIGHT_MAP_SCALE,
+            size.height * HEIGHT_MAP_SCALE
         );
 
         for (x, y) in height_map.positions_row_major()
         {
-            height_map[(x, y)] = if vis.cell_type[(x / height_map_scale, y / height_map_scale)] == CellType::Land
+            height_map[(x, y)] = if vis.cell_type[(x / HEIGHT_MAP_SCALE, y / HEIGHT_MAP_SCALE)] == CellType::Land
                 { 1.0 }
                 else
                 { 0.0 };
