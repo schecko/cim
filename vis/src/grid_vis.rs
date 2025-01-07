@@ -134,28 +134,28 @@ fn startup
         pos: Vec2::new(-0.5, -0.5),
         color: LinearRgba::BLACK,
         uv: Vec2::new(0.0, 1.0),
-        normal: Vec3::new(0.0, 0.0, 1.0),
+        normal: Vec3::new(0.5, 0.5, 1.0),
     };
     let tr = GridVert
     {
         pos: Vec2::new(0.5, -0.5),
         color: LinearRgba::BLACK,
         uv: Vec2::new(1.0, 1.0),
-        normal: Vec3::new(0.0, 0.0, 1.0),
+        normal: Vec3::new(-0.5, 0.5, 1.0),
     };
     let bl = GridVert
     {
         pos: Vec2::new(-0.5, 0.5),
         color: LinearRgba::BLACK,
         uv: Vec2::new(0.0, 0.0),
-        normal: Vec3::new(0.0, 0.0, 1.0),
+        normal: Vec3::new(0.5, -0.5, 1.0),
     };
     let br = GridVert
     {
         pos: Vec2::new(0.5, 0.5),
         color: LinearRgba::BLACK,
         uv: Vec2::new(1.0, 0.0),
-        normal: Vec3::new(0.0, 0.0, 1.0),
+        normal: Vec3::new(-0.5, -0.5, 1.0),
     };
 
     let mut geo = GeoBuilder::default();
