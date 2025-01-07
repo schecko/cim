@@ -5,6 +5,7 @@ use crate::board_vis_tuning::*;
 
 use bevy::prelude::*;
 use bevy::reflect::TypePath;
+use bevy::render::mesh::MeshVertexBufferLayoutRef;
 use bevy::render::render_asset::*;
 use bevy::render::render_resource::*;
 use bevy::render::render_resource::AsBindGroup;
@@ -86,6 +87,16 @@ impl Material2d for TerrainMaterial
     fn fragment_shader() -> ShaderRef
     {
         "shaders/terrain.wgsl".into()
+    }
+
+    fn specialize(
+        descriptor: &mut RenderPipelineDescriptor,
+        _layout: &MeshVertexBufferLayoutRef,
+        _key: Material2dKey<Self>,
+    ) -> Result<(), SpecializedMeshPipelineError>
+    {
+        // descriptor.primitive.polygon_mode = PolygonMode::Line;
+        Ok(())
     }
 }
 

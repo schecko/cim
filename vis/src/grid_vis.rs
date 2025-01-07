@@ -9,6 +9,7 @@ use bevy::render::render_resource::*;
 use bevy::render::render_resource::AsBindGroup;
 use bevy::render::render_resource::ShaderRef;
 use bevy::sprite::*;
+use bevy::render::mesh::MeshVertexBufferLayoutRef;
 
 #[derive(Asset, TypePath, AsBindGroup, Debug, Clone)]
 struct GridMaterial
@@ -27,6 +28,15 @@ impl Material2d for GridMaterial
     fn alpha_mode(&self) -> AlphaMode2d
     {
         AlphaMode2d::Blend
+    }
+
+    fn specialize(
+        descriptor: &mut RenderPipelineDescriptor,
+        _layout: &MeshVertexBufferLayoutRef,
+        _key: Material2dKey<Self>,
+    ) -> Result<(), SpecializedMeshPipelineError> {
+        // descriptor.primitive.polygon_mode = PolygonMode::Line;
+        Ok(())
     }
 }
 
@@ -150,21 +160,66 @@ fn startup
 
     let mut geo = GeoBuilder::default();
 
+    let corner_size = vis_tuning.cell_size * 0.15;
+
     // intersection points
     for y in 0..=size.height
     {
         for x in 0..=size.width
         {
             let cell_intersection = Vec2::new(x as f32, y as f32);
-            let tli = geo.insert_vert(tl.from_pos(cell_intersection * vis_tuning.cell_size + tl.pos * vis_tuning.cell_size * 0.5));
-            let tri = geo.insert_vert(tr.from_pos(cell_intersection * vis_tuning.cell_size + tr.pos * vis_tuning.cell_size * 0.5));
-            let bri = geo.insert_vert(br.from_pos(cell_intersection * vis_tuning.cell_size + br.pos * vis_tuning.cell_size * 0.5));
-            let bli = geo.insert_vert(bl.from_pos(cell_intersection * vis_tuning.cell_size + bl.pos * vis_tuning.cell_size * 0.5));
+            let tli = geo.insert_vert(tl.from_pos(cell_intersection * vis_tuning.cell_size + tl.pos * corner_size));
+            let tri = geo.insert_vert(tr.from_pos(cell_intersection * vis_tuning.cell_size + tr.pos * corner_size));
+            let bli = geo.insert_vert(bl.from_pos(cell_intersection * vis_tuning.cell_size + bl.pos * corner_size));
+            let bri = geo.insert_vert(br.from_pos(cell_intersection * vis_tuning.cell_size + br.pos * corner_size));
 
             geo.insert_index(tli);
             geo.insert_index(tri);
             geo.insert_index(bli);
 
+            geo.insert_index(tri);
+            geo.insert_index(bri);
+            geo.insert_index(bli);
+        }
+    }
+
+    // horizontal grid-aligned lines 
+    for y in 0..=size.height
+    {
+        for x in 0..size.width
+        {
+            let cell_intersection = Vec2::new(x as f32, y as f32);
+            let next_cell_intersection = Vec2::new((x + 1) as f32, y as f32);
+            let tli = geo.insert_vert(tr.from_pos(cell_intersection * vis_tuning.cell_size + tr.pos * corner_size));
+            let tri = geo.insert_vert(tl.from_pos(next_cell_intersection * vis_tuning.cell_size + tl.pos * corner_size));
+            let bli = geo.insert_vert(br.from_pos(cell_intersection * vis_tuning.cell_size + br.pos * corner_size));
+            let bri = geo.insert_vert(bl.from_pos(next_cell_intersection * vis_tuning.cell_size + bl.pos * corner_size));
+
+            geo.insert_index(tli);
+            geo.insert_index(tri);
+            geo.insert_index(bli);
+
+            geo.insert_index(tri);
+            geo.insert_index(bri);
+            geo.insert_index(bli);
+        }
+    }
+
+    // vertical grid-aligned lines 
+    for y in 0..size.height
+    {
+        for x in 0..=size.width
+        {
+            let cell_intersection = Vec2::new(x as f32, y as f32);
+            let next_cell_intersection = Vec2::new(x as f32, (y + 1) as f32);
+            let tli = geo.insert_vert(bl.from_pos(cell_intersection * vis_tuning.cell_size + bl.pos * corner_size));
+            let tri = geo.insert_vert(br.from_pos(cell_intersection * vis_tuning.cell_size + br.pos * corner_size));
+            let bli = geo.insert_vert(tl.from_pos(next_cell_intersection * vis_tuning.cell_size + tl.pos * corner_size));
+            let bri = geo.insert_vert(tr.from_pos(next_cell_intersection * vis_tuning.cell_size + tr.pos * corner_size));
+
+            geo.insert_index(tli);
+            geo.insert_index(tri);
+            geo.insert_index(bli);
 
             geo.insert_index(tri);
             geo.insert_index(bri);

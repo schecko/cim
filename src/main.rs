@@ -131,6 +131,7 @@ fn main()
                 render_creation: WgpuSettings
                 {
                     backends: Some(Backends::DX12),
+                    features: bevy::render::render_resource::WgpuFeatures::POLYGON_MODE_LINE,
                     ..default()
                 }.into(),
                 ..default()
