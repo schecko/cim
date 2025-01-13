@@ -90,7 +90,7 @@ impl Material2d for TerrainMaterial
     }
 
     fn specialize(
-        descriptor: &mut RenderPipelineDescriptor,
+        _descriptor: &mut RenderPipelineDescriptor,
         _layout: &MeshVertexBufferLayoutRef,
         _key: Material2dKey<Self>,
     ) -> Result<(), SpecializedMeshPipelineError>
