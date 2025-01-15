@@ -1,0 +1,25 @@
+
+
+LEGEND:
+- task
+? decide if necessary, otherwise task
+* milestone
+
+TODO:
+- sim board
+- mines visual
+- cell input/raycasting
+- manual mine placement
+- manual nonplayable placement
+- basic reveal/unreveal state
+- win/loss state
+- main menu
+- board size choice
+
+* playable state
+
+- solver
+- shuffler
+? terrain generation
+- terrain rendering improvements
+- grid rendering improvements
