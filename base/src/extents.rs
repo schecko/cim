@@ -26,19 +26,19 @@ bitflags!
     }
 }
 
-pub type Point = (isize, isize);
+pub type Point = glam::IVec2;
 
 #[derive(Debug, Clone, Copy, Eq, PartialEq, Hash)]
 pub struct Extents
 {
-    pub width: isize,
-    pub height: isize,
+    pub width: i32,
+    pub height: i32,
 }
 
 #[allow(dead_code)]
 impl Extents
 {
-    pub fn new(width: isize, height: isize) -> Self
+    pub fn new(width: i32, height: i32) -> Self
     {
         assert!(width > 0 && height > 0);
         Extents{ width, height }
@@ -49,16 +49,16 @@ impl Extents
         (self.width * self.height) as usize
     }
 
-    pub fn is_valid_pos(&self, x: isize, y: isize) -> bool
+    pub fn is_valid_pos(&self, pos: Point) -> bool
     {
-        return y >= 0 && y < self.height && x >= 0 && x < self.width;
+        return pos.y >= 0 && pos.y < self.height && pos.x >= 0 && pos.x < self.width;
     }
 
-    pub fn get_index_row_major(&self, x: isize, y: isize) -> Option<usize>
+    pub fn get_index_row_major(&self, pos: Point) -> Option<usize>
     {
-        if self.is_valid_pos(x, y)
+        if self.is_valid_pos(pos)
         {
-            Some((y * self.width + x) as usize)
+            Some((pos.y * self.width + pos.x) as usize)
         }
         else
         {
@@ -77,55 +77,54 @@ impl Extents
         self,
     ) -> impl DoubleEndedIterator<Item = Point> + Clone
     {
-        (0..self.height).flat_map(move |y| (0..self.width).map(move |x| (x, y)))
+        (0..self.height).flat_map(move |y| (0..self.width).map(move |x| (x, y).into()))
     }
 
     pub fn positions_column_major(
         self,
     ) -> impl DoubleEndedIterator<Item = Point> + Clone
     {
-        (0..self.width).flat_map(move |x| (0..self.height).map(move |y| (x, y)))
+        (0..self.width).flat_map(move |x| (0..self.height).map(move |y| (x, y).into()))
     }
 
     pub fn neighbours<const FLAGS: u8>(
         &self,
-        x: isize,
-        y: isize,
+        pos: Point,
     ) -> impl DoubleEndedIterator<Item = Point> + Clone
     {
-        let mut neigh = ArrayVec::<(isize, isize), 8>::new();
+        let mut neigh = ArrayVec::<Point, 8>::new();
 
         let can_add = |neighbour_position: Neighbours| -> bool
         {
             Neighbours::from_bits_retain( FLAGS ) & neighbour_position != Neighbours::None
         };
 
-        let mut try_add = |x: isize, y: isize|
+        let mut try_add = |pos: Point|
         {
-            if self.is_valid_pos(x, y)
+            if self.is_valid_pos(pos)
             {
-                neigh.push((x, y));
+                neigh.push(pos);
             }
         };
 
-        if can_add(Neighbours::TopLeft) { try_add( x.wrapping_sub(1), y.wrapping_sub(1) ); }
-        if can_add(Neighbours::Top) { try_add( x, y.wrapping_sub(1) ); }
-        if can_add(Neighbours::TopRight) { try_add( x.wrapping_add(1), y.wrapping_sub(1) ); }
+        if can_add(Neighbours::TopLeft) { try_add( ( pos.x.wrapping_sub(1), pos.y.wrapping_sub(1) ).into() ); }
+        if can_add(Neighbours::Top) { try_add( ( pos.x, pos.y.wrapping_sub(1) ).into() ); }
+        if can_add(Neighbours::TopRight) { try_add( ( pos.x.wrapping_add(1), pos.y.wrapping_sub(1) ).into() ); }
 
-        if can_add(Neighbours::Left) { try_add( x.wrapping_sub(1), y ); }
-        if can_add(Neighbours::Right) { try_add( x.wrapping_add(1), y ); }
+        if can_add(Neighbours::Left) { try_add( ( pos.x.wrapping_sub(1), pos.y ).into() ); }
+        if can_add(Neighbours::Right) { try_add( ( pos.x.wrapping_add(1), pos.y ).into() ); }
 
-        if can_add(Neighbours::BottomLeft) { try_add( x.wrapping_sub(1), y.wrapping_add(1) ); }
-        if can_add(Neighbours::Bottom) { try_add( x, y.wrapping_add(1) ); }
-        if can_add(Neighbours::BottomRight) { try_add( x.wrapping_add(1), y.wrapping_add(1) ); }
+        if can_add(Neighbours::BottomLeft) { try_add( ( pos.x.wrapping_sub(1), pos.y.wrapping_add(1) ).into() ); }
+        if can_add(Neighbours::Bottom) { try_add( ( pos.x, pos.y.wrapping_add(1) ).into() ); }
+        if can_add(Neighbours::BottomRight) { try_add( ( pos.x.wrapping_add(1), pos.y.wrapping_add(1) ).into() ); }
 
         neigh.into_iter()
     }
 }
 
-impl From<(isize, isize)> for Extents
+impl From<(i32, i32)> for Extents
 {
-    fn from(tuple: (isize, isize)) -> Self
+    fn from(tuple: (i32, i32)) -> Self
     {
         Self {
             width: tuple.0,
@@ -159,7 +158,7 @@ mod tests
         let size = Extents::new( 2, 2 );
         check_iterators(
             size.positions_column_major(),
-            [(0_isize, 0_isize), (1, 0), (1, 0), (1, 1)].into_iter() // wrong pos
+            [(0_i32, 0_i32), (1, 0), (1, 0), (1, 1)].into_iter() // wrong pos
         );
     }
 
@@ -170,7 +169,7 @@ mod tests
         let size = Extents::new( 2, 2 );
         check_iterators(
             size.positions_column_major(),
-            [(0_isize, 0_isize), (1, 1)].into_iter() // too short
+            [(0_i32, 0_i32), (1, 1)].into_iter() // too short
         );
     }
 
@@ -181,7 +180,7 @@ mod tests
         let size = Extents::new( 2, 2 );
         check_iterators(
             size.positions_row_major(),
-            [(0_isize, 0_isize), (1, 0), (0, 1), (1, 1)].into_iter()
+            [(0_i32, 0_i32), (1, 0), (0, 1), (1, 1)].into_iter()
         );
     }
 
@@ -191,7 +190,7 @@ mod tests
         let size = Extents::new( 2, 2 );
         check_iterators(
             size.positions_column_major(),
-            [(0_isize, 0_isize), (0, 1), (1, 0), (1, 1)].into_iter()
+            [(0_i32, 0_i32), (0, 1), (1, 0), (1, 1)].into_iter()
         );
     }
 

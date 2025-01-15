@@ -12,4 +12,5 @@ arrayvec = { workspace = true }
 bitflags = { workspace = true }
 serde = { workspace = true }
 ron = { workspace = true }
+glam = { workspace = true }
 

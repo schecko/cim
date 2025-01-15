@@ -54,8 +54,8 @@ fn setup
 fn main()
 {
     let ext = base::extents::Extents{ width: 10, height: 10 };
-    let _arr = ext.neighbours::<{ base::extents::Neighbours::Top.bits() }>( 0, 0 );
-    let _arr = ext.neighbours::<{ base::extents::Neighbours::Top.union(base::extents::Neighbours::Bottom).bits() }>( 0, 0 );
+    let _arr = ext.neighbours::<{ base::extents::Neighbours::Top.bits() }>(base::extents::Point::new(0, 0));
+    let _arr = ext.neighbours::<{ base::extents::Neighbours::Top.union(base::extents::Neighbours::Bottom).bits() }>(base::extents::Point::new(0, 0));
     let _ = find_assets_folder();
 
     base::hello_base();

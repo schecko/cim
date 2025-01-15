@@ -19,7 +19,7 @@ struct Board
 
 impl Board
 {
-    pub fn new(width: isize, height: isize) -> Self
+    pub fn new(width: i32, height: i32) -> Self
     {
         Self
         {

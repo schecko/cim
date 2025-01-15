@@ -21,6 +21,7 @@ num-traits = "0.2.19"
 ron = "0.8.1"
 serde = "1.0.215"
 thiserror = "2.0.6"
+glam = "0.29.2"
 
 # Enable optimizations for dependencies
 [profile.dev.package."*"]
@@ -32,6 +33,7 @@ bevy_egui = { workspace = true }
 ron = { workspace = true }
 serde = { workspace = true }
 thiserror = { workspace = true }
+glam = { workspace = true }
 
 base = { path = "base" }
 bevyx = { path = "bevyx" }
