@@ -15,7 +15,7 @@ pub enum CellState
 #[derive(Debug, Clone)]
 pub struct Grid
 {
-    states: array2::Array2<CellState>,
+    pub states: array2::Array2<CellState>,
 }
 
 impl Grid

@@ -259,8 +259,7 @@ fn spawn_grid
         .spawn
         ((
             Mesh2d(mesh_id.into()),
-            MeshMaterial2d(custom_material.into()),
-            Transform::default(),
+            MeshMaterial2d(custom_material.into())
         ));
 }
 
@@ -269,16 +268,28 @@ fn spawn_mines
     mut commands: Commands,
     asset_server: Res<AssetServer>,
     vis_tuning: Res<BoardVisTuning>,
+    grid_vis: Res<GridVis>,
 )
 {
+    let image = asset_server.load("textures/mine.png");
+
     let mine = Sprite
     {
-        image: asset_server.load("textures/mine.png"),
+        image,
         custom_size: Some(vis_tuning.cell_size),
         anchor: Anchor::BottomLeft,
         ..default()
     };
-    commands.spawn(mine);
+    for index2 in grid_vis.grid.states.size().positions_row_major()
+    {
+        if *grid_vis.grid.states.get(index2).unwrap() != CellState::Mine
+        {
+            continue;
+        }
+
+        let world_pos = index2.as_vec2() * vis_tuning.cell_size;
+        commands.spawn((mine.clone(), Transform::from_translation(world_pos.extend(0.0))));
+    }
 }
 
 #[derive(Debug, Clone, Resource)]
@@ -293,14 +304,13 @@ impl Plugin for GridVisPlugin
 {
     fn build(&self, app: &mut App)
     {
+        let mut grid = Grid::new(5, 5);
+        *grid.states.get_mut((0, 0).into()).unwrap() = CellState::Mine;
+        *grid.states.get_mut((1, 1).into()).unwrap() = CellState::Mine;
+        *grid.states.get_mut((4, 4).into()).unwrap() = CellState::Mine;
+
         app
-            .insert_resource
-            (
-                GridVis
-                {
-                    grid: Grid::new(5, 5),
-                }
-            )
+            .insert_resource(GridVis{ grid })
             .add_plugins(Material2dPlugin::<GridMaterial>::default())
             .add_systems(Startup, spawn_grid)
             .add_systems(Startup, spawn_mines);
