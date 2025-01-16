@@ -111,7 +111,7 @@ impl<Vert: PartialEq> GeoBuilder<Vert>
     }
 }
 
-fn startup
+fn spawn_grid
 (
     mut commands: Commands,
     mut meshes: ResMut<Assets<Mesh>>,
@@ -119,7 +119,7 @@ fn startup
     vis_tuning: Res<BoardVisTuning>,
 )
 {
-    let size = Extents::new(5, 5);
+    let size = Extents::new(2, 2);
 
     let custom_material = materials.add
     (
@@ -263,6 +263,23 @@ fn startup
         ));
 }
 
+fn spawn_mines
+(
+    mut commands: Commands,
+    asset_server: Res<AssetServer>,
+    vis_tuning: Res<BoardVisTuning>,
+)
+{
+    let mine = Sprite
+    {
+        image: asset_server.load("textures/mine.png"),
+        custom_size: Some(vis_tuning.cell_size),
+        anchor: Anchor::TopLeft,
+        ..default()
+    };
+    commands.spawn(mine);
+}
+
 pub struct GridVisPlugin;
 
 impl Plugin for GridVisPlugin
@@ -271,6 +288,7 @@ impl Plugin for GridVisPlugin
     {
         app
             .add_plugins(Material2dPlugin::<GridMaterial>::default())
-            .add_systems(Startup, startup);
+            .add_systems(Startup, spawn_grid)
+            .add_systems(Startup, spawn_mines);
     }
 }
