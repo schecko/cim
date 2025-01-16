@@ -2,6 +2,13 @@
 game concept:
 minesweeper + civilization + crash
 
+short descripotion:
+- minesweeper gameplay with an exploration mechanic.
+- underlying references to failing capitalism?
+- some CEO and their factory is spewing out mines to extort civilians
+- the player's goal is to actually clean up mines, maybe save civilians?
+- goal of the game is to reach the factory by navigating a sea littered with mines
+
 pretty good pixel artist:
 https://captainskolot.itch.io/
 
