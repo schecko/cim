@@ -17,7 +17,7 @@ struct Grid
     states: array2::Array2<CellState>,
 }
 
-impl Board
+impl Grid
 {
     pub fn new(width: i32, height: i32) -> Self
     {
