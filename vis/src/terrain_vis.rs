@@ -62,7 +62,7 @@ fn guassian_blur(data: &mut Array2<f32>, passes: u32)
 }
 
 #[derive(Debug, Clone, Resource)]
-struct BoardVis
+struct TerrainVis
 {
     cell_type: Array2<CellType>,
 }
@@ -119,10 +119,11 @@ fn startup
     mut images: ResMut<Assets<Image>>,
     vis_tuning: Res<BoardVisTuning>,
     asset_server: Res<AssetServer>,
+    
 )
 {
     let size = Extents::new(5, 5);
-    let mut vis = BoardVis
+    let mut vis = TerrainVis
     {
         cell_type: Array2::<CellType>::from_size(size),
     };
@@ -244,6 +245,10 @@ impl Plugin for TerrainVisPlugin
     fn build(&self, app: &mut App)
     {
         app
+            .insert_resource(TerrainVis
+            {
+                cell_type: Array2::<CellType>::new(5, 5)
+            })
             .add_plugins(Material2dPlugin::<TerrainMaterial>::default())
             .add_systems(Startup, startup);
     }

@@ -1,6 +1,7 @@
 
 use base::extents::*;
 use crate::board_vis_tuning::*;
+use sim::grid::*;
 
 use bevy::prelude::*;
 use bevy::reflect::TypePath;
@@ -117,10 +118,10 @@ fn spawn_grid
     mut meshes: ResMut<Assets<Mesh>>,
     mut materials: ResMut<Assets<GridMaterial>>,
     vis_tuning: Res<BoardVisTuning>,
+    grid_vis: Res<GridVis>,
 )
 {
-    let size = Extents::new(2, 2);
-
+    let size = &grid_vis.grid.size();
     let custom_material = materials.add
     (
         GridMaterial
@@ -274,10 +275,16 @@ fn spawn_mines
     {
         image: asset_server.load("textures/mine.png"),
         custom_size: Some(vis_tuning.cell_size),
-        anchor: Anchor::TopLeft,
+        anchor: Anchor::BottomLeft,
         ..default()
     };
     commands.spawn(mine);
+}
+
+#[derive(Debug, Clone, Resource)]
+pub struct GridVis
+{
+    grid: Grid,
 }
 
 pub struct GridVisPlugin;
@@ -287,6 +294,13 @@ impl Plugin for GridVisPlugin
     fn build(&self, app: &mut App)
     {
         app
+            .insert_resource
+            (
+                GridVis
+                {
+                    grid: Grid::new(5, 5),
+                }
+            )
             .add_plugins(Material2dPlugin::<GridMaterial>::default())
             .add_systems(Startup, spawn_grid)
             .add_systems(Startup, spawn_mines);

@@ -1,5 +1,6 @@
 
 use base::array2;
+use base::extents;
 
 #[repr(u8)]
 #[derive(Debug, Default, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
@@ -12,7 +13,7 @@ pub enum CellState
 }
 
 #[derive(Debug, Clone)]
-struct Grid
+pub struct Grid
 {
     states: array2::Array2<CellState>,
 }
@@ -25,6 +26,11 @@ impl Grid
         {
             states: array2::Array2::new(width, height),
         }
+    }
+
+    pub fn size(&self) -> extents::Extents
+    {
+        self.states.size()
     }
 }
 

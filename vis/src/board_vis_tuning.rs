@@ -3,14 +3,14 @@ use base::tuning::Tuning;
 use bevy::prelude::*;
 use bevy::reflect::TypePath;
 
-#[derive(serde::Deserialize, serde::Serialize)]
-pub struct Grid 
+#[derive(Clone, serde::Deserialize, serde::Serialize)]
+pub struct GridTuning
 {
     pub world_line_width: f32, // world space
     pub uv_width: f32, // uv/normalized (0.0, 1.0)
 }
 
-impl Default for Grid
+impl Default for GridTuning
 {
     fn default() -> Self
     {
@@ -26,7 +26,7 @@ impl Default for Grid
 pub struct BoardVisTuning 
 {
     pub cell_size: Vec2,
-    pub grid: Grid,
+    pub grid: GridTuning,
 }
 
 impl Tuning for BoardVisTuning

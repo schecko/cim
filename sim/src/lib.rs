@@ -1,5 +1,5 @@
 
-mod grid;
+pub mod grid;
 
 pub fn hello_sim()
 {
