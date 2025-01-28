@@ -41,6 +41,33 @@ pub fn camera_pan
     }
 }
 
+pub fn reveal_cell
+(
+    camera_query: Query<(&Camera, &GlobalTransform), With<Camera2d>>,
+    windows: Query<&Window, With<PrimaryWindow>>,
+    mut gizmos: Gizmos,
+)
+{
+    let Ok((camera, camera_transform)) = camera_query.get_single() else
+    {
+        return;
+    };
+
+    let Ok(window) = windows.get_single() else {
+        return;
+    };
+
+    let Some(cursor_position) = window.cursor_position() else {
+        return;
+    };
+
+    let Ok(point) = camera.viewport_to_world_2d(camera_transform, cursor_position) else {
+        return;
+    };
+
+    gizmos.circle_2d(point, 10., bevy::color::palettes::basic::WHITE);
+}
+
 pub fn camera_zoom
 (
     mut ortho_query: Query<&mut OrthographicProjection, With<Camera2d>>,

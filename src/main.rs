@@ -101,5 +101,6 @@ fn main()
         .add_systems(Startup, setup)
         .add_systems(Update, input::camera_pan)
         .add_systems(Update, input::camera_zoom)
+        .add_systems(Update, input::reveal_cell)
         .run();
 }

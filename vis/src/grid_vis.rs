@@ -320,7 +320,6 @@ fn spawn_covers
     }
 }
 
-
 #[derive(Debug, Clone, Resource)]
 pub struct GridVis
 {
