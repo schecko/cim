@@ -279,9 +279,9 @@ fn spawn_mines
         anchor: Anchor::BottomLeft,
         ..default()
     };
-    for index2 in grid_vis.grid.states.size().positions()
+    for (index2, state) in grid_vis.grid.states.enumerate()
     {
-        if *grid_vis.grid.states.get_by_position(index2).unwrap() != CellState::Mine
+        if !state.contains(CellState::Mine)
         {
             continue;
         }
@@ -290,6 +290,36 @@ fn spawn_mines
         commands.spawn((mine.clone(), Transform::from_translation(world_pos.extend(0.0))));
     }
 }
+
+fn spawn_covers
+(
+    mut commands: Commands,
+    asset_server: Res<AssetServer>,
+    vis_tuning: Res<BoardVisTuning>,
+    grid_vis: Res<GridVis>,
+)
+{
+    let image = asset_server.load("textures/cover.png");
+
+    let mine = Sprite
+    {
+        image,
+        custom_size: Some(vis_tuning.cell_size),
+        anchor: Anchor::BottomLeft,
+        ..default()
+    };
+    for (index2, state) in grid_vis.grid.states.enumerate()
+    {
+        if state.contains(CellState::Revealed) || state.contains(CellState::NonPlayable)
+        {
+            continue;
+        }
+
+        let world_pos = index2.as_vec2() * vis_tuning.cell_size;
+        commands.spawn((mine.clone(), Transform::from_translation(world_pos.extend(0.0))));
+    }
+}
+
 
 #[derive(Debug, Clone, Resource)]
 pub struct GridVis
@@ -312,6 +342,7 @@ impl Plugin for GridVisPlugin
             .insert_resource(GridVis{ grid })
             .add_plugins(Material2dPlugin::<GridMaterial>::default())
             .add_systems(Startup, spawn_grid)
-            .add_systems(Startup, spawn_mines);
+            .add_systems(Startup, spawn_mines)
+            .add_systems(Startup, spawn_covers);
     }
 }
