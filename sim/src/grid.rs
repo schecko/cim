@@ -2,14 +2,19 @@
 use base::array2;
 use base::extents;
 
-#[repr(u8)]
-#[derive(Debug, Default, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
-pub enum CellState
+use bitflags::bitflags;
+
+bitflags!
 {
-    #[default]
-    None = 0,
-    Mine = 1,
-    NonPlayable = 2,
+    #[repr(transparent)]
+    #[derive(Debug, Default, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
+    pub struct CellState: u8
+    {
+        const None = 0 << 0;
+        const Mine = 1 << 0;
+        const Revealed = 1 << 1;
+        const NonPlayable = 1 << 2;
+    }
 }
 
 #[derive(Debug, Clone)]
@@ -28,9 +33,22 @@ impl Grid
         }
     }
 
+    pub fn from_size(size: extents::Extents) -> Self
+    {
+        Self
+        {
+            states: array2::Array2::from_size(size),
+        }
+    }
+
     pub fn size(&self) -> extents::Extents
     {
         self.states.size()
+    }
+
+    pub fn clear(&mut self)
+    {
+        self.states.fill_with(CellState::None);
     }
 }
 

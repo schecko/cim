@@ -5,3 +5,5 @@ edition = "2021"
 
 [dependencies]
 base = { path = "../base" }
+
+bitflags = { workspace = true }

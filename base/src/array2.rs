@@ -126,6 +126,26 @@ impl<T> Array2<T>
         }
     }
 
+    pub fn fill_with(&mut self, element: T)
+    where
+        T: Copy,
+    {
+        for cell in &mut self.array
+        {
+            *cell = element;
+        }
+    }
+
+    pub fn fill_by<F>(&mut self, mut generator: F)
+    where
+        F: FnMut() -> T,
+    {
+        for cell in &mut self.array
+        {
+            *cell = generator();
+        }
+    }
+
     pub fn from_iter_row_major<I>(
         iterator: I,
         size: Extents,
