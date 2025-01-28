@@ -279,9 +279,9 @@ fn spawn_mines
         anchor: Anchor::BottomLeft,
         ..default()
     };
-    for index2 in grid_vis.grid.states.size().positions_row_major()
+    for index2 in grid_vis.grid.states.size().positions()
     {
-        if *grid_vis.grid.states.get(index2).unwrap() != CellState::Mine
+        if *grid_vis.grid.states.get_by_position(index2).unwrap() != CellState::Mine
         {
             continue;
         }
@@ -304,9 +304,9 @@ impl Plugin for GridVisPlugin
     fn build(&self, app: &mut App)
     {
         let mut grid = Grid::new(5, 5);
-        *grid.states.get_mut((0, 0).into()).unwrap() = CellState::Mine;
-        *grid.states.get_mut((1, 1).into()).unwrap() = CellState::Mine;
-        *grid.states.get_mut((4, 4).into()).unwrap() = CellState::Mine;
+        *grid.states.get_by_position_mut((0, 0).into()).unwrap() = CellState::Mine;
+        *grid.states.get_by_position_mut((1, 1).into()).unwrap() = CellState::Mine;
+        *grid.states.get_by_position_mut((4, 4).into()).unwrap() = CellState::Mine;
 
         app
             .insert_resource(GridVis{ grid })

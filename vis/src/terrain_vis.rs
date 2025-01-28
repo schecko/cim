@@ -25,12 +25,12 @@ fn blur<T, const N: usize>(data: &mut Array2<T>, kernel: &[T; N], passes: u32)
     for _ in 0..passes
     {
         // hori pass
-        for pos in data.positions_row_major()
+        for pos in data.iter_positions()
         {
             let mut acc = T::default();
             for d in -delta..=delta
             {
-                if let Some(&read) = data.get(pos + Point::new(d, 0))
+                if let Some(&read) = data.get_by_position(pos + Point::new(d, 0))
                 {
                     acc += read * kernel[(delta + d) as usize];
                 }
@@ -39,12 +39,12 @@ fn blur<T, const N: usize>(data: &mut Array2<T>, kernel: &[T; N], passes: u32)
         }
 
         // vert pass
-        for pos in data.positions_row_major()
+        for pos in data.iter_positions()
         {
             let mut acc = T::default();
             for d in -delta..=delta
             {
-                if let Some(&read) = temp.get(pos + Point::new(0, d))
+                if let Some(&read) = temp.get_by_position(pos + Point::new(0, d))
                 {
                     acc += read * kernel[(delta + d) as usize];
                 }
@@ -127,9 +127,9 @@ fn startup
     {
         cell_type: Array2::<CellType>::from_size(size),
     };
-    *vis.cell_type.get_mut((0, 0).into()).unwrap() = CellType::Land;
-    *vis.cell_type.get_mut((2, 2).into()).unwrap() = CellType::Land;
-    *vis.cell_type.get_mut((4, 4).into()).unwrap() = CellType::Land;
+    *vis.cell_type.get_by_position_mut((0, 0).into()).unwrap() = CellType::Land;
+    *vis.cell_type.get_by_position_mut((2, 2).into()).unwrap() = CellType::Land;
+    *vis.cell_type.get_by_position_mut((4, 4).into()).unwrap() = CellType::Land;
 
     let elevation_handle = {
         const HEIGHT_MAP_SCALE: i32 = 4;
@@ -139,7 +139,7 @@ fn startup
             size.height * HEIGHT_MAP_SCALE
         );
 
-        for pos in height_map.positions_row_major()
+        for pos in height_map.iter_positions()
         {
             height_map[pos] = if vis.cell_type[pos / HEIGHT_MAP_SCALE] == CellType::Land
                 { 1.0 }

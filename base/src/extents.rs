@@ -54,7 +54,7 @@ impl Extents
         return pos.y >= 0 && pos.y < self.height && pos.x >= 0 && pos.x < self.width;
     }
 
-    pub fn get_index_row_major(&self, pos: Point) -> Option<usize>
+    pub fn get_index(&self, pos: Point) -> Option<usize>
     {
         if self.is_valid_pos(pos)
         {
@@ -66,25 +66,18 @@ impl Extents
         }
     }
 
-    pub fn indices_row_major(
+    pub fn indices(
         self,
     ) -> impl DoubleEndedIterator<Item = usize> + Clone
     {
         0..self.num_elements()
     }
 
-    pub fn positions_row_major(
+    pub fn positions(
         self,
     ) -> impl DoubleEndedIterator<Item = Point> + Clone
     {
         (0..self.height).flat_map(move |y| (0..self.width).map(move |x| (x, y).into()))
-    }
-
-    pub fn positions_column_major(
-        self,
-    ) -> impl DoubleEndedIterator<Item = Point> + Clone
-    {
-        (0..self.width).flat_map(move |x| (0..self.height).map(move |y| (x, y).into()))
     }
 
     pub fn neighbours<const FLAGS: u8>(
@@ -152,45 +145,12 @@ mod tests
     }
 
     #[test]
-    #[should_panic]
-    fn test_check_iterators_fail_compare()
-    {
-        let size = Extents::new( 2, 2 );
-        check_iterators(
-            size.positions_column_major(),
-            [(0_i32, 0_i32), (1, 0), (1, 0), (1, 1)].into_iter() // wrong pos
-        );
-    }
-
-    #[test]
-    #[should_panic]
-    fn test_check_iterators_fail_size()
-    {
-        let size = Extents::new( 2, 2 );
-        check_iterators(
-            size.positions_column_major(),
-            [(0_i32, 0_i32), (1, 1)].into_iter() // too short
-        );
-    }
-
-
-    #[test]
     fn test_positions_row_major()
     {
         let size = Extents::new( 2, 2 );
         check_iterators(
             size.positions_row_major(),
             [(0_i32, 0_i32), (1, 0), (0, 1), (1, 1)].into_iter()
-        );
-    }
-
-    #[test]
-    fn test_positions_column_major()
-    {
-        let size = Extents::new( 2, 2 );
-        check_iterators(
-            size.positions_column_major(),
-            [(0_i32, 0_i32), (0, 1), (1, 0), (1, 1)].into_iter()
         );
     }
 
