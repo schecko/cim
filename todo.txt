@@ -6,8 +6,6 @@ LEGEND:
 * milestone
 
 TODO:
-- sim board
-- mines visual
 - cell input/raycasting
 - manual mine placement
 - manual nonplayable placement
