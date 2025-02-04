@@ -1,5 +1,6 @@
 
 use crate::board_vis_tuning::*;
+use crate::layers;
 use sim::grid::*;
 
 use bevy::prelude::*;
@@ -235,7 +236,7 @@ fn spawn_grid
     let (verts, indices) = geo.drain();
     for vert in verts
     {
-        v_pos.push(vert.pos.extend(1.0).to_array());
+        v_pos.push(vert.pos.extend(layers::GRID_LINE).to_array());
         v_color.push(vert.color.to_f32_array());
         v_uv.push(vert.uv.to_array());
         v_normal.push(vert.normal.to_array());
@@ -287,7 +288,7 @@ fn spawn_mines
         }
 
         let world_pos = index2.as_vec2() * vis_tuning.cell_size;
-        commands.spawn((mine.clone(), Transform::from_translation(world_pos.extend(0.0))));
+        commands.spawn((mine.clone(), Transform::from_translation(world_pos.extend(layers::MINE))));
     }
 }
 
@@ -316,7 +317,7 @@ fn spawn_covers
         }
 
         let world_pos = index2.as_vec2() * vis_tuning.cell_size;
-        commands.spawn((mine.clone(), Transform::from_translation(world_pos.extend(0.0))));
+        commands.spawn((mine.clone(), Transform::from_translation(world_pos.extend(layers::COVER))));
     }
 }
 

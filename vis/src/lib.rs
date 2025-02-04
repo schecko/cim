@@ -2,6 +2,7 @@
 mod board_vis_tuning;
 mod grid_vis;
 mod terrain_vis;
+mod layers;
 
 use base::tuning::Tuning;
 use bevyx::ron::RonAssetPlugin;

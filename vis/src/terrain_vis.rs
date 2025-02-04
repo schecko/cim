@@ -2,6 +2,7 @@
 use base::array2::*;
 use base::extents::*;
 use crate::board_vis_tuning::*;
+use crate::layers;
 
 use bevy::prelude::*;
 use bevy::reflect::TypePath;
@@ -195,10 +196,10 @@ fn startup
     let scale = vis_tuning.cell_size * Vec2::new(size.width as f32, size.height as f32);
     let v_pos = vec!
     [
-        [0.0 * scale.x, 0.0 * scale.y, 0.0], // TL
-        [1.0 * scale.x, 0.0 * scale.y, 0.0], // TR
-        [0.0 * scale.x, 1.0 * scale.y, 0.0], // BL
-        [1.0 * scale.x, 1.0 * scale.y, 0.0], // BR
+        [0.0 * scale.x, 0.0 * scale.y, layers::TERRAIN], // TL
+        [1.0 * scale.x, 0.0 * scale.y, layers::TERRAIN], // TR
+        [0.0 * scale.x, 1.0 * scale.y, layers::TERRAIN], // BL
+        [1.0 * scale.x, 1.0 * scale.y, layers::TERRAIN], // BR
     ];
     let v_color: Vec<[f32; 4]> = vec![LinearRgba::WHITE.to_f32_array(); 4];
     let v_uv: Vec<[f32; 2]> = vec!
