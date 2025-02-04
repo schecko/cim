@@ -3,6 +3,9 @@ use bevy::input::mouse::MouseWheel;
 use bevy::prelude::*;
 use bevy::window::PrimaryWindow;
 
+use vis::board_vis_tuning::BoardVisTuning;
+use vis::grid_vis::GridVis;
+
 pub fn camera_pan
 (
     mouse_buttons: Res<ButtonInput<MouseButton>>,
@@ -46,6 +49,9 @@ pub fn reveal_cell
     camera_query: Query<(&Camera, &GlobalTransform), With<Camera2d>>,
     windows: Query<&Window, With<PrimaryWindow>>,
     mut gizmos: Gizmos,
+    board_vis_tuning: Res<BoardVisTuning>,
+    mut grid_vis: ResMut<GridVis>,
+    mouse_buttons: Res<ButtonInput<MouseButton>>,
 )
 {
     let Ok((camera, camera_transform)) = camera_query.get_single() else
@@ -66,6 +72,14 @@ pub fn reveal_cell
     };
 
     gizmos.circle_2d(point, 10., bevy::color::palettes::basic::WHITE);
+
+    if !mouse_buttons.just_pressed(MouseButton::Left)
+    {
+        return;
+    }
+
+    gizmos.circle_2d(point, 5., bevy::color::palettes::basic::RED);
+    grid_vis.on_tap(&board_vis_tuning, &point);
 }
 
 pub fn camera_zoom

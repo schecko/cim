@@ -1,6 +1,6 @@
 
-mod board_vis_tuning;
-mod grid_vis;
+pub mod board_vis_tuning;
+pub mod grid_vis;
 mod terrain_vis;
 mod layers;
 

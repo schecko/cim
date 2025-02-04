@@ -12,6 +12,53 @@ use bevy::render::render_resource::ShaderRef;
 use bevy::sprite::*;
 use bevy::render::mesh::MeshVertexBufferLayoutRef;
 
+use bitflags::bitflags;
+
+#[derive(Debug, Clone, Component)]
+struct EntityIndex2(IVec2);
+
+#[derive(Debug, Clone, Component)]
+struct EntityIndex(usize);
+
+#[derive(Debug, Clone, Component)]
+struct Mine;
+
+#[derive(Debug, Clone, Component)]
+struct Cover;
+
+bitflags!
+{
+    #[repr(transparent)]
+    #[derive(Debug, Default, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
+    struct CellDirty: u8
+    {
+        const None = 0 << 0;
+        const Cover = 1 << 0;
+        const Mine = 1 << 1;
+    }
+}
+
+#[derive(Debug, Clone, Resource)]
+pub struct GridVis
+{
+    dirty: CellDirty,
+    grid: Grid,
+}
+
+impl GridVis
+{
+    pub fn on_tap(&mut self, vis_tuning: &BoardVisTuning, world_pos: &Vec2)
+    {
+        let pos = (world_pos / vis_tuning.cell_size).as_ivec2();
+
+        if let Some(cell) = self.grid.states.get_by_position_mut(pos)
+        {
+            cell.insert(CellState::Revealed);
+            self.dirty.insert(CellDirty::Cover | CellDirty::Mine);
+        }
+    }
+}
+
 #[derive(Asset, TypePath, AsBindGroup, Debug, Clone)]
 struct GridMaterial
 {
@@ -288,7 +335,14 @@ fn spawn_mines
         }
 
         let world_pos = index2.as_vec2() * vis_tuning.cell_size;
-        commands.spawn((mine.clone(), Transform::from_translation(world_pos.extend(layers::MINE))));
+        commands.spawn
+        ((
+            Mine,
+            EntityIndex(grid_vis.grid.states.point_to_index(index2).unwrap()),
+            EntityIndex2(index2),
+            mine.clone(),
+            Transform::from_translation(world_pos.extend(layers::MINE))
+        ));
     }
 }
 
@@ -302,7 +356,7 @@ fn spawn_covers
 {
     let image = asset_server.load("textures/cover.png");
 
-    let mine = Sprite
+    let cover = Sprite
     {
         image,
         custom_size: Some(vis_tuning.cell_size),
@@ -317,18 +371,48 @@ fn spawn_covers
         }
 
         let world_pos = index2.as_vec2() * vis_tuning.cell_size;
-        commands.spawn((mine.clone(), Transform::from_translation(world_pos.extend(layers::COVER))));
+        commands.spawn
+        ((
+            Cover,
+            EntityIndex(grid_vis.grid.states.point_to_index(index2).unwrap()),
+            EntityIndex2(index2),
+            cover.clone(),
+            Transform::from_translation(world_pos.extend(layers::COVER))
+        ));
     }
 }
 
-#[derive(Debug, Clone, Resource)]
-pub struct GridVis
+fn reveal_covers
+(
+    mut cover_query: Query<(&mut Visibility, &EntityIndex), With<Cover>>,
+    grid_vis: ResMut<GridVis>,
+)
 {
-    grid: Grid,
+    if !grid_vis.dirty.contains(CellDirty::Cover)
+    {
+        return;
+    }
+
+    for (mut visibility, index) in &mut cover_query
+    {
+        let Some(state) = grid_vis.grid.states.get_by_index(index.0) else
+        {
+            assert!(false, "covers should always be kept up to date with the size of the grid");
+            continue;
+        };
+
+        *visibility = if state.contains(CellState::Revealed)
+        {
+            Visibility::Hidden
+        }
+        else
+        {
+            Visibility::Visible
+        };
+    }
 }
 
 pub struct GridVisPlugin;
-
 impl Plugin for GridVisPlugin
 {
     fn build(&self, app: &mut App)
@@ -339,10 +423,12 @@ impl Plugin for GridVisPlugin
         *grid.states.get_by_position_mut((4, 4).into()).unwrap() = CellState::Mine;
 
         app
-            .insert_resource(GridVis{ grid })
+            .insert_resource(GridVis{ dirty: CellDirty::None, grid })
             .add_plugins(Material2dPlugin::<GridMaterial>::default())
             .add_systems(Startup, spawn_grid)
             .add_systems(Startup, spawn_mines)
-            .add_systems(Startup, spawn_covers);
+            .add_systems(Startup, spawn_covers)
+            .add_systems(Update, reveal_covers)
+            ;
     }
 }
