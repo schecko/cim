@@ -157,7 +157,7 @@ impl<T> Array2<T>
         self.size
     }
 
-    pub fn get_by_position(&self, pos: Point) -> Option<&T>
+    pub fn get_by_index2(&self, pos: Point) -> Option<&T>
     {
         self.size.get_index(pos).map(|index| &self.array[index])
     }
@@ -172,7 +172,7 @@ impl<T> Array2<T>
         self.array.get(index)
     }
 
-    pub fn get_by_position_mut(&mut self, pos: Point) -> Option<&mut T>
+    pub fn get_by_index2_mut(&mut self, pos: Point) -> Option<&mut T>
     {
         self.size.get_index(pos)
             .map(move |index| &mut self.array[index])
@@ -183,9 +183,9 @@ impl<T> Array2<T>
         self.array.get_mut(index)
     }
 
-    pub fn set_by_position(&mut self, pos: Point, element: T) -> Result<(), Error>
+    pub fn set_by_index2(&mut self, pos: Point, element: T) -> Result<(), Error>
     {
-        self.get_by_position_mut(pos)
+        self.get_by_index2_mut(pos)
             .map(|e|
              {
                 *e = element;
@@ -227,16 +227,16 @@ impl<T> Array2<T>
         })
     }
 
-    pub fn iter_positions(&self) -> impl DoubleEndedIterator<Item = Point> + Clone
+    pub fn index2_space(&self) -> impl DoubleEndedIterator<Item = Point> + Clone
     {
-        self.size.positions()
+        self.size.index2_space()
     }
 
     pub fn enumerate(
         &self,
     ) -> impl DoubleEndedIterator<Item = (Point, &T)> + Clone
     {
-        self.iter_positions().map(move |i| (i, &self[i]))
+        self.index2_space().map(move |i| (i, &self[i]))
     }
 }
 
@@ -246,7 +246,7 @@ impl<T> Index<Point> for Array2<T>
 
     fn index(&self, pos: Point) -> &Self::Output
     {
-        self.get_by_position(pos)
+        self.get_by_index2(pos)
             .unwrap_or_else(|| panic!("Array2 -- Index indices {}, {} out of bounds", pos.x, pos.y))
     }
 }
@@ -255,7 +255,7 @@ impl<T> IndexMut<Point> for Array2<T>
 {
     fn index_mut(&mut self, pos: Point) -> &mut Self::Output
     {
-        self.get_by_position_mut(pos)
+        self.get_by_index2_mut(pos)
             .unwrap_or_else(|| panic!("Array2 -- Index mut indices {}, {} out of bounds", pos.x, pos.y))
     }
 }

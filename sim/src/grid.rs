@@ -21,6 +21,7 @@ bitflags!
 pub struct Grid
 {
     pub states: array2::Array2<CellState>,
+    pub adjacencies: array2::Array2<u8>,
 }
 
 impl Grid
@@ -30,6 +31,7 @@ impl Grid
         Self
         {
             states: array2::Array2::new(width, height),
+            adjacencies: array2::Array2::new(width, height),
         }
     }
 
@@ -38,6 +40,7 @@ impl Grid
         Self
         {
             states: array2::Array2::from_size(size),
+            adjacencies: array2::Array2::from_size(size),
         }
     }
 
@@ -49,6 +52,7 @@ impl Grid
     pub fn clear(&mut self)
     {
         self.states.fill_with(CellState::None);
+        self.adjacencies.fill_with(0);
     }
 }
 

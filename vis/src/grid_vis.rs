@@ -51,7 +51,7 @@ impl GridVis
     {
         let pos = (world_pos / vis_tuning.cell_size).as_ivec2();
 
-        if let Some(cell) = self.grid.states.get_by_position_mut(pos)
+        if let Some(cell) = self.grid.states.get_by_index2_mut(pos)
         {
             cell.insert(CellState::Revealed);
             self.dirty.insert(CellDirty::Cover | CellDirty::Mine);
@@ -418,9 +418,9 @@ impl Plugin for GridVisPlugin
     fn build(&self, app: &mut App)
     {
         let mut grid = Grid::new(5, 5);
-        *grid.states.get_by_position_mut((0, 0).into()).unwrap() = CellState::Mine;
-        *grid.states.get_by_position_mut((1, 1).into()).unwrap() = CellState::Mine;
-        *grid.states.get_by_position_mut((4, 4).into()).unwrap() = CellState::Mine;
+        *grid.states.get_by_index2_mut((0, 0).into()).unwrap() = CellState::Mine;
+        *grid.states.get_by_index2_mut((1, 1).into()).unwrap() = CellState::Mine;
+        *grid.states.get_by_index2_mut((4, 4).into()).unwrap() = CellState::Mine;
 
         app
             .insert_resource(GridVis{ dirty: CellDirty::None, grid })

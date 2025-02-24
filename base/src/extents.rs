@@ -66,14 +66,14 @@ impl Extents
         }
     }
 
-    pub fn indices(
+    pub fn index_space(
         self,
     ) -> impl DoubleEndedIterator<Item = usize> + Clone
     {
         0..self.num_elements()
     }
 
-    pub fn positions(
+    pub fn index2_space(
         self,
     ) -> impl DoubleEndedIterator<Item = Point> + Clone
     {
