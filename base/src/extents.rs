@@ -66,6 +66,18 @@ impl Extents
         }
     }
 
+    pub fn get_index2(&self, index: usize) -> Option<Point>
+    {
+        if index < self.num_elements()
+        {
+            Some((index as i32 % self.width, index as i32 / self.width).into())
+        }
+        else
+        {
+            None
+        }
+    }
+
     pub fn index_space(
         self,
     ) -> impl DoubleEndedIterator<Item = usize> + Clone

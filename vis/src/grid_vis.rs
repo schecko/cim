@@ -26,6 +26,9 @@ struct Mine;
 #[derive(Debug, Clone, Component)]
 struct Cover;
 
+#[derive(Debug, Clone, Component)]
+struct Adjacency;
+
 bitflags!
 {
     #[repr(transparent)]
@@ -338,7 +341,7 @@ fn spawn_mines
         commands.spawn
         ((
             Mine,
-            EntityIndex(grid_vis.grid.states.point_to_index(index2).unwrap()),
+            EntityIndex(grid_vis.grid.states.get_index(index2).unwrap()),
             EntityIndex2(index2),
             mine.clone(),
             Transform::from_translation(world_pos.extend(layers::MINE))
@@ -374,7 +377,7 @@ fn spawn_covers
         commands.spawn
         ((
             Cover,
-            EntityIndex(grid_vis.grid.states.point_to_index(index2).unwrap()),
+            EntityIndex(grid_vis.grid.states.get_index(index2).unwrap()),
             EntityIndex2(index2),
             cover.clone(),
             Transform::from_translation(world_pos.extend(layers::COVER))
@@ -412,6 +415,48 @@ fn reveal_covers
     }
 }
 
+fn spawn_adjacency
+(
+    mut commands: Commands,
+    asset_server: Res<AssetServer>,
+    vis_tuning: Res<BoardVisTuning>,
+    grid_vis: Res<GridVis>,
+)
+{
+    let mut it = vis_tuning.adjacency_images
+        .iter()
+        .map( |path| asset_server.load(&**path) );
+    let images = std::array::from_fn::<Handle<Image>, 8, _>( |_| it.next().unwrap() );
+
+    for (index, (adj, state)) in grid_vis.grid.adjacency.raw_iter().zip(grid_vis.grid.states.raw_iter()).enumerate()
+    {
+        if state.intersects(CellState::NonPlayable | CellState::Mine) || *adj == 0
+        {
+            continue;
+        }
+
+        let adj_sprite = Sprite
+        {
+            image: images[(adj - 1) as usize].clone(),
+            custom_size: Some(vis_tuning.cell_size),
+            anchor: Anchor::BottomLeft,
+            ..default()
+        };
+
+        println!("adjacency");
+        let index2 =  grid_vis.grid.states.get_index2(index).unwrap();
+        let world_pos = index2.as_vec2() * vis_tuning.cell_size;
+        commands.spawn
+        ((
+            Adjacency,
+            EntityIndex2(index2),
+            EntityIndex(index),
+            adj_sprite,
+            Transform::from_translation(world_pos.extend(layers::ADJACENCY))
+        ));
+    }
+}
+
 pub struct GridVisPlugin;
 impl Plugin for GridVisPlugin
 {
@@ -421,10 +466,12 @@ impl Plugin for GridVisPlugin
         *grid.states.get_by_index2_mut((0, 0).into()).unwrap() = CellState::Mine;
         *grid.states.get_by_index2_mut((1, 1).into()).unwrap() = CellState::Mine;
         *grid.states.get_by_index2_mut((4, 4).into()).unwrap() = CellState::Mine;
+        grid.update_adjacency();
 
         app
             .insert_resource(GridVis{ dirty: CellDirty::None, grid })
             .add_plugins(Material2dPlugin::<GridMaterial>::default())
+            .add_systems(Startup, spawn_adjacency)
             .add_systems(Startup, spawn_grid)
             .add_systems(Startup, spawn_mines)
             .add_systems(Startup, spawn_covers)

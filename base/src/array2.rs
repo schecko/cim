@@ -162,9 +162,14 @@ impl<T> Array2<T>
         self.size.get_index(pos).map(|index| &self.array[index])
     }
 
-    pub fn point_to_index(&self, pos: Point) -> Option<usize>
+    pub fn get_index(&self, pos: Point) -> Option<usize>
     {
         self.size.get_index(pos)
+    }
+
+    pub fn get_index2(&self, index: usize) -> Option<Point>
+    {
+        self.size.get_index2(index)
     }
 
     pub fn get_by_index(&self, index: usize) -> Option<&T>
@@ -210,7 +215,7 @@ impl<T> Array2<T>
     pub fn row_iter(&self, y: i32) -> Result<impl DoubleEndedIterator<Item = &T> + Clone, Error>
     {
         let start = self
-            .point_to_index((0, y).into())
+            .get_index((0, y).into())
             .ok_or(Error::IndicesOutOfBounds((0, y).into()))?;
         let end = start + (self.size.width as usize);
         Ok(self.array[start..end].iter())

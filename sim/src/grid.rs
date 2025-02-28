@@ -21,7 +21,7 @@ bitflags!
 pub struct Grid
 {
     pub states: array2::Array2<CellState>,
-    pub adjacencies: array2::Array2<u8>,
+    pub adjacency: array2::Array2<u8>,
 }
 
 impl Grid
@@ -31,7 +31,7 @@ impl Grid
         Self
         {
             states: array2::Array2::new(width, height),
-            adjacencies: array2::Array2::new(width, height),
+            adjacency: array2::Array2::new(width, height),
         }
     }
 
@@ -40,7 +40,7 @@ impl Grid
         Self
         {
             states: array2::Array2::from_size(size),
-            adjacencies: array2::Array2::from_size(size),
+            adjacency: array2::Array2::from_size(size),
         }
     }
 
@@ -52,7 +52,26 @@ impl Grid
     pub fn clear(&mut self)
     {
         self.states.fill_with(CellState::None);
-        self.adjacencies.fill_with(0);
+        self.adjacency.fill_with(0);
+    }
+
+    pub fn update_adjacency(&mut self)
+    {
+        let size = self.states.size();
+        for pos in size.index2_space()
+        {
+            let mut adj = 0;
+            for neighbour_pos in size.neighbours::<{ base::extents::Neighbours::All.bits() }>(pos)
+            {
+                let state = self.states.get_by_index2(neighbour_pos).unwrap();
+                if state.intersects(CellState::Mine)
+                {
+                    adj += 1;
+                }
+            }
+            assert!(adj <= 8);
+            self.adjacency.set_by_index2(pos, adj).unwrap();
+        }
     }
 }
 

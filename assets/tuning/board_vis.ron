@@ -4,4 +4,5 @@
         world_line_width: 1.0,
         uv_width: 0.5,
     ),
+    adjacency_images: ("adjacency/1.png", "adjacency/2.png", "adjacency/3.png", "adjacency/4.png", "adjacency/5.png", "adjacency/6.png", "adjacency/7.png", "adjacency/8.png"),
 )

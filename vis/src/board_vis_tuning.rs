@@ -27,6 +27,7 @@ pub struct BoardVisTuning
 {
     pub cell_size: Vec2,
     pub grid: GridTuning,
+    pub adjacency_images: [std::path::PathBuf; 8],
 }
 
 impl Tuning for BoardVisTuning
@@ -45,6 +46,16 @@ impl Default for BoardVisTuning
         {
             cell_size: Vec2::splat(28.0),
             grid: Default::default(),
+            adjacency_images: [
+                "adjacency/1.png".into(),
+                "adjacency/2.png".into(),
+                "adjacency/3.png".into(),
+                "adjacency/4.png".into(),
+                "adjacency/5.png".into(),
+                "adjacency/6.png".into(),
+                "adjacency/7.png".into(),
+                "adjacency/8.png".into(),
+            ],
         }
     }
 }
