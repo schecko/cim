@@ -6,10 +6,13 @@ use bevy::window::PrimaryWindow;
 use vis::board_vis_tuning::BoardVisTuning;
 use vis::grid_vis::GridVis;
 
+#[derive(Debug, Clone, Component)]
+pub struct GameplayCamera;
+
 pub fn camera_pan
 (
     mouse_buttons: Res<ButtonInput<MouseButton>>,
-    mut camera_query: Query<(&mut Transform, &mut OrthographicProjection), With<Camera2d>>,
+    mut camera_query: Query<(&mut Transform, &mut OrthographicProjection), (With<Camera2d>, With<GameplayCamera>)>,
     mut previous_mouse_position: Local<Option<Vec2>>,
     windows: Query<&Window, With<PrimaryWindow>>,
 )
@@ -46,7 +49,7 @@ pub fn camera_pan
 
 pub fn reveal_cell
 (
-    camera_query: Query<(&Camera, &GlobalTransform), With<Camera2d>>,
+    camera_query: Query<(&Camera, &GlobalTransform), (With<Camera2d>, With<GameplayCamera>)>,
     windows: Query<&Window, With<PrimaryWindow>>,
     mut gizmos: Gizmos,
     board_vis_tuning: Res<BoardVisTuning>,
@@ -84,7 +87,7 @@ pub fn reveal_cell
 
 pub fn camera_zoom
 (
-    mut ortho_query: Query<&mut OrthographicProjection, With<Camera2d>>,
+    mut ortho_query: Query<&mut OrthographicProjection, (With<Camera2d>, With<GameplayCamera>)>,
     mut scroll_events: EventReader<MouseWheel>,
 )
 {

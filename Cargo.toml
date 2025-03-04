@@ -22,6 +22,7 @@ ron = "0.8.1"
 serde = "1.0.215"
 thiserror = "2.0.6"
 glam = "0.29.2"
+bevy_lunex = "0.3.1"
 
 # Enable optimizations for dependencies
 [profile.dev.package."*"]
@@ -34,6 +35,7 @@ ron = { workspace = true }
 serde = { workspace = true }
 thiserror = { workspace = true }
 glam = { workspace = true }
+bevy_lunex = { workspace = true }
 
 base = { path = "base" }
 bevyx = { path = "bevyx" }
