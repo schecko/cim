@@ -1,6 +1,7 @@
 
 mod debug;
 mod input;
+mod layers;
 use crate::input::GameplayCamera;
 
 use bevy::dev_tools::fps_overlay::FpsOverlayConfig;
@@ -53,23 +54,23 @@ fn setup
         Camera2d::default(),
         Camera
         {
-            order: 0,
+            order: layers::GAME_LAYER as isize,
             ..default()
         },
         GameplayCamera,
-        UiSourceCamera::<0>,
+        UiSourceCamera::<{ layers::GAME_LAYER }>,
     ));
     commands.spawn
     ((
         Camera2d::default(),
         Camera
         {
-            order: 1,
+            order: layers::UI_LAYER as isize,
             clear_color: ClearColorConfig::None,
             ..default()
         },
-        UiSourceCamera::<1>,
-        RenderLayers::from_layers(&[1, 2]),
+        UiSourceCamera::<{ layers::UI_LAYER }>,
+        RenderLayers::from_layers(&[layers::UI_LAYER, layers::DEBUG_LAYER_2D]),
     ));
 }
 
@@ -82,8 +83,8 @@ fn ui
     commands.spawn(
     (
         UiLayoutRoot::new_2d(),
-        UiFetchFromCamera::<1>,
-        RenderLayers::from_layers(&[1]),
+        UiFetchFromCamera::<{ layers::UI_LAYER }>,
+        RenderLayers::from_layers(&[layers::UI_LAYER]),
 
     )).with_children(|ui|
     {
@@ -91,13 +92,13 @@ fn ui
         (
             Name::new("My Rectangle"),
             UiLayout::window()
-                .anchor(Anchor::TopLeft) // Put the origin at the center
-                .pos(Rl((0.0, 0.0)))  // Set the position to 50%
-                .size((200.0, 100.0))    // Set the size to [200.0, 50.0]
+                .anchor(Anchor::TopLeft)
+                .pos(Rl((0.0, 0.0)))
+                .size((200.0, 100.0))
                 .pack(),
             UiColor::from(Color::srgb(1.0, 1.0, 1.0)),
             Sprite::from_image(asset_server.load("textures/sample.png")),
-            RenderLayers::from_layers(&[1]),
+            RenderLayers::from_layers(&[layers::UI_LAYER]),
 
         )).observe(|_: Trigger<Pointer<Click>>, mut exit: EventWriter<AppExit>|
         {
@@ -150,7 +151,7 @@ fn main()
             },
         })
         .add_plugins(UiLunexPlugin)
-        .add_plugins(UiLunexDebugPlugin::<2, 3>)
+        .add_plugins(UiLunexDebugPlugin::<{ layers::DEBUG_LAYER_2D }, { layers::DEBUG_LAYER_3D }>)
         .insert_state(AppState::Frontend)
         .add_plugins(crate::debug::DebugPlugin)
         .add_plugins(EguiPlugin)
