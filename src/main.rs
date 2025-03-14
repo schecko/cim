@@ -6,6 +6,7 @@ use crate::input::GameplayCamera;
 use bevy::dev_tools::fps_overlay::FpsOverlayConfig;
 use bevy::dev_tools::fps_overlay::FpsOverlayPlugin;
 use bevy::prelude::*;
+use bevy::render::view::visibility::RenderLayers;
 use bevy::render::RenderPlugin;
 use bevy::render::settings::Backends;
 use bevy::render::settings::WgpuSettings;
@@ -56,6 +57,7 @@ fn setup
             ..default()
         },
         GameplayCamera,
+        UiSourceCamera::<0>,
     ));
     commands.spawn
     ((
@@ -66,8 +68,8 @@ fn setup
             clear_color: ClearColorConfig::None,
             ..default()
         },
-        UiSourceCamera::<0>,
-        // RenderLayers::from_layers(&[0, 1]),
+        UiSourceCamera::<1>,
+        RenderLayers::from_layers(&[1, 2]),
     ));
 }
 
@@ -79,39 +81,26 @@ fn ui
 {
     commands.spawn(
     (
-        // Initialize the UI root for 2D
         UiLayoutRoot::new_2d(),
-
-        // Make the UI synchronized with camera viewport size
-        UiFetchFromCamera::<0>,
+        UiFetchFromCamera::<1>,
+        RenderLayers::from_layers(&[1]),
 
     )).with_children(|ui|
     {
         ui.spawn(
         (
-            // You can name the entity
             Name::new("My Rectangle"),
-
-            // Specify the position and size of the button
             UiLayout::window()
-                .anchor(Anchor::Center) // Put the origin at the center
-                .pos(Rl((50.0, 50.0)))  // Set the position to 50%
-                .size((200.0, 50.0))    // Set the size to [200.0, 50.0]
+                .anchor(Anchor::TopLeft) // Put the origin at the center
+                .pos(Rl((0.0, 0.0)))  // Set the position to 50%
+                .size((200.0, 100.0))    // Set the size to [200.0, 50.0]
                 .pack(),
-
-            // Color the sprite with red color
             UiColor::from(Color::srgb(1.0, 1.0, 1.0)),
-
-            // Attach sprite to the node
             Sprite::from_image(asset_server.load("textures/sample.png")),
+            RenderLayers::from_layers(&[1]),
 
-            // When hovered, it will request the cursor icon to be changed
-            //OnHoverSetCursor::new(SystemCursorIcon::Pointer),
-
-        // Interactivity is done through observers, you can query anything here
-        )).observe(|_: Trigger<Pointer<Click>>, mut exit: EventWriter<AppExit>| {
-    
-            // Close the app on click
+        )).observe(|_: Trigger<Pointer<Click>>, mut exit: EventWriter<AppExit>|
+        {
             exit.send(AppExit::Success);
         });
     });
@@ -161,6 +150,7 @@ fn main()
             },
         })
         .add_plugins(UiLunexPlugin)
+        .add_plugins(UiLunexDebugPlugin::<2, 3>)
         .insert_state(AppState::Frontend)
         .add_plugins(crate::debug::DebugPlugin)
         .add_plugins(EguiPlugin)
