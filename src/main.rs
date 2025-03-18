@@ -17,8 +17,9 @@ use bevy_lunex::*;
 #[derive(States, Debug, Clone, PartialEq, Eq, Hash)]
 enum AppState
 {
+    Splash,
     Frontend,
-    InGame,
+    Gameplay,
 }
 
 fn find_assets_folder() -> Result<(), std::io::Error>
@@ -71,6 +72,7 @@ fn setup
         },
         UiSourceCamera::<{ layers::UI_LAYER }>,
         RenderLayers::from_layers(&[layers::UI_LAYER, layers::DEBUG_LAYER_2D]),
+        Transform::from_translation(Vec3::Z * 1000.0),
     ));
 }
 
@@ -84,7 +86,7 @@ fn ui
     (
         UiLayoutRoot::new_2d(),
         UiFetchFromCamera::<{ layers::UI_LAYER }>,
-        RenderLayers::from_layers(&[layers::UI_LAYER]),
+        layers::UI_RENDER_LAYER,
 
     )).with_children(|ui|
     {
@@ -98,13 +100,136 @@ fn ui
                 .pack(),
             UiColor::from(Color::srgb(1.0, 1.0, 1.0)),
             Sprite::from_image(asset_server.load("textures/sample.png")),
-            RenderLayers::from_layers(&[layers::UI_LAYER]),
+            layers::UI_RENDER_LAYER,
 
         )).observe(|_: Trigger<Pointer<Click>>, mut exit: EventWriter<AppExit>|
         {
             exit.send(AppExit::Success);
         });
     });
+}
+
+fn despawn_scene<S: Component>(mut commands: Commands, query: Query<Entity, With<S>>)
+{
+    for entity in &query
+    {
+        commands.entity(entity).despawn_recursive();
+    }
+}
+
+#[derive(Component)]
+struct SplashAppState;
+impl SplashAppState
+{
+    fn spawn( mut commands: Commands, asset_server: Res<AssetServer> )
+    {
+        commands.spawn((
+            UiLayoutRoot::new_2d(),
+            UiFetchFromCamera::<{ layers::UI_LAYER }>,
+            layers::UI_RENDER_LAYER,
+            SplashAppState,
+            Name::new("Splash"),
+        )).with_children(|ui|
+        {
+            ui.spawn
+            ((
+                Name::new("Background"),
+                UiLayout::solid().pack(),
+                UiColor::from(Color::srgb(1.0, 0.0, 1.0)),
+                Sprite::from_image(asset_server.load("textures/sample.png")),
+                layers::UI_RENDER_LAYER,
+            ))
+            .observe(|_: Trigger<Pointer<Click>>, mut next: ResMut<NextState<AppState>>|
+            {
+                next.set(AppState::Frontend);
+            });
+        });
+    }
+}
+
+#[derive(Component)]
+struct FrontendAppState;
+impl FrontendAppState
+{
+    fn spawn( mut commands: Commands, asset_server: Res<AssetServer> )
+    {
+        commands.spawn((
+            UiLayoutRoot::new_2d(),
+            UiFetchFromCamera::<{ layers::UI_LAYER }>,
+            layers::UI_RENDER_LAYER,
+            FrontendAppState,
+            Name::new("Frontend"),
+        )).with_children(|ui|
+        {
+            ui.spawn
+            ((
+                Name::new("Background"),
+                UiLayout::solid().pack(),
+                UiColor::from(Color::srgb(0.0, 1.0, 1.0)),
+                Sprite::from_image(asset_server.load("textures/sample.png")),
+                layers::UI_RENDER_LAYER,
+            ));
+
+            ui.spawn
+            ((
+                Name::new("ButtonContainer"),
+                UiLayout::solid().pack(),
+                layers::UI_RENDER_LAYER,
+            ))
+            .with_children(|ui|
+            {
+                let gap = 3.0;
+                let size = 14.0;
+                let mut offset = 0.0;
+                 for button in ["Continue", "New Game", "Load Game", "Settings", "Additional Content", "Credits", "Quit Game"]
+                 {
+                    ui.spawn((
+                        Name::new(button),
+                        UiLayout::window().y(Rl(offset)).size(Rl((100.0, size))).pack(),
+                        Text2d::new(button),
+                        layers::UI_RENDER_LAYER,
+                    ))
+                    .observe(|_: Trigger<Pointer<Click>>, mut next: ResMut<NextState<AppState>>|
+                    {
+                        next.set(AppState::Gameplay);
+                    });
+                    offset += gap + size;
+                 }
+            });
+
+
+        });
+    }
+}
+
+#[derive(Component)]
+struct GameplayAppState;
+impl GameplayAppState
+{
+    fn spawn( mut commands: Commands, asset_server: Res<AssetServer> )
+    {
+        commands.spawn((
+            UiLayoutRoot::new_2d(),
+            UiFetchFromCamera::<{ layers::UI_LAYER }>,
+            layers::UI_RENDER_LAYER,
+            GameplayAppState,
+            Name::new("Gameplay"),
+        )).with_children(|ui|
+        {
+            ui.spawn
+            ((
+                Name::new("Background"),
+                UiLayout::window().anchor(Anchor::TopLeft).size((100.0, 100.0)).pack(),
+                UiColor::from(Color::srgb(1.0, 1.0, 0.0)),
+                Sprite::from_image(asset_server.load("textures/sample.png")),
+                layers::UI_RENDER_LAYER,
+            ))
+            .observe(|_: Trigger<Pointer<Click>>, mut next: ResMut<NextState<AppState>>|
+            {
+                next.set(AppState::Frontend);
+            });
+        });
+    }
 }
 
 fn main()
@@ -152,14 +277,20 @@ fn main()
         })
         .add_plugins(UiLunexPlugin)
         .add_plugins(UiLunexDebugPlugin::<{ layers::DEBUG_LAYER_2D }, { layers::DEBUG_LAYER_3D }>)
-        .insert_state(AppState::Frontend)
+        .insert_state(AppState::Splash)
         .add_plugins(crate::debug::DebugPlugin)
         .add_plugins(EguiPlugin)
         .add_plugins(vis::GameVisPlugin)
         .add_systems(Startup, setup)
-        .add_systems(Startup, ui)
-        .add_systems(Update, input::camera_pan)
-        .add_systems(Update, input::camera_zoom)
-        .add_systems(Update, input::reveal_cell)
+        // .add_systems(Startup, ui)
+        // .add_systems(Update, input::camera_pan)
+        // .add_systems(Update, input::camera_zoom)
+        // .add_systems(Update, input::reveal_cell)
+        .add_systems(OnEnter(AppState::Splash), SplashAppState::spawn)
+        .add_systems(OnExit(AppState::Splash), despawn_scene::<SplashAppState>)
+        .add_systems(OnEnter(AppState::Frontend), FrontendAppState::spawn)
+        .add_systems(OnExit(AppState::Frontend), despawn_scene::<FrontendAppState>)
+        .add_systems(OnEnter(AppState::Gameplay), GameplayAppState::spawn)
+        .add_systems(OnExit(AppState::Gameplay), despawn_scene::<GameplayAppState>)
         .run();
 }
