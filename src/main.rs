@@ -2,7 +2,7 @@
 mod debug;
 mod input;
 mod layers;
-mod ui;
+mod screens;
 use crate::input::GameplayCamera;
 
 use bevy::dev_tools::fps_overlay::FpsOverlayConfig;
@@ -91,7 +91,7 @@ impl SplashAppState
 {
     fn spawn(commands: Commands, asset_server: Res<AssetServer>)
     {
-        ui::splash_screen::spawn(commands, asset_server);
+        screens::splash::spawn(commands, asset_server);
     }
 }
 
@@ -101,7 +101,7 @@ impl FrontendAppState
 {
     fn spawn( mut commands: Commands, asset_server: Res<AssetServer> )
     {
-        ui::home_screen::spawn(commands, asset_server);
+        screens::home::spawn(commands, asset_server);
     }
 }
 
@@ -111,7 +111,7 @@ impl GameplayAppState
 {
     fn spawn(commands: Commands, asset_server: Res<AssetServer>)
     {
-        ui::hud_screen::spawn(commands, asset_server);
+        screens::hud::spawn(commands, asset_server);
     }
 }
 
