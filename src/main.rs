@@ -3,6 +3,7 @@ mod debug;
 mod input;
 mod layers;
 mod screens;
+mod app_state;
 use crate::input::GameplayCamera;
 
 use bevy::dev_tools::fps_overlay::FpsOverlayConfig;
@@ -14,14 +15,6 @@ use bevy::render::settings::Backends;
 use bevy::render::settings::WgpuSettings;
 use bevy_egui::EguiPlugin;
 use bevy_lunex::*;
-
-#[derive(States, Debug, Clone, PartialEq, Eq, Hash)]
-pub enum AppState
-{
-    Splash,
-    Frontend,
-    Gameplay,
-}
 
 fn find_assets_folder() -> Result<(), std::io::Error>
 {
@@ -86,20 +79,10 @@ fn despawn_scene<S: Component>(mut commands: Commands, query: Query<Entity, With
 }
 
 #[derive(Component)]
-struct SplashAppState;
-impl SplashAppState
-{
-    fn spawn(commands: Commands, asset_server: Res<AssetServer>)
-    {
-        screens::splash::spawn(commands, asset_server);
-    }
-}
-
-#[derive(Component)]
 struct FrontendAppState;
 impl FrontendAppState
 {
-    fn spawn( mut commands: Commands, asset_server: Res<AssetServer> )
+    fn spawn(commands: Commands, asset_server: Res<AssetServer>)
     {
         screens::home::spawn(commands, asset_server);
     }
@@ -160,19 +143,18 @@ fn main()
         })
         .add_plugins(UiLunexPlugin)
         .add_plugins(UiLunexDebugPlugin::<{ layers::DEBUG_LAYER_2D }, { layers::DEBUG_LAYER_3D }>)
-        .insert_state(AppState::Splash)
+        .insert_state(crate::app_state::AppState::Splash)
         .add_plugins(crate::debug::DebugPlugin)
         .add_plugins(EguiPlugin)
         .add_plugins(vis::GameVisPlugin)
+        .add_plugins(app_state::splash::SplashAppState)
         .add_systems(Startup, setup)
         .add_systems(Update, input::camera_pan)
         .add_systems(Update, input::camera_zoom)
         .add_systems(Update, input::reveal_cell)
-        .add_systems(OnEnter(AppState::Splash), SplashAppState::spawn)
-        .add_systems(OnExit(AppState::Splash), despawn_scene::<SplashAppState>)
-        .add_systems(OnEnter(AppState::Frontend), FrontendAppState::spawn)
-        .add_systems(OnExit(AppState::Frontend), despawn_scene::<FrontendAppState>)
-        .add_systems(OnEnter(AppState::Gameplay), GameplayAppState::spawn)
-        .add_systems(OnExit(AppState::Gameplay), despawn_scene::<GameplayAppState>)
+        .add_systems(OnEnter(crate::app_state::AppState::Frontend), FrontendAppState::spawn)
+        .add_systems(OnExit(crate::app_state::AppState::Frontend), despawn_scene::<FrontendAppState>)
+        .add_systems(OnEnter(crate::app_state::AppState::Gameplay), GameplayAppState::spawn)
+        .add_systems(OnExit(crate::app_state::AppState::Gameplay), despawn_scene::<GameplayAppState>)
         .run();
 }

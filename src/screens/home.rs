@@ -2,6 +2,7 @@ use bevy::prelude::*;
 use bevy_lunex::*;
 
 use crate::layers;
+use crate::app_state::AppState;
 
 #[derive(Component)]
 struct HomeScreen;
@@ -38,31 +39,31 @@ pub fn spawn(mut commands: Commands, asset_server: Res<AssetServer>)
             let gap = 3.0;
             let size = 14.0;
             let mut offset = 0.0;
-                for button in ["Play", "Settings", "Credits", "Quit Game"]
+            for button in ["Play", "Settings", "Credits", "Quit Game"]
+            {
+                ui.spawn((
+                    Name::new(button),
+                    UiLayout::window().y(Rl(offset)).size(Rl((100.0, size))).pack(),
+                    Text2d::new(button),
+                    layers::UI_RENDER_LAYER,
+                    HomeScreen,
+                ))
+                .observe(
+                |
+                     _: Trigger<Pointer<Click>>,
+                     mut next: ResMut<NextState<AppState>>,
+                     query: Query<Entity, With<HomeScreen>>,
+                     mut cmd: Commands,
+                |
                 {
-                    ui.spawn((
-                        Name::new(button),
-                        UiLayout::window().y(Rl(offset)).size(Rl((100.0, size))).pack(),
-                        Text2d::new(button),
-                        layers::UI_RENDER_LAYER,
-                        HomeScreen,
-                    ))
-                    .observe(
-                    |
-                         _: Trigger<Pointer<Click>>,
-                         mut next: ResMut<NextState<crate::AppState>>,
-                         query: Query<Entity, With<HomeScreen>>,
-                         mut cmd: Commands,
-                    |
+                    for entity in &query
                     {
-                        for entity in &query
-                        {
-                            cmd.entity(entity).despawn_recursive();
-                        }
-                        next.set(crate::AppState::Gameplay);
-                    });
-                    offset += gap + size;
-                }
+                        cmd.entity(entity).despawn_recursive();
+                    }
+                    next.set(AppState::Gameplay);
+                });
+                offset += gap + size;
+            }
         });
     });
 }

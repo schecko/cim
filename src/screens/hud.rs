@@ -2,6 +2,7 @@ use bevy::prelude::*;
 use bevy_lunex::*;
 
 use crate::layers;
+use crate::app_state::AppState;
 
 #[derive(Component)]
 struct HudScreen;
@@ -28,7 +29,7 @@ pub fn spawn(mut commands: Commands, asset_server: Res<AssetServer>)
         .observe(
         |
              _: Trigger<Pointer<Click>>,
-             mut next: ResMut<NextState<crate::AppState>>,
+             mut next: ResMut<NextState<AppState>>,
              query: Query<Entity, With<HudScreen>>,
              mut cmd: Commands,
         |
@@ -37,7 +38,7 @@ pub fn spawn(mut commands: Commands, asset_server: Res<AssetServer>)
             {
                 cmd.entity(entity).despawn_recursive();
             }
-            next.set(crate::AppState::Frontend);
+            next.set(AppState::Frontend);
         });
     });
 }
