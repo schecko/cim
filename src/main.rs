@@ -76,39 +76,6 @@ fn setup
     ));
 }
 
-fn ui
-(
-    mut commands: Commands,
-    asset_server: Res<AssetServer>,
-)
-{
-    commands.spawn(
-    (
-        UiLayoutRoot::new_2d(),
-        UiFetchFromCamera::<{ layers::UI_LAYER }>,
-        layers::UI_RENDER_LAYER,
-
-    )).with_children(|ui|
-    {
-        ui.spawn(
-        (
-            Name::new("My Rectangle"),
-            UiLayout::window()
-                .anchor(Anchor::TopLeft)
-                .pos(Rl((0.0, 0.0)))
-                .size((200.0, 100.0))
-                .pack(),
-            UiColor::from(Color::srgb(1.0, 1.0, 1.0)),
-            Sprite::from_image(asset_server.load("textures/sample.png")),
-            layers::UI_RENDER_LAYER,
-
-        )).observe(|_: Trigger<Pointer<Click>>, mut exit: EventWriter<AppExit>|
-        {
-            exit.send(AppExit::Success);
-        });
-    });
-}
-
 fn despawn_scene<S: Component>(mut commands: Commands, query: Query<Entity, With<S>>)
 {
     for entity in &query
@@ -181,20 +148,20 @@ impl FrontendAppState
                 let gap = 3.0;
                 let size = 14.0;
                 let mut offset = 0.0;
-                 for button in ["Continue", "New Game", "Load Game", "Settings", "Additional Content", "Credits", "Quit Game"]
-                 {
-                    ui.spawn((
-                        Name::new(button),
-                        UiLayout::window().y(Rl(offset)).size(Rl((100.0, size))).pack(),
-                        Text2d::new(button),
-                        layers::UI_RENDER_LAYER,
-                    ))
-                    .observe(|_: Trigger<Pointer<Click>>, mut next: ResMut<NextState<AppState>>|
+                    for button in ["Play", "Settings", "Credits", "Quit Game"]
                     {
-                        next.set(AppState::Gameplay);
-                    });
-                    offset += gap + size;
-                 }
+                        ui.spawn((
+                            Name::new(button),
+                            UiLayout::window().y(Rl(offset)).size(Rl((100.0, size))).pack(),
+                            Text2d::new(button),
+                            layers::UI_RENDER_LAYER,
+                        ))
+                        .observe(|_: Trigger<Pointer<Click>>, mut next: ResMut<NextState<AppState>>|
+                        {
+                            next.set(AppState::Gameplay);
+                        });
+                        offset += gap + size;
+                    }
             });
 
 
@@ -282,10 +249,9 @@ fn main()
         .add_plugins(EguiPlugin)
         .add_plugins(vis::GameVisPlugin)
         .add_systems(Startup, setup)
-        // .add_systems(Startup, ui)
-        // .add_systems(Update, input::camera_pan)
-        // .add_systems(Update, input::camera_zoom)
-        // .add_systems(Update, input::reveal_cell)
+        .add_systems(Update, input::camera_pan)
+        .add_systems(Update, input::camera_zoom)
+        .add_systems(Update, input::reveal_cell)
         .add_systems(OnEnter(AppState::Splash), SplashAppState::spawn)
         .add_systems(OnExit(AppState::Splash), despawn_scene::<SplashAppState>)
         .add_systems(OnEnter(AppState::Frontend), FrontendAppState::spawn)
