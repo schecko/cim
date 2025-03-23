@@ -2,6 +2,7 @@
 mod debug;
 mod input;
 mod layers;
+mod ui;
 use crate::input::GameplayCamera;
 
 use bevy::dev_tools::fps_overlay::FpsOverlayConfig;
@@ -15,7 +16,7 @@ use bevy_egui::EguiPlugin;
 use bevy_lunex::*;
 
 #[derive(States, Debug, Clone, PartialEq, Eq, Hash)]
-enum AppState
+pub enum AppState
 {
     Splash,
     Frontend,
@@ -88,29 +89,9 @@ fn despawn_scene<S: Component>(mut commands: Commands, query: Query<Entity, With
 struct SplashAppState;
 impl SplashAppState
 {
-    fn spawn( mut commands: Commands, asset_server: Res<AssetServer> )
+    fn spawn(commands: Commands, asset_server: Res<AssetServer>)
     {
-        commands.spawn((
-            UiLayoutRoot::new_2d(),
-            UiFetchFromCamera::<{ layers::UI_LAYER }>,
-            layers::UI_RENDER_LAYER,
-            SplashAppState,
-            Name::new("Splash"),
-        )).with_children(|ui|
-        {
-            ui.spawn
-            ((
-                Name::new("Background"),
-                UiLayout::solid().pack(),
-                UiColor::from(Color::srgb(1.0, 0.0, 1.0)),
-                Sprite::from_image(asset_server.load("textures/sample.png")),
-                layers::UI_RENDER_LAYER,
-            ))
-            .observe(|_: Trigger<Pointer<Click>>, mut next: ResMut<NextState<AppState>>|
-            {
-                next.set(AppState::Frontend);
-            });
-        });
+        ui::splash_screen::spawn(commands, asset_server);
     }
 }
 
@@ -120,52 +101,7 @@ impl FrontendAppState
 {
     fn spawn( mut commands: Commands, asset_server: Res<AssetServer> )
     {
-        commands.spawn((
-            UiLayoutRoot::new_2d(),
-            UiFetchFromCamera::<{ layers::UI_LAYER }>,
-            layers::UI_RENDER_LAYER,
-            FrontendAppState,
-            Name::new("Frontend"),
-        )).with_children(|ui|
-        {
-            ui.spawn
-            ((
-                Name::new("Background"),
-                UiLayout::solid().pack(),
-                UiColor::from(Color::srgb(0.0, 1.0, 1.0)),
-                Sprite::from_image(asset_server.load("textures/sample.png")),
-                layers::UI_RENDER_LAYER,
-            ));
-
-            ui.spawn
-            ((
-                Name::new("ButtonContainer"),
-                UiLayout::solid().pack(),
-                layers::UI_RENDER_LAYER,
-            ))
-            .with_children(|ui|
-            {
-                let gap = 3.0;
-                let size = 14.0;
-                let mut offset = 0.0;
-                    for button in ["Play", "Settings", "Credits", "Quit Game"]
-                    {
-                        ui.spawn((
-                            Name::new(button),
-                            UiLayout::window().y(Rl(offset)).size(Rl((100.0, size))).pack(),
-                            Text2d::new(button),
-                            layers::UI_RENDER_LAYER,
-                        ))
-                        .observe(|_: Trigger<Pointer<Click>>, mut next: ResMut<NextState<AppState>>|
-                        {
-                            next.set(AppState::Gameplay);
-                        });
-                        offset += gap + size;
-                    }
-            });
-
-
-        });
+        ui::home_screen::spawn(commands, asset_server);
     }
 }
 
@@ -173,29 +109,9 @@ impl FrontendAppState
 struct GameplayAppState;
 impl GameplayAppState
 {
-    fn spawn( mut commands: Commands, asset_server: Res<AssetServer> )
+    fn spawn(commands: Commands, asset_server: Res<AssetServer>)
     {
-        commands.spawn((
-            UiLayoutRoot::new_2d(),
-            UiFetchFromCamera::<{ layers::UI_LAYER }>,
-            layers::UI_RENDER_LAYER,
-            GameplayAppState,
-            Name::new("Gameplay"),
-        )).with_children(|ui|
-        {
-            ui.spawn
-            ((
-                Name::new("Background"),
-                UiLayout::window().anchor(Anchor::TopLeft).size((100.0, 100.0)).pack(),
-                UiColor::from(Color::srgb(1.0, 1.0, 0.0)),
-                Sprite::from_image(asset_server.load("textures/sample.png")),
-                layers::UI_RENDER_LAYER,
-            ))
-            .observe(|_: Trigger<Pointer<Click>>, mut next: ResMut<NextState<AppState>>|
-            {
-                next.set(AppState::Frontend);
-            });
-        });
+        ui::hud_screen::spawn(commands, asset_server);
     }
 }
 

@@ -13,6 +13,7 @@ TODO:
 - win/loss state
 - main menu
 - board size choice
+- app state cleaning on transition
 
 * playable state
 
