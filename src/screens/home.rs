@@ -1,11 +1,21 @@
 use bevy::prelude::*;
 use bevy_lunex::*;
+use strum::{EnumIter, IntoEnumIterator};
 
 use crate::layers;
 use crate::app_state::AppState;
 
 #[derive(Component)]
 struct HomeScreen;
+
+#[derive(Debug, Eq, PartialEq, EnumIter, strum::Display)]
+enum Buttons
+{
+    Play,
+    Settings,
+    Credits,
+    Quit,
+}
 
 pub fn spawn(mut commands: Commands, asset_server: Res<AssetServer>)
 {
@@ -39,15 +49,38 @@ pub fn spawn(mut commands: Commands, asset_server: Res<AssetServer>)
             let gap = 3.0;
             let size = 14.0;
             let mut offset = 0.0;
-            for button in ["Play", "Settings", "Credits", "Quit Game"]
+            let mut make_button = |button_type: Buttons|
             {
-                ui.spawn((
-                    Name::new(button),
-                    UiLayout::window().y(Rl(offset)).size(Rl((100.0, size))).pack(),
-                    Text2d::new(button),
+                let local_offset = offset;
+                offset += gap + size;
+                (
+                    Name::new(button_type.to_string()),
+                    UiLayout::window().y(Rl(local_offset)).size(Rl((25.0, size))).pack(),
                     layers::UI_RENDER_LAYER,
                     HomeScreen,
-                ))
+                )
+            };
+
+            let make_button_child = |button_type: Buttons|
+            {
+                (
+                    Name::new("Button Text"),
+                    UiColor::new(vec![
+                        (UiBase::id(), Color::srgba(1.0, 0.0, 0.0, 1.0)),
+                        (UiHover::id(), Color::srgba(1.0, 0.0, 1.0, 1.0))
+                    ]),
+                    Text2d::new(button_type.to_string()),
+                    layers::UI_RENDER_LAYER,
+                    HomeScreen,
+                    PickingBehavior::IGNORE,
+                )
+            };
+
+            ui.spawn(make_button(Buttons::Play))
+                .with_children(|ui|
+                {
+                    ui.spawn(make_button_child(Buttons::Play));
+                })
                 .observe(
                 |
                      _: Trigger<Pointer<Click>>,
@@ -56,14 +89,54 @@ pub fn spawn(mut commands: Commands, asset_server: Res<AssetServer>)
                      mut cmd: Commands,
                 |
                 {
+                    println!("play");
                     for entity in &query
                     {
                         cmd.entity(entity).despawn_recursive();
                     }
                     next.set(AppState::Gameplay);
                 });
-                offset += gap + size;
-            }
+
+            ui.spawn(make_button(Buttons::Settings))
+                .with_children(|ui|
+                {
+                    ui.spawn(make_button_child(Buttons::Settings));
+                })
+                .observe(
+                |
+                     _: Trigger<Pointer<Click>>,
+                |
+                {
+                    println!("settings");
+                });
+
+            ui.spawn(make_button(Buttons::Credits))
+                .with_children(|ui|
+                {
+                    ui.spawn(make_button_child(Buttons::Credits));
+                })
+                .observe(
+                |
+                     _: Trigger<Pointer<Click>>,
+                |
+                {
+                    println!("credits");
+                });
+
+            ui.spawn(make_button(Buttons::Quit))
+                .with_children(|ui|
+                {
+                    ui.spawn(make_button_child(Buttons::Quit));
+                })
+                .observe(
+                |
+                     _: Trigger<Pointer<Click>>,
+                    mut exit: EventWriter<AppExit>,
+                |
+                {
+                    println!("quit");
+                    exit.send(AppExit::Success);
+                });
         });
     });
 }
