@@ -131,8 +131,5 @@ fn main()
         .add_plugins(app_state::gameplay::GameplayAppState)
         .add_plugins(app_state::frontend::FrontendAppState)
         .add_systems(Startup, setup)
-        .add_systems(Update, input::camera_pan)
-        .add_systems(Update, input::camera_zoom)
-        .add_systems(Update, input::reveal_cell)
         .run();
 }
