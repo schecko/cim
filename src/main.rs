@@ -78,26 +78,6 @@ fn despawn_scene<S: Component>(mut commands: Commands, query: Query<Entity, With
     }
 }
 
-#[derive(Component)]
-struct FrontendAppState;
-impl FrontendAppState
-{
-    fn spawn(commands: Commands, asset_server: Res<AssetServer>)
-    {
-        screens::home::spawn(commands, asset_server);
-    }
-}
-
-#[derive(Component)]
-struct GameplayAppState;
-impl GameplayAppState
-{
-    fn spawn(commands: Commands, asset_server: Res<AssetServer>)
-    {
-        screens::hud::spawn(commands, asset_server);
-    }
-}
-
 fn main()
 {
     let ext = base::extents::Extents{ width: 10, height: 10 };
@@ -148,13 +128,11 @@ fn main()
         .add_plugins(EguiPlugin)
         .add_plugins(vis::GameVisPlugin)
         .add_plugins(app_state::splash::SplashAppState)
+        .add_plugins(app_state::gameplay::GameplayAppState)
+        .add_plugins(app_state::frontend::FrontendAppState)
         .add_systems(Startup, setup)
         .add_systems(Update, input::camera_pan)
         .add_systems(Update, input::camera_zoom)
         .add_systems(Update, input::reveal_cell)
-        .add_systems(OnEnter(crate::app_state::AppState::Frontend), FrontendAppState::spawn)
-        .add_systems(OnExit(crate::app_state::AppState::Frontend), despawn_scene::<FrontendAppState>)
-        .add_systems(OnEnter(crate::app_state::AppState::Gameplay), GameplayAppState::spawn)
-        .add_systems(OnExit(crate::app_state::AppState::Gameplay), despawn_scene::<GameplayAppState>)
         .run();
 }

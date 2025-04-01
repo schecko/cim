@@ -6,6 +6,14 @@ use crate::app_state::AppState;
 #[derive(Component)]
 pub struct SplashAppState;
 
+impl SplashAppState
+{
+    fn spawn(commands: Commands, asset_server: Res<AssetServer>)
+    {
+        screens::splash::spawn(commands, asset_server);
+    }
+}
+
 impl Plugin for SplashAppState
 {
     fn build(&self, app: &mut App)
@@ -16,12 +24,3 @@ impl Plugin for SplashAppState
             ;
     }
 }
-
-impl SplashAppState
-{
-    fn spawn(commands: Commands, asset_server: Res<AssetServer>)
-    {
-        screens::splash::spawn(commands, asset_server);
-    }
-}
-

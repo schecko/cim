@@ -134,7 +134,6 @@ pub fn spawn(mut commands: Commands, asset_server: Res<AssetServer>)
                     mut exit: EventWriter<AppExit>,
                 |
                 {
-                    println!("quit");
                     exit.send(AppExit::Success);
                 });
         });
