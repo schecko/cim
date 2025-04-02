@@ -1,10 +1,13 @@
 
-use bevy::input::mouse::MouseWheel;
-use bevy::prelude::*;
-use bevy::window::PrimaryWindow;
+use crate::interactor::Interactor;
 
 use vis::board_vis_tuning::BoardVisTuning;
 use vis::grid_vis::GridVis;
+use base::extents::Extents;
+
+use bevy::input::mouse::MouseWheel;
+use bevy::prelude::*;
+use bevy::window::PrimaryWindow;
 
 #[derive(Debug, Clone, Component)]
 pub struct GameplayCamera;
@@ -53,6 +56,7 @@ pub fn reveal_cell
     windows: Query<&Window, With<PrimaryWindow>>,
     mut gizmos: Gizmos,
     board_vis_tuning: Res<BoardVisTuning>,
+    mut interactor: ResMut<Interactor>,
     mut grid_vis: ResMut<GridVis>,
     mouse_buttons: Res<ButtonInput<MouseButton>>,
 )
@@ -82,7 +86,7 @@ pub fn reveal_cell
     }
 
     gizmos.circle_2d(point, 5., bevy::color::palettes::basic::RED);
-    grid_vis.on_tap(&board_vis_tuning, &point);
+    interactor.on_tap(&mut grid_vis.grid, &board_vis_tuning, &point);
 }
 
 pub fn camera_zoom

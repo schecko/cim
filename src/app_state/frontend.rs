@@ -20,8 +20,6 @@ impl Plugin for FrontendAppState
     {
         app
             .add_systems(OnEnter(AppState::Frontend), FrontendAppState::spawn)
-            // .add_systems(OnExit(AppState::Frontend), despawn_scene::<FrontendAppState>)
-            // .add_systems(OnExit(AppState::Splash), despawn_scene::<SplashAppState>)
             ;
     }
 }

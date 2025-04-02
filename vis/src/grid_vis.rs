@@ -1,6 +1,7 @@
 
 use crate::board_vis_tuning::*;
 use crate::layers;
+use base::array2::Array2;
 use sim::grid::*;
 
 use bevy::prelude::*;
@@ -29,37 +30,11 @@ struct Cover;
 #[derive(Debug, Clone, Component)]
 struct Adjacency;
 
-bitflags!
-{
-    #[repr(transparent)]
-    #[derive(Debug, Default, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
-    struct CellDirty: u8
-    {
-        const None = 0 << 0;
-        const Cover = 1 << 0;
-        const Mine = 1 << 1;
-    }
-}
-
 #[derive(Debug, Clone, Resource)]
 pub struct GridVis
 {
-    dirty: CellDirty,
-    grid: Grid,
-}
-
-impl GridVis
-{
-    pub fn on_tap(&mut self, vis_tuning: &BoardVisTuning, world_pos: &Vec2)
-    {
-        let pos = (world_pos / vis_tuning.cell_size).as_ivec2();
-
-        if let Some(cell) = self.grid.states.get_by_index2_mut(pos)
-        {
-            cell.insert(CellState::Revealed);
-            self.dirty.insert(CellDirty::Cover | CellDirty::Mine);
-        }
-    }
+    // TODO I dont want vis to own the sim, it should be in svc or above
+    pub grid: Grid,
 }
 
 #[derive(Asset, TypePath, AsBindGroup, Debug, Clone)]
@@ -391,11 +366,6 @@ fn reveal_covers
     grid_vis: ResMut<GridVis>,
 )
 {
-    if !grid_vis.dirty.contains(CellDirty::Cover)
-    {
-        return;
-    }
-
     for (mut visibility, index) in &mut cover_query
     {
         let Some(state) = grid_vis.grid.states.get_by_index(index.0) else
@@ -443,7 +413,6 @@ fn spawn_adjacency
             ..default()
         };
 
-        println!("adjacency");
         let index2 =  grid_vis.grid.states.get_index2(index).unwrap();
         let world_pos = index2.as_vec2() * vis_tuning.cell_size;
         commands.spawn
@@ -462,14 +431,7 @@ impl Plugin for GridVisPlugin
 {
     fn build(&self, app: &mut App)
     {
-        let mut grid = Grid::new(5, 5);
-        *grid.states.get_by_index2_mut((0, 0).into()).unwrap() = CellState::Mine;
-        *grid.states.get_by_index2_mut((1, 1).into()).unwrap() = CellState::Mine;
-        *grid.states.get_by_index2_mut((4, 4).into()).unwrap() = CellState::Mine;
-        grid.update_adjacency();
-
         app
-            .insert_resource(GridVis{ dirty: CellDirty::None, grid })
             .add_plugins(Material2dPlugin::<GridMaterial>::default())
             .add_systems(Startup, spawn_adjacency)
             .add_systems(Startup, spawn_grid)

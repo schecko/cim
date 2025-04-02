@@ -4,6 +4,7 @@ mod input;
 mod layers;
 mod screens;
 mod app_state;
+mod interactor;
 use crate::input::GameplayCamera;
 
 use bevy::dev_tools::fps_overlay::FpsOverlayConfig;

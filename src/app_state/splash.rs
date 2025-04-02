@@ -20,7 +20,6 @@ impl Plugin for SplashAppState
     {
         app
             .add_systems(OnEnter(AppState::Splash), SplashAppState::spawn)
-            // .add_systems(OnExit(AppState::Splash), despawn_scene::<SplashAppState>)
             ;
     }
 }

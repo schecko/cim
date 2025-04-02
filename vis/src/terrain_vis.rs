@@ -3,6 +3,8 @@ use base::array2::*;
 use base::extents::*;
 use crate::board_vis_tuning::*;
 use crate::layers;
+use crate::terrain_grid::CellType;
+use crate::terrain_grid::TerrainGrid;
 
 use bevy::prelude::*;
 use bevy::reflect::TypePath;
@@ -65,7 +67,6 @@ fn guassian_blur(data: &mut Array2<f32>, passes: u32)
 #[derive(Debug, Clone, Resource)]
 struct TerrainVis
 {
-    cell_type: Array2<CellType>,
 }
 
 #[derive(Asset, TypePath, AsBindGroup, Debug, Clone)]
@@ -101,36 +102,18 @@ impl Material2d for TerrainMaterial
     }
 }
 
-bitflags!
-{
-    #[repr(transparent)]
-    #[derive(Debug, Default, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
-    pub struct CellType: u8
-    {
-        const None = 0 << 0;
-        const Land = 1 << 0;
-    }
-}
-
 fn startup
 (
     mut commands: Commands,
     mut meshes: ResMut<Assets<Mesh>>,
     mut materials: ResMut<Assets<TerrainMaterial>>,
     mut images: ResMut<Assets<Image>>,
+    terrain_grid: Res<TerrainGrid>,
     vis_tuning: Res<BoardVisTuning>,
     asset_server: Res<AssetServer>,
-    
 )
 {
-    let size = Extents::new(5, 5);
-    let mut vis = TerrainVis
-    {
-        cell_type: Array2::<CellType>::from_size(size),
-    };
-    *vis.cell_type.get_by_index2_mut((0, 0).into()).unwrap() = CellType::Land;
-    *vis.cell_type.get_by_index2_mut((2, 2).into()).unwrap() = CellType::Land;
-    *vis.cell_type.get_by_index2_mut((4, 4).into()).unwrap() = CellType::Land;
+    let size = terrain_grid.size();
 
     let elevation_handle = {
         const HEIGHT_MAP_SCALE: i32 = 4;
@@ -142,7 +125,7 @@ fn startup
 
         for pos in height_map.index2_space()
         {
-            height_map[pos] = if vis.cell_type[pos / HEIGHT_MAP_SCALE] == CellType::Land
+            height_map[pos] = if terrain_grid.grid[pos / HEIGHT_MAP_SCALE] == CellType::Land
                 { 1.0 }
                 else
                 { 0.0 };
@@ -246,10 +229,6 @@ impl Plugin for TerrainVisPlugin
     fn build(&self, app: &mut App)
     {
         app
-            .insert_resource(TerrainVis
-            {
-                cell_type: Array2::<CellType>::new(5, 5)
-            })
             .add_plugins(Material2dPlugin::<TerrainMaterial>::default())
             .add_systems(Startup, startup);
     }
