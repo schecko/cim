@@ -8,9 +8,12 @@ use base::array2::Array2;
 use base::extents::Extents;
 use sim::grid::*;
 use sim::logic::Logic;
+use vis::grid_vis::GridVisPlugin;
 use vis::grid_vis::GridVis;
+use vis::grid_vis;
 use vis::terrain_grid::CellType;
 use vis::terrain_grid::TerrainGrid;
+use vis::terrain_vis;
 
 use bevy::prelude::*;
 
@@ -50,11 +53,31 @@ impl Plugin for GameplayAppState
     fn build(&self, app: &mut App)
     {
         app
+            .add_plugins(terrain_vis::TerrainVisPlugin{})
+            .add_plugins(grid_vis::GridVisPlugin{})
+
             .add_systems(OnEnter(AppState::Gameplay), GameplayAppState::on_enter)
             .add_systems
             (
+                OnEnter(AppState::Gameplay),
+                (
+                    grid_vis::spawn_adjacency,
+                    grid_vis::spawn_covers,
+                    grid_vis::spawn_grid,
+                    grid_vis::spawn_mines,
+                    terrain_vis::startup
+                )
+                    .after(GameplayAppState::on_enter)
+            )
+            .add_systems
+            (
                 Update,
-                 (input::camera_pan, input::camera_zoom, input::reveal_cell)
+                (
+                     input::camera_pan,
+                     input::camera_zoom,
+                     input::reveal_cell,
+                     grid_vis::reveal_covers
+                )
                     .run_if(in_state(AppState::Gameplay))
             )
             ;

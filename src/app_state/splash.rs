@@ -1,7 +1,8 @@
 
-use bevy::prelude::*;
-use crate::screens;
 use crate::app_state::AppState;
+use crate::screens;
+
+use bevy::prelude::*;
 
 #[derive(Component)]
 pub struct SplashAppState;

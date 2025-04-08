@@ -2,12 +2,13 @@
 pub mod board_vis_tuning;
 pub mod grid_vis;
 pub mod terrain_grid;
-mod terrain_vis;
+pub mod terrain_vis;
 mod layers;
+
+use board_vis_tuning::*;
 
 use base::tuning::Tuning;
 use bevyx::ron::RonAssetPlugin;
-use board_vis_tuning::*;
 
 use bevy::prelude::*;
 
@@ -16,7 +17,7 @@ pub fn hello_vis()
     println!("Hello, vis!");
 }
 
-fn pre_startup
+fn startup
 (
     mut commands: Commands,
 )
@@ -33,8 +34,6 @@ impl Plugin for GameVisPlugin
     {
         app
             .add_plugins(RonAssetPlugin::<BoardVisTuning>::default())
-            .add_plugins(terrain_vis::TerrainVisPlugin{})
-            .add_plugins(grid_vis::GridVisPlugin{})
-            .add_systems(PreStartup, pre_startup);
+            .add_systems(Startup, startup);
     }
 }

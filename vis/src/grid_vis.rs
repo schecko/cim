@@ -1,31 +1,31 @@
 
 use crate::board_vis_tuning::*;
 use crate::layers;
+
 use base::array2::Array2;
 use sim::grid::*;
 
 use bevy::prelude::*;
 use bevy::reflect::TypePath;
+use bevy::render::mesh::MeshVertexBufferLayoutRef;
 use bevy::render::render_asset::*;
 use bevy::render::render_resource::*;
 use bevy::render::render_resource::AsBindGroup;
 use bevy::render::render_resource::ShaderRef;
 use bevy::sprite::*;
-use bevy::render::mesh::MeshVertexBufferLayoutRef;
-
 use bitflags::bitflags;
 
 #[derive(Debug, Clone, Component)]
-struct EntityIndex2(IVec2);
+pub struct EntityIndex2(IVec2);
 
 #[derive(Debug, Clone, Component)]
-struct EntityIndex(usize);
+pub struct EntityIndex(usize);
 
 #[derive(Debug, Clone, Component)]
-struct Mine;
+pub struct Mine;
 
 #[derive(Debug, Clone, Component)]
-struct Cover;
+pub struct Cover;
 
 #[derive(Debug, Clone, Component)]
 struct Adjacency;
@@ -38,7 +38,7 @@ pub struct GridVis
 }
 
 #[derive(Asset, TypePath, AsBindGroup, Debug, Clone)]
-struct GridMaterial
+pub struct GridMaterial
 {
     #[uniform(0)]
     color: LinearRgba,
@@ -137,7 +137,7 @@ impl<Vert: PartialEq> GeoBuilder<Vert>
     }
 }
 
-fn spawn_grid
+pub fn spawn_grid
 (
     mut commands: Commands,
     mut meshes: ResMut<Assets<Mesh>>,
@@ -288,7 +288,7 @@ fn spawn_grid
         ));
 }
 
-fn spawn_mines
+pub fn spawn_mines
 (
     mut commands: Commands,
     asset_server: Res<AssetServer>,
@@ -324,7 +324,7 @@ fn spawn_mines
     }
 }
 
-fn spawn_covers
+pub fn spawn_covers
 (
     mut commands: Commands,
     asset_server: Res<AssetServer>,
@@ -360,7 +360,7 @@ fn spawn_covers
     }
 }
 
-fn reveal_covers
+pub fn reveal_covers
 (
     mut cover_query: Query<(&mut Visibility, &EntityIndex), With<Cover>>,
     grid_vis: ResMut<GridVis>,
@@ -385,7 +385,7 @@ fn reveal_covers
     }
 }
 
-fn spawn_adjacency
+pub fn spawn_adjacency
 (
     mut commands: Commands,
     asset_server: Res<AssetServer>,
@@ -433,11 +433,6 @@ impl Plugin for GridVisPlugin
     {
         app
             .add_plugins(Material2dPlugin::<GridMaterial>::default())
-            .add_systems(Startup, spawn_adjacency)
-            .add_systems(Startup, spawn_grid)
-            .add_systems(Startup, spawn_mines)
-            .add_systems(Startup, spawn_covers)
-            .add_systems(Update, reveal_covers)
             ;
     }
 }

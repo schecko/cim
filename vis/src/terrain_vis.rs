@@ -70,7 +70,7 @@ struct TerrainVis
 }
 
 #[derive(Asset, TypePath, AsBindGroup, Debug, Clone)]
-struct TerrainMaterial
+pub struct TerrainMaterial
 {
     #[uniform(0)]
     color: LinearRgba,
@@ -102,7 +102,7 @@ impl Material2d for TerrainMaterial
     }
 }
 
-fn startup
+pub fn startup
 (
     mut commands: Commands,
     mut meshes: ResMut<Assets<Mesh>>,
@@ -230,6 +230,6 @@ impl Plugin for TerrainVisPlugin
     {
         app
             .add_plugins(Material2dPlugin::<TerrainMaterial>::default())
-            .add_systems(Startup, startup);
+            ;
     }
 }

@@ -5,10 +5,11 @@ edition = "2021"
 
 [workspace]
 members = [
-	"vis",
-	"sim",
 	"base",
 	"bevyx",
+	"sim",
+	"sup",
+	"vis",
 ]
 
 [workspace.dependencies]
@@ -43,3 +44,4 @@ base = { path = "base" }
 bevyx = { path = "bevyx" }
 sim = { path = "sim" }
 vis = { path = "vis" }
+sup = { path = "sup" }

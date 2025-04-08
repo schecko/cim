@@ -1,5 +1,6 @@
 [package]
 name = "vis"
+description = "visuals"
 version = "0.1.0"
 edition = "2021"
 
@@ -7,6 +8,7 @@ edition = "2021"
 bevyx = { path = "../bevyx" }
 sim = { path = "../sim" }
 base = { path = "../base" }
+sup = { path = "../sup" }
 
 bevy = { workspace = true }
 bitflags = { workspace = true }
