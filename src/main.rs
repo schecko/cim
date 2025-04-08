@@ -119,10 +119,11 @@ fn main()
                     font_size: 20.0,
                     ..default()
                 },
+                text_color: Color::BLACK,
                 ..default()
             },
         })
-        .add_plugins(UiLunexPlugin)
+        .add_plugins(UiLunexPlugin::<{ layers::UI_LAYER }> )
         .add_plugins(UiLunexDebugPlugin::<{ layers::DEBUG_LAYER_2D }, { layers::DEBUG_LAYER_3D }>)
         .insert_state(crate::app_state::AppState::Splash)
         .add_plugins(crate::debug::DebugPlugin)

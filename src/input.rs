@@ -93,12 +93,18 @@ pub fn camera_zoom
 (
     mut ortho_query: Query<&mut OrthographicProjection, (With<Camera2d>, With<GameplayCamera>)>,
     mut scroll_events: EventReader<MouseWheel>,
+    keys: Res<ButtonInput<KeyCode>>,
 )
 {
     let Ok(mut ortho) = ortho_query.get_single_mut() else
     {
         return;
     };
+
+    if keys.just_pressed(KeyCode::KeyR)
+    {
+        ortho.scale = 1.0;
+    }
 
     use bevy::input::mouse::MouseScrollUnit;
     for event in scroll_events.read()
