@@ -14,6 +14,7 @@ bitflags!
         const Mine = 1 << 0;
         const Revealed = 1 << 1;
         const NonPlayable = 1 << 2;
+        const Flag = 1 << 3;
     }
 }
 
