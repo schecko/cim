@@ -3,7 +3,6 @@ use crate::interactor::Interactor;
 
 use vis::board_vis_tuning::BoardVisTuning;
 use vis::grid_vis::GridVis;
-use base::extents::Extents;
 
 use bevy::input::mouse::MouseWheel;
 use bevy::prelude::*;

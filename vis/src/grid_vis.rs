@@ -2,7 +2,6 @@
 use crate::board_vis_tuning::*;
 use crate::layers;
 
-use base::array2::Array2;
 use sim::grid::*;
 
 use bevy::prelude::*;
@@ -13,8 +12,9 @@ use bevy::render::render_resource::*;
 use bevy::render::render_resource::AsBindGroup;
 use bevy::render::render_resource::ShaderRef;
 use bevy::sprite::*;
-use bitflags::bitflags;
 
+// TODO schecko
+#[allow(dead_code)]
 #[derive(Debug, Clone, Component)]
 pub struct EntityIndex2(IVec2);
 

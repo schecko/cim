@@ -1,15 +1,14 @@
 
-use base::extents::Extents;
-use base::extents::Point;
 use sim::grid::Grid;
 use sim::logic::Logic;
 use sim::logic::LogicPreview;
-use sim::logic::PreviewResult;
 use sim::logic::PreviewKind;
 use vis::board_vis_tuning::BoardVisTuning;
 
 use bevy::prelude::*;
 
+// TODO schecko
+#[allow(dead_code)]
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 enum InteractionMode
 {

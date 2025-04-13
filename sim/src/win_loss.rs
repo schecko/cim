@@ -1,7 +1,5 @@
 use crate::grid::Grid;
-use crate::grid::CellState;
 
-use base::extents::Extents;
 use base::extents::Point;
 
 pub trait WinLossLogic
@@ -19,6 +17,7 @@ impl WinLossLogic for ClassicWinLossLogic
 
 impl ClassicWinLossLogic
 {
+    #[allow(dead_code)]
     pub fn blah(&self, _grid: &mut Grid, _pos: Point) -> bool
     {
         false

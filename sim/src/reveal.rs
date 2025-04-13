@@ -1,7 +1,6 @@
 use crate::grid::Grid;
 use crate::grid::CellState;
 
-use base::extents::Extents;
 use base::extents::Point;
 
 pub trait RevealLogic

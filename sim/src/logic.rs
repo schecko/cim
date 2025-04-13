@@ -6,7 +6,6 @@ use crate::reveal::ClassicRevealLogic;
 use crate::win_loss::WinLossLogic;
 use crate::win_loss::ClassicWinLossLogic;
 
-use base::extents::Extents;
 use base::extents::Point;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -48,6 +47,8 @@ pub struct FlagResult
 pub struct Logic
 {
     reveal: Box<dyn RevealLogic + Send + Sync>,
+    // TODO schecko
+    #[allow(dead_code)]
     win_loss: Box<dyn WinLossLogic + Send + Sync>,
 }
 

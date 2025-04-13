@@ -14,7 +14,6 @@ use bevy::render::render_resource::*;
 use bevy::render::render_resource::AsBindGroup;
 use bevy::render::render_resource::ShaderRef;
 use bevy::sprite::*;
-use bitflags::bitflags;
 
 fn blur<T, const N: usize>(data: &mut Array2<T>, kernel: &[T; N], passes: u32)
     where T: Default + Copy + std::ops::AddAssign + std::ops::Mul<Output = T>
@@ -62,11 +61,6 @@ fn guassian_blur(data: &mut Array2<f32>, passes: u32)
     // blur(data, &[0.25, 0.5, 0.25], passes)
     // blur(data, &[0.27406862, 0.45186276, 0.27406862], passes)
     blur(data, &[0.06136, 0.24477, 0.38774, 0.24477, 0.06136], passes)
-}
-
-#[derive(Debug, Clone, Resource)]
-struct TerrainVis
-{
 }
 
 #[derive(Asset, TypePath, AsBindGroup, Debug, Clone)]

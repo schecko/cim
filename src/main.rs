@@ -71,14 +71,6 @@ fn setup
     ));
 }
 
-fn despawn_scene<S: Component>(mut commands: Commands, query: Query<Entity, With<S>>)
-{
-    for entity in &query
-    {
-        commands.entity(entity).despawn_recursive();
-    }
-}
-
 fn main()
 {
     let ext = base::extents::Extents{ width: 10, height: 10 };

@@ -7,8 +7,6 @@ use crate::screens;
 use base::array2::Array2;
 use base::extents::Extents;
 use sim::grid::*;
-use sim::logic::Logic;
-use vis::grid_vis::GridVisPlugin;
 use vis::grid_vis::GridVis;
 use vis::grid_vis;
 use vis::terrain_grid::CellType;
