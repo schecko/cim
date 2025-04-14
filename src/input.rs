@@ -79,13 +79,16 @@ pub fn reveal_cell
 
     gizmos.circle_2d(point, 10., bevy::color::palettes::basic::WHITE);
 
-    if !mouse_buttons.just_pressed(MouseButton::Left)
+    if mouse_buttons.just_pressed(MouseButton::Left)
     {
-        return;
+        gizmos.circle_2d(point, 5., bevy::color::palettes::basic::RED);
+        interactor.on_primary(&mut grid_vis.grid, &board_vis_tuning, &point);
     }
-
-    gizmos.circle_2d(point, 5., bevy::color::palettes::basic::RED);
-    interactor.on_tap(&mut grid_vis.grid, &board_vis_tuning, &point);
+    else if mouse_buttons.just_pressed(MouseButton::Right)
+    {
+        gizmos.circle_2d(point, 5., bevy::color::palettes::basic::BLUE);
+        interactor.on_secondary(&mut grid_vis.grid, &board_vis_tuning, &point);
+    }
 }
 
 pub fn camera_zoom

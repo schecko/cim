@@ -47,8 +47,6 @@ pub struct FlagResult
 pub struct Logic
 {
     reveal: Box<dyn RevealLogic + Send + Sync>,
-    // TODO schecko
-    #[allow(dead_code)]
     win_loss: Box<dyn WinLossLogic + Send + Sync>,
 }
 
@@ -59,32 +57,13 @@ impl Logic
         Logic
         {
             reveal: Box::new(ClassicRevealLogic{}),
-            win_loss: Box::new(ClassicWinLossLogic{}),
+            win_loss: Box::new(ClassicWinLossLogic::default()),
         }
     }
 
     pub fn preview_guess(&self, grid: &Grid, pos: Point) -> LogicPreview
     {
-        let Some(cell) = grid.states.get_by_index2(pos) else
-        {
-            return LogicPreview{ pos, kind: PreviewKind::Guess, result: PreviewResult::Nothing };
-        };
-
-        if cell.intersects(CellState::Revealed | CellState::NonPlayable | CellState::Flag)
-        {
-            return LogicPreview{ pos, kind: PreviewKind::Guess, result: PreviewResult::Nothing };
-        }
-
-        let result = if cell.intersects(CellState::Mine)
-        {
-            PreviewResult::Fail
-        }
-        else
-        {
-            PreviewResult::Success
-        };
-
-        return LogicPreview{ pos, kind: PreviewKind::Guess, result };
+        return LogicPreview{ pos, kind: PreviewKind::Guess, result: self.win_loss.check_guess(grid, pos) };
     }
 
     pub fn preview_flag(&self, grid: &Grid, pos: Point) -> LogicPreview
@@ -102,37 +81,34 @@ impl Logic
         return LogicPreview{ pos, kind: PreviewKind::Flag, result: PreviewResult::Success };
     }
 
-    pub fn do_guess(&self, grid: &mut Grid, preview: LogicPreview) -> GuessResult
+    pub fn do_guess(&mut self, grid: &mut Grid, preview: &LogicPreview) -> GuessResult
     {
         assert!(preview.kind == PreviewKind::Guess);
-        assert!(self.preview_guess(grid, preview.pos) == preview);
+        assert!(self.preview_guess(grid, preview.pos) == *preview);
 
-        match preview.result
+        if preview.result == PreviewResult::Nothing
         {
-            PreviewResult::Success =>
-            {
-                let cells = self.reveal.reveal(grid, preview.pos);
-                GuessResult
-                {
-                    pos: preview.pos,
-                    revealed: cells,
-                }
-            }
-            PreviewResult::Fail =>
-            {
-                GuessResult { pos: preview.pos, revealed: Vec::new(), }
-            }
-            PreviewResult::Nothing =>
-            {
-                GuessResult { pos: preview.pos, revealed: Vec::new(), }
-            }
+            return GuessResult{ pos: preview.pos, revealed: Vec::new() };
+        }
+
+        self.win_loss.handle_guess(grid, preview);
+        let cells = self.reveal.reveal(grid, preview.pos);
+        GuessResult
+        {
+            pos: preview.pos,
+            revealed: cells,
         }
     }
 
-    pub fn do_flag(&self, grid: &mut Grid, preview: LogicPreview) -> FlagResult
+    pub fn do_flag(&self, grid: &mut Grid, preview: &LogicPreview) -> FlagResult
     {
         assert!(preview.kind == PreviewKind::Flag);
-        assert!(self.preview_flag(grid, preview.pos) == preview);
+        assert!(self.preview_flag(grid, preview.pos) == *preview);
+
+        if preview.result == PreviewResult::Nothing
+        {
+            return FlagResult{ pos: preview.pos };
+        }
 
         let cell = grid.states.get_by_index2_mut(preview.pos).unwrap();
         cell.toggle(CellState::Flag);
