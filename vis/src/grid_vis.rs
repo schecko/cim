@@ -2,6 +2,7 @@
 use crate::board_vis_tuning::*;
 use crate::layers;
 
+use base::array2::Array2;
 use sim::grid::*;
 
 use bevy::prelude::*;
@@ -23,9 +24,17 @@ pub struct EntityIndex(usize);
 
 #[derive(Debug, Clone, Component)]
 pub struct Mine;
+#[derive(Debug, Clone, Resource)]
+pub struct Mines
+{
+    known: Array2<Option<Entity>>,
+}
 
 #[derive(Debug, Clone, Component)]
 pub struct Cover;
+
+#[derive(Debug, Clone, Component)]
+pub struct Flag;
 
 #[derive(Debug, Clone, Component)]
 struct Adjacency;
@@ -35,6 +44,12 @@ pub struct GridVis
 {
     // TODO I dont want vis to own the sim, it should be in svc or above
     pub grid: Grid,
+}
+
+#[derive(Debug, Clone, Resource)]
+pub struct VisHandles
+{
+    mine: Handle<Image>,
 }
 
 #[derive(Asset, TypePath, AsBindGroup, Debug, Clone)]
@@ -288,27 +303,62 @@ pub fn spawn_grid
         ));
 }
 
-pub fn spawn_mines
+pub fn init_handles
+(
+    mut commands: Commands,
+    asset_server: Res<AssetServer>,
+    _vis_tuning: Res<BoardVisTuning>,
+)
+{
+    commands.insert_resource
+    (
+        VisHandles
+        {
+            mine: asset_server.load("textures/mine.png"),
+        }
+    );
+}
+
+pub fn init_known
+(
+    mut commands: Commands,
+    grid_vis: Res<GridVis>,
+)
+{
+    commands.insert_resource
+    (
+        Mines
+        {
+            known: Array2::from_size(grid_vis.grid.states.size()),
+        }
+    );
+}
+
+pub fn sync_mines
 (
     mut commands: Commands,
     asset_server: Res<AssetServer>,
     vis_tuning: Res<BoardVisTuning>,
     grid_vis: Res<GridVis>,
+    mut mines: ResMut<Mines>,
+    handles: Res<VisHandles>,
 )
 {
-    let image = asset_server.load("textures/mine.png");
 
-    let mine = Sprite
+    let size = grid_vis.grid.states.size();
+    for index2 in size.index2_space()
     {
-        image,
-        custom_size: Some(vis_tuning.cell_size),
-        anchor: Anchor::BottomLeft,
-        ..default()
-    };
-    for (index2, state) in grid_vis.grid.states.enumerate()
-    {
-        if !state.contains(CellState::Mine)
+        let state = grid_vis.grid.states.get_by_index2(index2).unwrap();
+        let mut vis = mines.known.get_by_index2_mut(index2).unwrap();
+
+        if state.contains(CellState::Mine | CellState::Revealed) == vis.is_some()
         {
+            continue;
+        }
+
+        if let Some(entity) = vis.take()
+        {
+            commands.entity(entity).despawn();
             continue;
         }
 
@@ -316,9 +366,15 @@ pub fn spawn_mines
         commands.spawn
         ((
             Mine,
-            EntityIndex(grid_vis.grid.states.get_index(index2).unwrap()),
+            EntityIndex(size.get_index(index2).unwrap()),
             EntityIndex2(index2),
-            mine.clone(),
+            Sprite
+            {
+                image: handles.mine.clone(),
+                custom_size: Some(vis_tuning.cell_size),
+                anchor: Anchor::BottomLeft,
+                ..default()
+            },
             Transform::from_translation(world_pos.extend(layers::MINE))
         ));
     }

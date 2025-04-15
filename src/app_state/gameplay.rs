@@ -15,6 +15,20 @@ use vis::terrain_vis;
 
 use bevy::prelude::*;
 
+#[derive(SystemSet, Debug, Clone, PartialEq, Eq, Hash)]
+enum InitializeSet
+{
+    BeforeBoard,
+    AfterBoard,
+}
+
+#[derive(SystemSet, Debug, Clone, PartialEq, Eq, Hash)]
+enum UpdateSet
+{
+    First,
+    Second,
+}
+
 #[derive(Component)]
 pub struct GameplayAppState;
 
@@ -54,29 +68,61 @@ impl Plugin for GameplayAppState
             .add_plugins(terrain_vis::TerrainVisPlugin{})
             .add_plugins(grid_vis::GridVisPlugin{})
 
-            .add_systems(OnEnter(AppState::Gameplay), GameplayAppState::on_enter)
+            // initialize
             .add_systems
             (
                 OnEnter(AppState::Gameplay),
                 (
+                    GameplayAppState::on_enter,
+                    grid_vis::init_handles
+                )
+                .in_set(InitializeSet::BeforeBoard)
+            )
+            .add_systems
+            (
+                OnEnter(AppState::Gameplay),
+                (
+                    grid_vis::init_known,
                     grid_vis::spawn_adjacency,
                     grid_vis::spawn_covers,
                     grid_vis::spawn_grid,
-                    grid_vis::spawn_mines,
                     terrain_vis::startup
                 )
-                    .after(GameplayAppState::on_enter)
+                .in_set(InitializeSet::AfterBoard)
             )
+
+            // update
             .add_systems
             (
                 Update,
                 (
-                     input::camera_pan,
-                     input::camera_zoom,
-                     input::reveal_cell,
-                     grid_vis::reveal_covers
+                    input::camera_pan,
+                    input::camera_zoom,
+                    input::reveal_cell,
+                    grid_vis::reveal_covers,
+                    grid_vis::sync_mines,
                 )
-                    .run_if(in_state(AppState::Gameplay))
+                .run_if(in_state(AppState::Gameplay))
+            )
+
+            // sets
+            .configure_sets
+            (
+                OnEnter(AppState::Gameplay),
+                (
+                    InitializeSet::AfterBoard
+                        .after(InitializeSet::BeforeBoard),
+                )
+            )
+            .configure_sets
+            (
+                Update,
+                (
+                    UpdateSet::First
+                        .run_if(in_state(AppState::Gameplay)),
+                    UpdateSet::Second
+                        .run_if(in_state(AppState::Gameplay)),
+                )
             )
             ;
     }

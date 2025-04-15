@@ -1,5 +1,5 @@
 
-use base::array2;
+use base::array2::Array2;
 use base::extents;
 
 use bitflags::bitflags;
@@ -21,8 +21,8 @@ bitflags!
 #[derive(Debug, Clone)]
 pub struct Grid
 {
-    pub states: array2::Array2<CellState>,
-    pub adjacency: array2::Array2<u8>,
+    pub states: Array2<CellState>,
+    pub adjacency: Array2<u8>,
 }
 
 impl Grid
@@ -31,8 +31,8 @@ impl Grid
     {
         Self
         {
-            states: array2::Array2::new(width, height),
-            adjacency: array2::Array2::new(width, height),
+            states: Array2::new(width, height),
+            adjacency: Array2::new(width, height),
         }
     }
 
@@ -40,8 +40,8 @@ impl Grid
     {
         Self
         {
-            states: array2::Array2::from_size(size),
-            adjacency: array2::Array2::from_size(size),
+            states: Array2::from_size(size),
+            adjacency: Array2::from_size(size),
         }
     }
 
