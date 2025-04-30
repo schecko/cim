@@ -15,6 +15,7 @@ use bevy::render::render_resource::AsBindGroup;
 use bevy::render::render_resource::ShaderRef;
 use bevy::sprite::*;
 
+use std::any::TypeId;
 use std::marker::PhantomData;
 
 #[derive(Debug, Clone, Resource)]
@@ -75,8 +76,26 @@ impl VisTag for Mine
     }
 }
 
-#[derive(Debug, Clone, Component)]
+#[derive(Debug, Clone, Component, Default)]
 pub struct Cover;
+
+impl VisTag for Cover
+{
+    fn include_state() -> CellState { CellState::None }
+    fn exclude_state() -> CellState { CellState::NonPlayable | CellState::Revealed }
+    fn layer() -> f32 { layers::COVER }
+
+    fn sprite(vis_tuning: &BoardVisTuning, handles: &VisHandles) -> Sprite
+    {
+        Sprite
+        {
+            image: handles.cover.clone(),
+            custom_size: Some(vis_tuning.cell_size),
+            anchor: Anchor::BottomLeft,
+            ..default()
+        }
+    }
+}
 
 #[derive(Debug, Clone, Component, Default)]
 pub struct Flag;
@@ -114,6 +133,7 @@ pub struct VisHandles
 {
     mine: Handle<Image>,
     flag: Handle<Image>,
+    cover: Handle<Image>,
 }
 
 #[derive(Asset, TypePath, AsBindGroup, Debug, Clone)]
@@ -380,6 +400,7 @@ pub fn init_handles
         {
             mine: asset_server.load("textures/mine.png"),
             flag: asset_server.load("textures/flag.png"),
+            cover: asset_server.load("textures/cover.png"),
         }
     );
 }
@@ -399,6 +420,10 @@ pub fn init_known
     (
         EntityGrid::<Flag>::new(size),
     );
+    commands.insert_resource
+    (
+        EntityGrid::<Cover>::new(size),
+    );
 }
 
 pub fn sync_grid_entities<Tag>
@@ -414,17 +439,20 @@ pub fn sync_grid_entities<Tag>
     let size = grid_vis.grid.states.size();
     for index2 in size.index2_space()
     {
-        let state = &grid_vis.grid.states.get_by_index2(index2).unwrap();
+        let state = grid_vis.grid.states.get_by_index2(index2).unwrap();
         let vis = &mut entity_grid.known.get_by_index2_mut(index2).unwrap();
 
         let include_state = Tag::include_state();
         let exclude_state = Tag::exclude_state();
-        let include = state.contains(include_state);
-        let exclude = !state.intersects(exclude_state);
-        if include && !exclude
+        let include = ( *state & include_state ) == include_state;
+        let exclude = ( *state & exclude_state ) == CellState::None;
+
+        if TypeId::of::<Tag>() == TypeId::of::<Cover>()
         {
             println!("test");
         }
+            
+        
         if ( include && exclude ) == vis.is_some()
         {
             continue;
@@ -436,8 +464,6 @@ pub fn sync_grid_entities<Tag>
             continue;
         }
 
-        println!("spawning {}", Tag::layer());
-
         let world_pos = index2.as_vec2() * vis_tuning.cell_size;
         let id = commands.spawn
         ((
@@ -448,67 +474,6 @@ pub fn sync_grid_entities<Tag>
             Transform::from_translation(world_pos.extend(Tag::layer()))
         )).id();
         **vis = Some(id);
-    }
-}
-
-pub fn spawn_covers
-(
-    mut commands: Commands,
-    asset_server: Res<AssetServer>,
-    vis_tuning: Res<BoardVisTuning>,
-    grid_vis: Res<GridVis>,
-)
-{
-    let image = asset_server.load("textures/cover.png");
-
-    let cover = Sprite
-    {
-        image,
-        custom_size: Some(vis_tuning.cell_size),
-        anchor: Anchor::BottomLeft,
-        ..default()
-    };
-    for (index2, state) in grid_vis.grid.states.enumerate()
-    {
-        if state.contains(CellState::Revealed) || state.contains(CellState::NonPlayable)
-        {
-            continue;
-        }
-
-        let world_pos = index2.as_vec2() * vis_tuning.cell_size;
-        commands.spawn
-        ((
-            Cover,
-            EntityIndex(grid_vis.grid.states.get_index(index2).unwrap()),
-            EntityIndex2(index2),
-            cover.clone(),
-            Transform::from_translation(world_pos.extend(layers::COVER))
-        ));
-    }
-}
-
-pub fn reveal_covers
-(
-    mut cover_query: Query<(&mut Visibility, &EntityIndex), With<Cover>>,
-    grid_vis: ResMut<GridVis>,
-)
-{
-    for (mut visibility, index) in &mut cover_query
-    {
-        let Some(state) = grid_vis.grid.states.get_by_index(index.0) else
-        {
-            assert!(false, "covers should always be kept up to date with the size of the grid");
-            continue;
-        };
-
-        *visibility = if state.contains(CellState::Revealed)
-        {
-            Visibility::Hidden
-        }
-        else
-        {
-            Visibility::Visible
-        };
     }
 }
 

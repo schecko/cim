@@ -173,18 +173,18 @@ pub fn startup
     let scale = vis_tuning.cell_size * Vec2::new(size.width as f32, size.height as f32);
     let v_pos = vec!
     [
-        [0.0 * scale.x, 0.0 * scale.y, layers::TERRAIN], // TL
-        [1.0 * scale.x, 0.0 * scale.y, layers::TERRAIN], // TR
-        [0.0 * scale.x, 1.0 * scale.y, layers::TERRAIN], // BL
-        [1.0 * scale.x, 1.0 * scale.y, layers::TERRAIN], // BR
+        [0.0 * scale.x, 0.0 * scale.y, layers::TERRAIN], // BL
+        [1.0 * scale.x, 0.0 * scale.y, layers::TERRAIN], // BR
+        [0.0 * scale.x, 1.0 * scale.y, layers::TERRAIN], // TL
+        [1.0 * scale.x, 1.0 * scale.y, layers::TERRAIN], // TR
     ];
     let v_color: Vec<[f32; 4]> = vec![LinearRgba::WHITE.to_f32_array(); 4];
     let v_uv: Vec<[f32; 2]> = vec!
     [
-        [0.0, 1.0],
-        [1.0, 1.0],
         [0.0, 0.0],
         [1.0, 0.0],
+        [0.0, 1.0],
+        [1.0, 1.0],
     ];
     let v_normal: Vec<[f32; 3]> = vec![[0.0, 0.0, 1.0]; 4];
 

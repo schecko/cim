@@ -22,7 +22,7 @@ pub fn spawn(mut commands: Commands, asset_server: Res<AssetServer>)
             Name::new("Background"),
             UiLayout::solid().pack(),
             UiColor::from(Color::srgb(1.0, 0.0, 1.0)),
-            Sprite::from_image(asset_server.load("textures/sample.png")),
+            Sprite::from_image(asset_server.load("textures/splash.png")),
             layers::UI_RENDER_LAYER,
             SplashScreen,
         ))

@@ -41,6 +41,11 @@ impl GameplayAppState
         *grid.states.get_by_index2_mut((0, 0).into()).unwrap() = CellState::Mine;
         *grid.states.get_by_index2_mut((1, 1).into()).unwrap() = CellState::Mine;
         *grid.states.get_by_index2_mut((4, 4).into()).unwrap() = CellState::Mine;
+
+        *grid.states.get_by_index2_mut((1, 0).into()).unwrap() = CellState::NonPlayable;
+        *grid.states.get_by_index2_mut((0, 1).into()).unwrap() = CellState::NonPlayable;
+        *grid.states.get_by_index2_mut((2, 2).into()).unwrap() = CellState::NonPlayable;
+        *grid.states.get_by_index2_mut((4, 3).into()).unwrap() = CellState::NonPlayable;
         grid.update_adjacency();
 
         let size = Extents::new(5, 5);
@@ -48,9 +53,10 @@ impl GameplayAppState
         {
             grid: Array2::<CellType>::from_size(size),
         };
-        *terrain.grid.get_by_index2_mut((0, 0).into()).unwrap() = CellType::Land;
+        *terrain.grid.get_by_index2_mut((1, 0).into()).unwrap() = CellType::Land;
+        *terrain.grid.get_by_index2_mut((0, 1).into()).unwrap() = CellType::Land;
         *terrain.grid.get_by_index2_mut((2, 2).into()).unwrap() = CellType::Land;
-        *terrain.grid.get_by_index2_mut((4, 4).into()).unwrap() = CellType::Land;
+        *terrain.grid.get_by_index2_mut((4, 3).into()).unwrap() = CellType::Land;
 
         commands.insert_resource(Interactor::new());
         commands.insert_resource(GridVis{ grid });
@@ -84,7 +90,6 @@ impl Plugin for GameplayAppState
                 (
                     grid_vis::init_known,
                     grid_vis::spawn_adjacency,
-                    grid_vis::spawn_covers,
                     grid_vis::spawn_grid,
                     terrain_vis::startup
                 )
@@ -99,9 +104,9 @@ impl Plugin for GameplayAppState
                     input::camera_pan,
                     input::camera_zoom,
                     input::reveal_cell,
-                    grid_vis::reveal_covers,
                     grid_vis::sync_grid_entities::<grid_vis::Mine>,
                     grid_vis::sync_grid_entities::<grid_vis::Flag>,
+                    grid_vis::sync_grid_entities::<grid_vis::Cover>,
                 )
                 .run_if(in_state(AppState::Gameplay))
             )
