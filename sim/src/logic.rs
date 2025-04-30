@@ -110,7 +110,7 @@ impl Logic
             return FlagResult{ pos: preview.pos };
         }
 
-        let cell = grid.states.get_by_index2_mut(preview.pos).unwrap();
+        let cell = &mut grid.states.get_by_index2_mut(preview.pos).unwrap();
         cell.toggle(CellState::Flag);
         FlagResult
         {

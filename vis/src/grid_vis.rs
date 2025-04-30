@@ -3,6 +3,7 @@ use crate::board_vis_tuning::*;
 use crate::layers;
 
 use base::array2::Array2;
+use base::extents::Extents;
 use sim::grid::*;
 
 use bevy::prelude::*;
@@ -14,6 +15,37 @@ use bevy::render::render_resource::AsBindGroup;
 use bevy::render::render_resource::ShaderRef;
 use bevy::sprite::*;
 
+use std::marker::PhantomData;
+
+#[derive(Debug, Clone, Resource)]
+pub struct EntityGrid<Tag>
+{
+    known: Array2<Option<Entity>>,
+    _tag: PhantomData<Tag>,
+}
+
+impl<Tag> EntityGrid<Tag>
+{
+    fn new(size: Extents) -> Self
+    {
+        Self
+        {
+            known: Array2::from_size(size),
+            _tag: PhantomData::<Tag>,
+        }
+    }
+}
+
+pub trait VisTag
+{
+    fn include_state() -> CellState;
+    fn exclude_state() -> CellState;
+
+    // TODO just spawn the whole bloody entity?
+    fn layer() -> f32;
+    fn sprite(vis_tuning: &BoardVisTuning, handles: &VisHandles) -> Sprite;
+}
+
 // TODO schecko
 #[allow(dead_code)]
 #[derive(Debug, Clone, Component)]
@@ -22,19 +54,50 @@ pub struct EntityIndex2(IVec2);
 #[derive(Debug, Clone, Component)]
 pub struct EntityIndex(usize);
 
-#[derive(Debug, Clone, Component)]
+#[derive(Debug, Clone, Component, Default)]
 pub struct Mine;
-#[derive(Debug, Clone, Resource)]
-pub struct Mines
+
+impl VisTag for Mine
 {
-    known: Array2<Option<Entity>>,
+    fn include_state() -> CellState { CellState::Mine | CellState::Revealed }
+    fn exclude_state() -> CellState { CellState::None }
+    fn layer() -> f32 { layers::MINE }
+
+    fn sprite(vis_tuning: &BoardVisTuning, handles: &VisHandles) -> Sprite
+    {
+        Sprite
+        {
+            image: handles.mine.clone(),
+            custom_size: Some(vis_tuning.cell_size),
+            anchor: Anchor::BottomLeft,
+            ..default()
+        }
+    }
 }
 
 #[derive(Debug, Clone, Component)]
 pub struct Cover;
 
-#[derive(Debug, Clone, Component)]
+#[derive(Debug, Clone, Component, Default)]
 pub struct Flag;
+
+impl VisTag for Flag
+{
+    fn include_state() -> CellState { CellState::Flag }
+    fn exclude_state() -> CellState { CellState::None }
+    fn layer() -> f32 { layers::FLAG }
+
+    fn sprite(vis_tuning: &BoardVisTuning, handles: &VisHandles) -> Sprite
+    {
+        Sprite
+        {
+            image: handles.flag.clone(),
+            custom_size: Some(vis_tuning.cell_size),
+            anchor: Anchor::BottomLeft,
+            ..default()
+        }
+    }
+}
 
 #[derive(Debug, Clone, Component)]
 struct Adjacency;
@@ -50,6 +113,7 @@ pub struct GridVis
 pub struct VisHandles
 {
     mine: Handle<Image>,
+    flag: Handle<Image>,
 }
 
 #[derive(Asset, TypePath, AsBindGroup, Debug, Clone)]
@@ -315,6 +379,7 @@ pub fn init_handles
         VisHandles
         {
             mine: asset_server.load("textures/mine.png"),
+            flag: asset_server.load("textures/flag.png"),
         }
     );
 }
@@ -325,33 +390,42 @@ pub fn init_known
     grid_vis: Res<GridVis>,
 )
 {
+    let size = grid_vis.grid.states.size();
     commands.insert_resource
     (
-        Mines
-        {
-            known: Array2::from_size(grid_vis.grid.states.size()),
-        }
+        EntityGrid::<Mine>::new(size),
+    );
+    commands.insert_resource
+    (
+        EntityGrid::<Flag>::new(size),
     );
 }
 
-pub fn sync_mines
+pub fn sync_grid_entities<Tag>
 (
     mut commands: Commands,
-    asset_server: Res<AssetServer>,
     vis_tuning: Res<BoardVisTuning>,
     grid_vis: Res<GridVis>,
-    mut mines: ResMut<Mines>,
+    mut entity_grid: ResMut<EntityGrid<Tag>>,
     handles: Res<VisHandles>,
 )
+    where Tag: Component + Default + VisTag
 {
-
     let size = grid_vis.grid.states.size();
     for index2 in size.index2_space()
     {
-        let state = grid_vis.grid.states.get_by_index2(index2).unwrap();
-        let mut vis = mines.known.get_by_index2_mut(index2).unwrap();
+        let state = &grid_vis.grid.states.get_by_index2(index2).unwrap();
+        let vis = &mut entity_grid.known.get_by_index2_mut(index2).unwrap();
 
-        if state.contains(CellState::Mine | CellState::Revealed) == vis.is_some()
+        let include_state = Tag::include_state();
+        let exclude_state = Tag::exclude_state();
+        let include = state.contains(include_state);
+        let exclude = !state.intersects(exclude_state);
+        if include && !exclude
+        {
+            println!("test");
+        }
+        if ( include && exclude ) == vis.is_some()
         {
             continue;
         }
@@ -362,21 +436,18 @@ pub fn sync_mines
             continue;
         }
 
+        println!("spawning {}", Tag::layer());
+
         let world_pos = index2.as_vec2() * vis_tuning.cell_size;
-        commands.spawn
+        let id = commands.spawn
         ((
-            Mine,
+            Tag::default(),
             EntityIndex(size.get_index(index2).unwrap()),
             EntityIndex2(index2),
-            Sprite
-            {
-                image: handles.mine.clone(),
-                custom_size: Some(vis_tuning.cell_size),
-                anchor: Anchor::BottomLeft,
-                ..default()
-            },
-            Transform::from_translation(world_pos.extend(layers::MINE))
-        ));
+            Tag::sprite(&vis_tuning, &handles),
+            Transform::from_translation(world_pos.extend(Tag::layer()))
+        )).id();
+        **vis = Some(id);
     }
 }
 

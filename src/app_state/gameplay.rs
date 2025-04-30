@@ -100,12 +100,13 @@ impl Plugin for GameplayAppState
                     input::camera_zoom,
                     input::reveal_cell,
                     grid_vis::reveal_covers,
-                    grid_vis::sync_mines,
+                    grid_vis::sync_grid_entities::<grid_vis::Mine>,
+                    grid_vis::sync_grid_entities::<grid_vis::Flag>,
                 )
                 .run_if(in_state(AppState::Gameplay))
             )
 
-            // sets
+        // sets
             .configure_sets
             (
                 OnEnter(AppState::Gameplay),

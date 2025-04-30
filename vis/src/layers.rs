@@ -5,3 +5,4 @@ pub const MINE: f32 = 1.0;
 pub const GRID_LINE: f32 = 2.0;
 pub const ADJACENCY: f32 = 3.0;
 pub const COVER: f32 = 4.0;
+pub const FLAG: f32 = 5.0;
