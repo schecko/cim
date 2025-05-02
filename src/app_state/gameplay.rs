@@ -7,8 +7,9 @@ use crate::screens;
 use base::array2::Array2;
 use base::extents::Extents;
 use sim::grid::*;
-use vis::grid_vis::GridVis;
-use vis::grid_vis;
+use vis::grid_entities::GridVis;
+use vis::grid_entities;
+use vis::grid_lines;
 use vis::terrain_grid::CellType;
 use vis::terrain_grid::TerrainGrid;
 use vis::terrain_vis;
@@ -72,7 +73,8 @@ impl Plugin for GameplayAppState
     {
         app
             .add_plugins(terrain_vis::TerrainVisPlugin{})
-            .add_plugins(grid_vis::GridVisPlugin{})
+            .add_plugins(grid_entities::GridEntitiesPlugin{})
+            .add_plugins(grid_lines::GridLinesPlugin{})
 
             // initialize
             .add_systems
@@ -80,7 +82,7 @@ impl Plugin for GameplayAppState
                 OnEnter(AppState::Gameplay),
                 (
                     GameplayAppState::on_enter,
-                    grid_vis::init_handles
+                    grid_entities::init_handles
                 )
                 .in_set(InitializeSet::BeforeBoard)
             )
@@ -88,9 +90,9 @@ impl Plugin for GameplayAppState
             (
                 OnEnter(AppState::Gameplay),
                 (
-                    grid_vis::init_known,
-                    grid_vis::spawn_adjacency,
-                    grid_vis::spawn_grid,
+                    grid_entities::init_known,
+                    grid_entities::spawn_adjacency,
+                    grid_lines::spawn_lines,
                     terrain_vis::startup
                 )
                 .in_set(InitializeSet::AfterBoard)
@@ -104,9 +106,9 @@ impl Plugin for GameplayAppState
                     input::camera_pan,
                     input::camera_zoom,
                     input::reveal_cell,
-                    grid_vis::sync_grid_entities::<grid_vis::Mine>,
-                    grid_vis::sync_grid_entities::<grid_vis::Flag>,
-                    grid_vis::sync_grid_entities::<grid_vis::Cover>,
+                    grid_entities::sync_grid_entities::<grid_entities::Mine>,
+                    grid_entities::sync_grid_entities::<grid_entities::Flag>,
+                    grid_entities::sync_grid_entities::<grid_entities::Cover>,
                 )
                 .run_if(in_state(AppState::Gameplay))
             )

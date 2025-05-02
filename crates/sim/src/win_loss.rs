@@ -17,6 +17,8 @@ pub enum Status
 pub trait WinLossLogic
 {
     fn check_guess(&self, _grid: &Grid, _pos: Point) -> PreviewResult;
+    // TODO schecko
+    #[allow(dead_code)]
     fn get_status(&self) -> Status;
     fn handle_guess(&mut self, grid: &Grid, preview: &LogicPreview);
 }
