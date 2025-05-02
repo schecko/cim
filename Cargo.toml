@@ -5,11 +5,11 @@ edition = "2021"
 
 [workspace]
 members = [
-	"base",
-	"bevyx",
-	"sim",
-	"sup",
-	"vis",
+	"crates/base",
+	"crates/bevyx",
+	"crates/sim",
+	"crates/sup",
+	"crates/vis",
 ]
 
 [workspace.dependencies]
@@ -41,8 +41,8 @@ glam = { workspace = true }
 bevy_lunex = { workspace = true }
 strum = { workspace = true }
 
-base = { path = "base" }
-bevyx = { path = "bevyx" }
-sim = { path = "sim" }
-vis = { path = "vis" }
-sup = { path = "sup" }
+base = { path = "crates/base" }
+bevyx = { path = "crates/bevyx" }
+sim = { path = "crates/sim" }
+vis = { path = "crates/vis" }
+sup = { path = "crates/sup" }
