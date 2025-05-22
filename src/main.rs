@@ -15,7 +15,7 @@ use bevy::render::RenderPlugin;
 use bevy::render::settings::Backends;
 use bevy::render::settings::WgpuSettings;
 use bevy_egui::EguiPlugin;
-use bevy_lunex::*;
+use lunex::*;
 
 fn find_assets_folder() -> Result<(), std::io::Error>
 {

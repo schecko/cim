@@ -2,7 +2,7 @@ use crate::app_state::AppState;
 use crate::layers;
 
 use bevy::prelude::*;
-use bevy_lunex::*;
+use lunex::*;
 use strum::EnumIter;
 
 #[derive(Component)]

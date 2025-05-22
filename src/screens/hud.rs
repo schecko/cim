@@ -1,5 +1,5 @@
 use bevy::prelude::*;
-use bevy_lunex::prelude::*;
+use lunex::prelude::*;
 
 use crate::layers;
 use crate::app_state::AppState;

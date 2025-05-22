@@ -953,18 +953,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "bevy_lunex"
-version = "0.4.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "b49135743b89c61fa3894558f84e1abf037855a892b75546034051e5c2ee2c9c"
-dependencies = [
- "bevy",
- "bevy_rich_text3d",
- "colored",
- "radsort",
-]
-
-[[package]]
 name = "bevy_macro_utils"
 version = "0.16.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1755,9 +1743,9 @@ dependencies = [
  "base",
  "bevy",
  "bevy_egui",
- "bevy_lunex",
  "bevyx",
  "glam",
+ "lunex",
  "ron",
  "serde",
  "sim",
@@ -3260,6 +3248,16 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "0fae87c125b03c1d2c0150c90365d7d6bcc53fb73a9acaef207d2d065860f062"
 dependencies = [
  "imgref",
+]
+
+[[package]]
+name = "lunex"
+version = "0.0.0"
+dependencies = [
+ "bevy",
+ "bevy_rich_text3d",
+ "colored",
+ "radsort",
 ]
 
 [[package]]
