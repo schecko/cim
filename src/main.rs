@@ -98,8 +98,14 @@ fn main()
             .set(WindowPlugin
              {
                  exit_condition: bevy::window::ExitCondition::OnPrimaryClosed,
+                 primary_window: Some(Window
+                 {
+                    // present_mode: bevy::window::PresentMode::AutoNoVsync,
+                    ..default()
+                 }),
                 ..default()
-             }),
+             })
+             // .disable::<bevy::render::pipelined_rendering::PipelinedRenderingPlugin>(), // for novsync
         )
         .add_plugins(FpsOverlayPlugin
         {
@@ -115,11 +121,12 @@ fn main()
                 ..default()
             },
         })
-        .add_plugins(UiLunexPlugin::<{ layers::UI_LAYER }> )
+        // .add_plugins(UiLunexPlugin::<{ layers::UI_LAYER }> )
+        .add_plugins(UiLunexPlugin)
         .add_plugins(UiLunexDebugPlugin::<{ layers::DEBUG_LAYER_2D }, { layers::DEBUG_LAYER_3D }>)
         .insert_state(crate::app_state::AppState::Splash)
         .add_plugins(crate::debug::DebugPlugin)
-        .add_plugins(EguiPlugin)
+        .add_plugins(EguiPlugin { enable_multipass_for_primary_context: true })
         .add_plugins(vis::GameVisPlugin)
         .add_plugins(app_state::splash::SplashAppState)
         .add_plugins(app_state::gameplay::GameplayAppState)

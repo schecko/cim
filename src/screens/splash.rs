@@ -36,7 +36,7 @@ pub fn spawn(mut commands: Commands, asset_server: Res<AssetServer>)
         {
             for entity in &query
             {
-                cmd.entity(entity).despawn_recursive();
+                cmd.entity(entity).despawn();
             }
             next.set(AppState::Frontend);
         });

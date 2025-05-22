@@ -39,7 +39,7 @@ fn primary_window_ui
     keys: Res<ButtonInput<KeyCode>>,
     mut debug_state: ResMut<DebugState>,
     mut egui_ctx: Query<&mut EguiContext, With<PrimaryWindow>>,
-    mut secondary_window: Query<&mut Window, Without<PrimaryWindow>>,
+    secondary_window: Option<Single<&mut Window, Without<PrimaryWindow>>>,
     mut app_exit_events: ResMut<Events<bevy::app::AppExit>>
 )
 {
@@ -56,7 +56,7 @@ fn primary_window_ui
     {
         return;
     }
-    let Ok(mut ctx) = egui_ctx.get_single_mut() else {
+    let Ok(mut ctx) = egui_ctx.single_mut() else {
         return;
     };
     egui::TopBottomPanel::top("debug_panel")
@@ -66,9 +66,9 @@ fn primary_window_ui
             ui.horizontal(|ui|
             {
                 ui.label("Cim Debug");
-                if ui.button("Dev Window").clicked()
+                if let (true, Some(mut window)) = (ui.button("Dev Window").clicked(), secondary_window)
                 {
-                    secondary_window.single_mut().visible = !secondary_window.single().visible;
+                    window.visible = window.visible;
                 }
             });
         });
@@ -78,12 +78,10 @@ fn dev_window_ui
 (
     _keys: Res<ButtonInput<KeyCode>>,
     _debug_state: ResMut<DebugState>,
-    mut egui_ctx: Query<&mut EguiContext, Without<PrimaryWindow>>,
+    egui_ctx: Single<&mut EguiContext, Without<PrimaryWindow>>,
 )
 {
-    let Ok(mut ctx) = egui_ctx.get_single_mut() else {
-        return;
-    };
+    let mut ctx = egui_ctx.into_inner();
     egui::Window::new("Hello").show(ctx.get_mut(), |ui| {
         ui.label("world");
     });

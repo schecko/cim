@@ -14,19 +14,17 @@ pub struct GameplayCamera;
 pub fn camera_pan
 (
     mouse_buttons: Res<ButtonInput<MouseButton>>,
-    mut camera_query: Query<(&mut Transform, &mut OrthographicProjection), (With<Camera2d>, With<GameplayCamera>)>,
+    camera_query: Single<(&mut Transform, &mut Projection), (With<Camera2d>, With<GameplayCamera>)>,
     mut previous_mouse_position: Local<Option<Vec2>>,
-    windows: Query<&Window, With<PrimaryWindow>>,
+    window: Single<&Window, With<PrimaryWindow>>,
 )
 {
-    let Ok(window) = windows.get_single() else
+    let (mut camera_transform, mut projection_query) = camera_query.into_inner();
+    let Projection::Orthographic(ref mut projection) = *projection_query else
     {
         return;
     };
-    let Ok((mut camera_transform, projection)) = camera_query.get_single_mut() else
-    {
-        return;
-    };
+
     let Some(current_mouse_pos) = window.cursor_position() else
     {
         return;
@@ -51,8 +49,8 @@ pub fn camera_pan
 
 pub fn reveal_cell
 (
-    camera_query: Query<(&Camera, &GlobalTransform), (With<Camera2d>, With<GameplayCamera>)>,
-    windows: Query<&Window, With<PrimaryWindow>>,
+    camera_query: Single<(&Camera, &GlobalTransform), (With<Camera2d>, With<GameplayCamera>)>,
+    window: Single<&Window, With<PrimaryWindow>>,
     mut gizmos: Gizmos,
     board_vis_tuning: Res<BoardVisTuning>,
     mut interactor: ResMut<Interactor>,
@@ -60,15 +58,7 @@ pub fn reveal_cell
     mouse_buttons: Res<ButtonInput<MouseButton>>,
 )
 {
-    let Ok((camera, camera_transform)) = camera_query.get_single() else
-    {
-        return;
-    };
-
-    let Ok(window) = windows.get_single() else {
-        return;
-    };
-
+    let (camera, camera_transform) = camera_query.into_inner();
     let Some(cursor_position) = window.cursor_position() else {
         return;
     };
@@ -93,12 +83,12 @@ pub fn reveal_cell
 
 pub fn camera_zoom
 (
-    mut ortho_query: Query<&mut OrthographicProjection, (With<Camera2d>, With<GameplayCamera>)>,
+    ortho_query: Single<&mut Projection, (With<Camera2d>, With<GameplayCamera>)>,
     mut scroll_events: EventReader<MouseWheel>,
     keys: Res<ButtonInput<KeyCode>>,
 )
 {
-    let Ok(mut ortho) = ortho_query.get_single_mut() else
+    let Projection::Orthographic(ref mut ortho) = *ortho_query.into_inner() else
     {
         return;
     };

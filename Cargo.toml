@@ -14,10 +14,10 @@ members = [
 
 [workspace.dependencies]
 arrayvec = "0.7.6"
-bevy = { version = "0.15.0", features = ["default", "bevy_dev_tools"] }
-bevy_egui = "0.31.1"
-# bevy_lunex = "0.3.1"
-bevy_lunex = { git = "https://github.com/schecko/bevy_lunex.git", branch = "main" }
+bevy = { version = "0.16.0", features = ["default", "bevy_dev_tools"] }
+bevy_egui = "0.34.0"
+bevy_lunex = "0.4.1"
+# bevy_lunex = { git = "https://github.com/schecko/bevy_lunex.git", branch = "main" }
 bitflags = "2.6.0"
 bytemuck = "1.21.0"
 glam = "0.29.2"

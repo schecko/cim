@@ -72,7 +72,7 @@ pub fn spawn(mut commands: Commands, asset_server: Res<AssetServer>)
                     Text2d::new(button_type.to_string()),
                     layers::UI_RENDER_LAYER,
                     HomeScreen,
-                    PickingBehavior::IGNORE,
+                    Pickable::IGNORE,
                 )
             };
 
@@ -92,7 +92,7 @@ pub fn spawn(mut commands: Commands, asset_server: Res<AssetServer>)
                     println!("play");
                     for entity in &query
                     {
-                        cmd.entity(entity).despawn_recursive();
+                        cmd.entity(entity).despawn();
                     }
                     next.set(AppState::Gameplay);
                 });
@@ -134,7 +134,7 @@ pub fn spawn(mut commands: Commands, asset_server: Res<AssetServer>)
                     mut exit: EventWriter<AppExit>,
                 |
                 {
-                    exit.send(AppExit::Success);
+                    exit.write(AppExit::Success);
                 });
         });
     });
