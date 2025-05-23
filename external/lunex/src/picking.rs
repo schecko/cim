@@ -11,23 +11,24 @@ use crate::*;
 
 /// Adds picking support for Lunex.
 #[derive(Clone)]
-pub struct UiLunexPickingPlugin;
-impl Plugin for UiLunexPickingPlugin {
+pub struct UiLunexPickingPlugin<const LAYER: usize>;
+impl<const LAYER: usize> Plugin for UiLunexPickingPlugin<LAYER>
+{
     fn build(&self, app: &mut App) {
-        app.add_systems(PreUpdate, lunex_2d_picking.in_set(PickSet::Backend));
+        app.add_systems(PreUpdate, lunex_2d_picking::<LAYER>.in_set(PickSet::Backend));
     }
 }
 
-
 /// Checks if any Dimension entities are under a pointer
-fn lunex_2d_picking(
+fn lunex_2d_picking<const LAYER: usize>
+    (
     pointers: Query<(&PointerId, &PointerLocation)>,
     cameras: Query<(
         Entity,
         &Camera,
         &GlobalTransform,
         &Projection,
-    )>,
+    ), With<UiSourceCamera<LAYER>>>,
     primary_window: Query<Entity, With<PrimaryWindow>>,
     lunex_query: Query<(
         Entity,

@@ -1164,8 +1164,9 @@ pub struct LunexGizmoGroup3d;
 
 /// This plugin is used for the main logic.
 #[derive(Debug, Default, Clone)]
-pub struct UiLunexPlugin;
-impl Plugin for UiLunexPlugin {
+pub struct UiLunexPlugin<const LAYER: usize>;
+impl<const LAYER: usize> Plugin for UiLunexPlugin<LAYER>
+{
     fn build(&self, app: &mut App) {
 
         // Configure the system set
@@ -1227,11 +1228,8 @@ impl Plugin for UiLunexPlugin {
         app.add_plugins((
             CursorPlugin,
             UiLunexStatePlugin,
-            UiLunexPickingPlugin,
-            UiLunexIndexPlugin::<0>,
-            UiLunexIndexPlugin::<1>,
-            UiLunexIndexPlugin::<2>,
-            UiLunexIndexPlugin::<3>,
+            UiLunexPickingPlugin::<LAYER>,
+            UiLunexIndexPlugin::<LAYER>,
         ));
     }
 }
@@ -1282,9 +1280,11 @@ impl <const INDEX: usize> Plugin for UiLunexIndexPlugin<INDEX> {
 
 
 /// Plugin group adding all necessary plugins for Lunex
-pub struct UiLunexPlugins;
-impl PluginGroup for UiLunexPlugins {
-    fn build(self) -> PluginGroupBuilder {
+pub struct UiLunexPlugins<const LAYER: usize>;
+impl<const LAYER: usize> PluginGroup for UiLunexPlugins<LAYER>
+{
+    fn build(self) -> PluginGroupBuilder
+    {
         let mut builder = PluginGroupBuilder::start::<Self>();
 
         // Add text 3d plugin
@@ -1296,7 +1296,7 @@ impl PluginGroup for UiLunexPlugins {
         }
 
         // Add Lunex plugin
-        builder = builder.add(UiLunexPlugin);
+        builder = builder.add(UiLunexPlugin::<LAYER>);
 
         // Return the plugin group
         builder
