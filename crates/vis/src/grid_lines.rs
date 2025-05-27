@@ -19,6 +19,9 @@ pub struct GridMaterial
     color: LinearRgba,
 }
 
+#[derive(Component)]
+pub struct GridLines;
+
 impl Material2d for GridMaterial
 {
     fn fragment_shader() -> ShaderRef
@@ -257,9 +260,22 @@ pub fn spawn_lines
     commands
         .spawn
         ((
+            GridLines,
             Mesh2d(mesh_id.into()),
             MeshMaterial2d(custom_material.into())
         ));
+}
+
+pub fn despawn_lines
+(
+    mut commands: Commands,
+    entities: Query<Entity, With<GridLines>>
+)
+{
+    for entity in entities
+    {
+        commands.entity(entity).despawn();
+    }
 }
 
 

@@ -114,7 +114,7 @@ impl VisTag for Flag
 }
 
 #[derive(Debug, Clone, Component)]
-struct Adjacency;
+pub struct Adjacency;
 
 #[derive(Debug, Clone, Resource)]
 pub struct GridVis
@@ -253,6 +253,33 @@ pub fn spawn_adjacency
             adj_sprite,
             Transform::from_translation(world_pos.extend(layers::ADJACENCY))
         ));
+    }
+}
+
+pub fn destroy_known
+(
+    mut commands: Commands,
+    mines: Query<Entity, With<Mine>>,
+    flags: Query<Entity, With<Flag>>,
+    covers: Query<Entity, With<Cover>>,
+    adjacency: Query<Entity, With<Adjacency>>
+)
+{
+    for entity in mines
+    {
+        commands.entity(entity).despawn();
+    }
+    for entity in flags
+    {
+        commands.entity(entity).despawn();
+    }
+    for entity in covers
+    {
+        commands.entity(entity).despawn();
+    }
+    for entity in adjacency
+    {
+        commands.entity(entity).despawn();
     }
 }
 

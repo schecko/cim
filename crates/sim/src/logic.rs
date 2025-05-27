@@ -8,6 +8,15 @@ use crate::win_loss::ClassicWinLossLogic;
 
 use base::extents::Point;
 
+#[derive(Debug, Default, Copy, Clone, PartialEq, Eq)]
+pub enum WinStatus
+{
+    #[default]
+    InProgress,
+    Win,
+    Loss,
+}
+
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum PreviewKind
 {
@@ -59,6 +68,11 @@ impl Logic
             reveal: Box::new(ClassicRevealLogic{}),
             win_loss: Box::new(ClassicWinLossLogic::default()),
         }
+    }
+
+    pub fn get_status(&self) -> WinStatus
+    {
+        self.win_loss.get_status()
     }
 
     pub fn preview_guess(&self, grid: &Grid, pos: Point) -> LogicPreview

@@ -2,31 +2,21 @@ use crate::grid::Grid;
 use crate::grid::CellState;
 use crate::logic::PreviewResult;
 use crate::logic::LogicPreview;
+use crate::logic::WinStatus;
 
 use base::extents::Point;
-
-#[derive(Debug, Default, Copy, Clone, PartialEq, Eq)]
-pub enum Status
-{
-    #[default]
-    InProgress,
-    Win,
-    Loss,
-}
 
 pub trait WinLossLogic
 {
     fn check_guess(&self, _grid: &Grid, _pos: Point) -> PreviewResult;
-    // TODO schecko
-    #[allow(dead_code)]
-    fn get_status(&self) -> Status;
+    fn get_status(&self) -> WinStatus;
     fn handle_guess(&mut self, grid: &Grid, preview: &LogicPreview);
 }
 
 #[derive(Debug, Default)]
 pub struct ClassicWinLossLogic
 {
-    status: Status,
+    status: WinStatus,
 }
 
 impl WinLossLogic for ClassicWinLossLogic
@@ -55,25 +45,25 @@ impl WinLossLogic for ClassicWinLossLogic
 
     fn handle_guess(&mut self, grid: &Grid, preview: &LogicPreview)
     {
-        if self.status != Status::InProgress
+        if self.status != WinStatus::InProgress
         {
             return;
         }
 
         if preview.result == PreviewResult::Fail
         {
-            self.status = Status::Loss;
+            self.status = WinStatus::Loss;
             return;
         }
 
         if Self::is_won(grid)
         {
-            self.status = Status::Win;
+            self.status = WinStatus::Win;
             return;
         }
     }
 
-    fn get_status(&self) -> Status
+    fn get_status(&self) -> WinStatus
     {
         self.status
     }

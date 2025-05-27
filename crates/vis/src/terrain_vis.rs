@@ -15,6 +15,9 @@ use bevy::render::render_resource::AsBindGroup;
 use bevy::render::render_resource::ShaderRef;
 use bevy::sprite::*;
 
+#[derive(Component)]
+pub struct TerrainVis;
+
 fn blur<T, const N: usize>(data: &mut Array2<T>, kernel: &[T; N], passes: u32)
     where T: Default + Copy + std::ops::AddAssign + std::ops::Mul<Output = T>
 {
@@ -210,10 +213,23 @@ pub fn startup
     commands
         .spawn
         ((
+            TerrainVis,
             Mesh2d(mesh_id.into()),
             MeshMaterial2d(custom_material.into()),
             Transform::default(),
         ));
+}
+
+pub fn shutdown
+(
+    mut commands: Commands,
+    entities: Query<Entity, With<TerrainVis>>
+)
+{
+    for entity in entities
+    {
+        commands.entity(entity).despawn();
+    }
 }
 
 pub struct TerrainVisPlugin;

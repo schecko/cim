@@ -3,6 +3,7 @@ use crate::app_state::AppState;
 use crate::input;
 use crate::interactor::Interactor;
 use crate::screens;
+use crate::screens::hud::HudScreen;
 
 use base::array2::Array2;
 use base::extents::Extents;
@@ -13,7 +14,9 @@ use vis::grid_lines;
 use vis::terrain_grid::CellType;
 use vis::terrain_grid::TerrainGrid;
 use vis::terrain_vis;
+use sim::logic::WinStatus;
 
+use lunex::UiLayoutRoot;
 use bevy::prelude::*;
 
 #[derive(SystemSet, Debug, Clone, PartialEq, Eq, Hash)]
@@ -30,12 +33,22 @@ enum UpdateSet
     Second,
 }
 
+#[derive(States, Debug, Clone, Copy, PartialEq, Eq, Hash)]
+pub enum SubState
+{
+    Playing,
+    End,
+}
+
 #[derive(Component)]
 pub struct GameplayAppState;
 
 impl GameplayAppState
 {
-    fn on_enter(mut commands: Commands, asset_server: Res<AssetServer>)
+    fn on_enter(
+        mut commands: Commands,
+        asset_server: Res<AssetServer>,
+        mut next_state: ResMut<NextState<SubState>> )
     {
         // TODO
         let mut grid = Grid::new(5, 5);
@@ -62,8 +75,30 @@ impl GameplayAppState
         commands.insert_resource(Interactor::new());
         commands.insert_resource(GridVis{ grid });
         commands.insert_resource(terrain);
+        next_state.set(SubState::Playing);
 
         screens::hud::spawn(commands, asset_server);
+    }
+
+    fn on_update
+    (
+        mut commands: Commands,
+        asset_server: Res<AssetServer>,
+        interactor: Res<Interactor>,
+        mut next_state: ResMut<NextState<SubState>>,
+        hud_screen: Option<Single<Entity, (With<HudScreen>, With<UiLayoutRoot>)>>,
+    )
+    {
+        let status =  interactor.logic().get_status();
+        if status != WinStatus::InProgress
+        {
+            if let Some(hud) = hud_screen
+            {
+                commands.entity(*hud).despawn();
+            }
+            screens::eog::spawn(commands, asset_server);
+            next_state.set(SubState::End);
+        }
     }
 }
 
@@ -75,6 +110,8 @@ impl Plugin for GameplayAppState
             .add_plugins(terrain_vis::TerrainVisPlugin{})
             .add_plugins(grid_entities::GridEntitiesPlugin{})
             .add_plugins(grid_lines::GridLinesPlugin{})
+            
+            .insert_state(SubState::Playing)
 
             // initialize
             .add_systems
@@ -98,11 +135,22 @@ impl Plugin for GameplayAppState
                 .in_set(InitializeSet::AfterBoard)
             )
 
-            // update
+            .add_systems
+            (
+                OnExit(AppState::Gameplay),
+                (
+                    grid_entities::destroy_known,
+                    grid_lines::despawn_lines,
+                    terrain_vis::shutdown
+                )
+            )
+
+            // update while playing
             .add_systems
             (
                 Update,
                 (
+                    GameplayAppState::on_update,
                     input::camera_pan,
                     input::camera_zoom,
                     input::reveal_cell,
@@ -111,9 +159,22 @@ impl Plugin for GameplayAppState
                     grid_entities::sync_grid_entities::<grid_entities::Cover>,
                 )
                 .run_if(in_state(AppState::Gameplay))
+                .run_if(in_state(SubState::Playing))
             )
 
-        // sets
+            // update in eog
+            .add_systems
+            (
+                Update,
+                (
+                    input::camera_pan,
+                    input::camera_zoom,
+                )
+                .run_if(in_state(AppState::Gameplay))
+                .run_if(in_state(SubState::End))
+            )
+
+            // sets
             .configure_sets
             (
                 OnEnter(AppState::Gameplay),

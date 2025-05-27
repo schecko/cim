@@ -23,6 +23,11 @@ impl Interactor
         }
     }
 
+    pub fn logic(&self) -> &Logic
+    {
+        &self.logic
+    }
+
     pub fn on_primary(&mut self, grid: &mut Grid, vis_tuning: &BoardVisTuning, world_pos: &Vec2)
     {
         let pos = (world_pos / vis_tuning.cell_size).as_ivec2();

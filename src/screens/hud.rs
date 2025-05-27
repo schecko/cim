@@ -5,7 +5,7 @@ use crate::layers;
 use crate::app_state::AppState;
 
 #[derive(Component)]
-struct HudScreen;
+pub struct HudScreen;
 
 pub fn spawn(mut commands: Commands, asset_server: Res<AssetServer>)
 {
@@ -30,14 +30,14 @@ pub fn spawn(mut commands: Commands, asset_server: Res<AssetServer>)
         |
              _: Trigger<Pointer<Click>>,
              mut next: ResMut<NextState<AppState>>,
-             query: Query<Entity, With<HudScreen>>,
+             screen: Option<Single<Entity, (With<HudScreen>, With<UiLayoutRoot>)>>,
              mut cmd: Commands,
         |
         {
-            for entity in &query
-            {
-                cmd.entity(entity).despawn();
-            }
+            if let Some(entity) = screen
+			{
+            	cmd.entity(*entity).despawn();
+			}
             next.set(AppState::Frontend);
         });
     });
