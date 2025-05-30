@@ -11,6 +11,7 @@ pub trait WinLossLogic
     fn check_guess(&self, _grid: &Grid, _pos: Point) -> PreviewResult;
     fn get_status(&self) -> WinStatus;
     fn handle_guess(&mut self, grid: &Grid, preview: &LogicPreview);
+    fn post_reveal(&mut self, grid: &Grid);
 }
 
 #[derive(Debug, Default)]
@@ -43,7 +44,7 @@ impl WinLossLogic for ClassicWinLossLogic
         }
     }
 
-    fn handle_guess(&mut self, grid: &Grid, preview: &LogicPreview)
+    fn handle_guess(&mut self, _grid: &Grid, preview: &LogicPreview)
     {
         if self.status != WinStatus::InProgress
         {
@@ -53,6 +54,14 @@ impl WinLossLogic for ClassicWinLossLogic
         if preview.result == PreviewResult::Fail
         {
             self.status = WinStatus::Loss;
+            return;
+        }
+    }
+    
+    fn post_reveal(&mut self, grid: &Grid)
+    {
+        if self.status != WinStatus::InProgress
+        {
             return;
         }
 
@@ -75,21 +84,25 @@ impl ClassicWinLossLogic
     {
         Self::validate(grid);
 
+        let mut revealed_playable = 0;
+        let mut playable = 0;
         for pos in grid.size().index2_space()
         {
             let cell = grid.states.get_by_index2(pos).unwrap();
-            if *cell == CellState::None
-            {
-                return false;
-            }
 
-            if cell.contains(CellState::Flag) && !cell.contains(CellState::Mine)
+            if cell.intersects(CellState::Mine | CellState::NonPlayable)
             {
-                return false;
+                continue;
+            }
+            
+            playable += 1;
+            if cell.contains(CellState::Revealed)
+            {
+                revealed_playable += 1;
             }
         }
 
-        return true;
+        return revealed_playable == playable;
     }
 
     fn validate(grid: &Grid)

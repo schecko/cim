@@ -107,6 +107,7 @@ impl Logic
 
         self.win_loss.handle_guess(grid, preview);
         let cells = self.reveal.reveal(grid, preview.pos);
+        self.win_loss.post_reveal(grid);
         GuessResult
         {
             pos: preview.pos,
