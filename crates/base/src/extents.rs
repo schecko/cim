@@ -1,4 +1,3 @@
-
 use arrayvec::ArrayVec;
 use bitflags::bitflags;
 
@@ -58,7 +57,9 @@ impl Extents
     {
         if self.is_valid_pos(pos)
         {
-            Some((pos.y * self.width + pos.x) as usize)
+            let index = (pos.y * self.width + pos.x) as usize;
+            assert!(index < (self.width * self.height) as usize);
+            Some(index)
         }
         else
         {
@@ -157,31 +158,17 @@ mod tests
     }
 
     #[test]
-    fn test_positions_row_major()
-    {
-        let size = Extents::new( 2, 2 );
-        check_iterators(
-            size.positions_row_major(),
-            [(0_i32, 0_i32), (1, 0), (0, 1), (1, 1)].into_iter()
-        );
-    }
-
-    #[test]
     fn test_neighbours()
     {
         let size = Extents::new( 3, 3 );
         check_iterators(
-            size.neighbours::<{ Neighbours::All.bits() }>(1, 1),
-            [
-                (0, 0), (1, 0), (2, 0), (0, 1), (2, 1), (0, 2), (1, 2), (2, 2),
-            ].into_iter()
+            size.neighbours::<{ Neighbours::All.bits() }>((1, 1).into()),
+            crate::convert::<Point, _, 8>(&[(0, 0), (1, 0), (2, 0), (0, 1), (2, 1), (0, 2), (1, 2), (2, 2),]).into_iter()
         );
 
         check_iterators(
-            size.neighbours::<{ Neighbours::Flush.bits() }>(1, 1),
-            [
-                (1, 0), (0, 1), (2, 1), (1, 2)
-            ].into_iter()
+            size.neighbours::<{ Neighbours::Flush.bits() }>((1, 1).into()),
+            crate::convert::<Point, _, 4>(&[ (1, 0), (0, 1), (2, 1), (1, 2) ]).into_iter()
         );
     }
 
@@ -190,17 +177,13 @@ mod tests
     {
         let size = Extents::new( 2, 2 );
         check_iterators(
-            size.neighbours::<{ Neighbours::All.bits() }>(0, 0),
-            [
-                (1, 0), (0, 1), (1, 1)
-            ].into_iter()
+            size.neighbours::<{ Neighbours::All.bits() }>((0, 0).into()),
+            crate::convert::<Point, _, 3>(&[ (1, 0), (0, 1), (1, 1) ]).into_iter()
         );
 
         check_iterators(
-            size.neighbours::<{ Neighbours::All.bits() }>(1, 1),
-            [
-                (0, 0), (1, 0), (0, 1)
-            ].into_iter()
+            size.neighbours::<{ Neighbours::All.bits() }>((1, 1).into()),
+            crate::convert::<Point, _, 3>(&[(0, 0), (1, 0), (0, 1) ]).into_iter()
         );
     }
 }

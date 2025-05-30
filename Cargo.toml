@@ -35,7 +35,6 @@ strip = false
 opt-level = 3
 debug = true
 strip = false
-
  
 [dependencies]
 bevy = { workspace = true }
