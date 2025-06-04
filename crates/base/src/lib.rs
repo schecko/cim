@@ -6,6 +6,7 @@ pub mod extents;
 pub mod ronx;
 pub mod tuning;
 pub mod const_default;
+pub mod random;
 
 pub fn convert<Out, In, const SIZE: usize>( input: &[In; SIZE] ) -> [Out; SIZE] where
     Out: From<In> + Copy + Default,

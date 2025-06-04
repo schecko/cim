@@ -232,12 +232,24 @@ impl<T> Array2<T>
         })
     }
 
+    pub fn index_space(&self) -> impl DoubleEndedIterator<Item = usize> + Clone
+    {
+        self.size.index_space()
+    }
+
     pub fn index2_space(&self) -> impl DoubleEndedIterator<Item = Point> + Clone
     {
         self.size.index2_space()
     }
 
     pub fn enumerate(
+        &self,
+    ) -> impl DoubleEndedIterator<Item = (usize, &T)> + Clone
+    {
+        self.index_space().map(move |i| (i, &self[i]))
+    }
+
+    pub fn enumerate2(
         &self,
     ) -> impl DoubleEndedIterator<Item = (Point, &T)> + Clone
     {

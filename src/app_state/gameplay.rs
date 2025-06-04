@@ -5,6 +5,7 @@ use crate::interactor::Interactor;
 use crate::screens;
 use crate::screens::hud::HudScreen;
 
+use base::random::RandomGenerator;
 use base::array2::Array2;
 use base::extents::Extents;
 use sim::grid::*;
@@ -15,6 +16,7 @@ use vis::terrain_grid::CellType;
 use vis::terrain_grid::TerrainGrid;
 use vis::terrain_vis;
 use sim::logic::WinStatus;
+use sim::grid_gen;
 
 use lunex::UiLayoutRoot;
 use bevy::prelude::*;
@@ -52,15 +54,13 @@ impl GameplayAppState
     {
         // TODO
         let mut grid = Grid::new(5, 5);
-        *grid.states.get_by_index2_mut((0, 0).into()).unwrap() = CellState::Mine;
-        *grid.states.get_by_index2_mut((1, 1).into()).unwrap() = CellState::Mine;
-        *grid.states.get_by_index2_mut((4, 4).into()).unwrap() = CellState::Mine;
-
         *grid.states.get_by_index2_mut((1, 0).into()).unwrap() = CellState::NonPlayable;
         *grid.states.get_by_index2_mut((0, 1).into()).unwrap() = CellState::NonPlayable;
         *grid.states.get_by_index2_mut((2, 2).into()).unwrap() = CellState::NonPlayable;
         *grid.states.get_by_index2_mut((4, 3).into()).unwrap() = CellState::NonPlayable;
-        grid.update_adjacency();
+
+        let mut rand = RandomGenerator::new(1);
+        grid_gen::initial_mines(&mut grid, &mut rand, 3);
 
         let size = Extents::new(5, 5);
         let mut terrain = TerrainGrid
