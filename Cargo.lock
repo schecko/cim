@@ -1737,25 +1737,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "613afe47fcd5fac7ccf1db93babcb082c5994d996f20b8b159f2ad1658eb5724"
 
 [[package]]
-name = "cim"
-version = "0.1.0"
-dependencies = [
- "base",
- "bevy",
- "bevy_egui",
- "bevyx",
- "glam",
- "lunex",
- "ron",
- "serde",
- "sim",
- "strum 0.27.1",
- "sup",
- "thiserror 2.0.12",
- "vis",
-]
-
-[[package]]
 name = "clang-sys"
 version = "1.8.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -4825,6 +4806,25 @@ dependencies = [
  "skrifa",
  "yazi",
  "zeno",
+]
+
+[[package]]
+name = "sweeper"
+version = "0.1.0"
+dependencies = [
+ "base",
+ "bevy",
+ "bevy_egui",
+ "bevyx",
+ "glam",
+ "lunex",
+ "ron",
+ "serde",
+ "sim",
+ "strum 0.27.1",
+ "sup",
+ "thiserror 2.0.12",
+ "vis",
 ]
 
 [[package]]

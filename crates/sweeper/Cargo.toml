@@ -1,0 +1,21 @@
+[package]
+name = "sweeper"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+bevy = { workspace = true }
+bevy_egui = { workspace = true }
+ron = { workspace = true }
+serde = { workspace = true }
+thiserror = { workspace = true }
+glam = { workspace = true }
+strum = { workspace = true }
+
+base = { workspace = true }
+bevyx = { workspace = true }
+sim = { workspace = true }
+vis = { workspace = true }
+sup = { workspace = true }
+lunex = { workspace = true }
+
