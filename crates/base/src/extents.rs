@@ -88,7 +88,7 @@ impl Extents
 
     pub fn index2_space(
         self,
-    ) -> impl DoubleEndedIterator<Item = Point> + Clone
+    ) -> impl DoubleEndedIterator<Item = Point> + Clone + use<>
     {
         (0..self.height).flat_map(move |y| (0..self.width).map(move |x| (x, y).into()))
     }
@@ -96,7 +96,7 @@ impl Extents
     pub fn neighbours<const FLAGS: u8>(
         &self,
         pos: Point,
-    ) -> impl DoubleEndedIterator<Item = Point> + Clone
+    ) -> impl DoubleEndedIterator<Item = Point> + Clone + use<FLAGS>
     {
         let mut neigh = ArrayVec::<Point, 8>::new();
 

@@ -237,7 +237,7 @@ impl<T> Array2<T>
         self.size.index_space()
     }
 
-    pub fn index2_space(&self) -> impl DoubleEndedIterator<Item = Point> + Clone
+    pub fn index2_space(&self) -> impl DoubleEndedIterator<Item = Point> + Clone + use<T>
     {
         self.size.index2_space()
     }

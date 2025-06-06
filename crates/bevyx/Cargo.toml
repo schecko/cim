@@ -1,8 +1,8 @@
 [package]
 name = "bevyx"
 description = "Bevy Extensions"
-version = "0.1.0"
-edition = "2021"
+version = { workspace = true }
+edition = { workspace = true }
 
 [dependencies]
 bevy = { workspace = true }

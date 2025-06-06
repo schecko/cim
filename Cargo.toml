@@ -15,7 +15,8 @@ default-members = [
 
 [workspace.package]
 authors = ["Scott Checko"]
-edition = "2021"
+edition = "2024"
+version = "0.1.0"
 
 [workspace.dependencies]
 arrayvec = "0.7.6"
