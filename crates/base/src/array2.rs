@@ -1,5 +1,5 @@
 use crate::extents::Extents;
-use crate::extents::Point;
+use crate::point::Point;
 
 use std::fmt::Display;
 use std::fmt::Formatter;

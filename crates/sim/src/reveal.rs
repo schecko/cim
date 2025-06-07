@@ -2,7 +2,7 @@ use crate::grid::Grid;
 use crate::grid::CellState;
 
 use base::extents::Neighbours;
-use base::extents::Point;
+use base::point::Point;
 
 pub trait RevealLogic
 {
@@ -33,8 +33,7 @@ impl ClassicRevealLogic
             return;
         }
 
-        let neighbours = grid.size().neighbours::<{ Neighbours::All.bits() }>(pos);
-        for neighbour in neighbours
+        for neighbour in grid.size().neighbours::<{ Neighbours::All.bits() }>(pos)
         {
             self.reveal_internal(grid, neighbour, revealed);
         }

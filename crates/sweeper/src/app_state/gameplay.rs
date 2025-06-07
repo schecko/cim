@@ -96,6 +96,7 @@ impl GameplayAppState
             {
                 commands.entity(*hud).despawn();
             }
+            println!("game finished, status: {:?}", status);
             screens::eog::spawn(commands, asset_server);
             next_state.set(SubState::End);
         }

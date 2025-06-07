@@ -4,7 +4,7 @@ use crate::logic::PreviewResult;
 use crate::logic::LogicPreview;
 use crate::logic::WinStatus;
 
-use base::extents::Point;
+use base::point::Point;
 
 pub trait WinLossLogic
 {

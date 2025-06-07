@@ -1,3 +1,5 @@
+use crate::point::Point;
+
 use arrayvec::ArrayVec;
 use bitflags::bitflags;
 
@@ -24,8 +26,6 @@ bitflags!
         const All = Self::Flush.bits() | Self::Diagonal.bits();
     }
 }
-
-pub type Point = glam::IVec2;
 
 #[derive(Debug, Clone, Copy, Eq, PartialEq, Hash)]
 pub struct Extents
@@ -91,6 +91,23 @@ impl Extents
     ) -> impl DoubleEndedIterator<Item = Point> + Clone + use<>
     {
         (0..self.height).flat_map(move |y| (0..self.width).map(move |x| (x, y).into()))
+    }
+    
+    pub fn neighbours_self<const FLAGS: u8>(
+        &self,
+        pos: Point,
+    ) -> impl DoubleEndedIterator<Item = Point> + Clone + use<FLAGS>
+    {
+        let mut result = ArrayVec::<Point, 9>::new();
+        if self.is_valid_pos(pos)
+        {
+            result.push(pos);
+        }
+        for n in self.neighbours::<FLAGS>(pos)
+        {
+            result.push(n);
+        }
+        result.into_iter()
     }
 
     pub fn neighbours<const FLAGS: u8>(

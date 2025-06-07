@@ -14,7 +14,7 @@ enum Buttons
     Return,
 }
 
-pub fn spawn(mut commands: Commands, asset_server: Res<AssetServer>)
+pub fn spawn(mut commands: Commands, _asset_server: Res<AssetServer>)
 {
     commands.spawn((
         UiLayoutRoot::new_2d(),

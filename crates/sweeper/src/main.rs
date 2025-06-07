@@ -74,8 +74,8 @@ fn setup
 fn main()
 {
     let ext = base::extents::Extents{ width: 10, height: 10 };
-    let _arr = ext.neighbours::<{ base::extents::Neighbours::Top.bits() }>(base::extents::Point::new(0, 0));
-    let _arr = ext.neighbours::<{ base::extents::Neighbours::Top.union(base::extents::Neighbours::Bottom).bits() }>(base::extents::Point::new(0, 0));
+    let _arr = ext.neighbours::<{ base::extents::Neighbours::Top.bits() }>(base::point::Point::new(0, 0));
+    let _arr = ext.neighbours::<{ base::extents::Neighbours::Top.union(base::extents::Neighbours::Bottom).bits() }>(base::point::Point::new(0, 0));
     let _ = find_assets_folder();
 
     base::hello_base();
@@ -89,7 +89,7 @@ fn main()
             {
                 render_creation: WgpuSettings
                 {
-                    backends: Some(Backends::DX12),
+                    //backends: Some(Backends::DX12),
                     features: bevy::render::render_resource::WgpuFeatures::POLYGON_MODE_LINE,
                     ..default()
                 }.into(),

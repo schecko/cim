@@ -1,4 +1,5 @@
 
+pub mod point;
 pub mod array2;
 pub mod assets;
 pub mod debug;

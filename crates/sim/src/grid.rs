@@ -21,6 +21,7 @@ bitflags!
 #[derive(Debug, Clone)]
 pub struct Grid
 {
+    pub first_guess: bool,
     pub states: Array2<CellState>,
     pub adjacency: Array2<u8>,
 }
@@ -31,6 +32,7 @@ impl Grid
     {
         Self
         {
+            first_guess: true,
             states: Array2::new(width, height),
             adjacency: Array2::new(width, height),
         }
@@ -40,6 +42,7 @@ impl Grid
     {
         Self
         {
+            first_guess: true,
             states: Array2::from_size(size),
             adjacency: Array2::from_size(size),
         }

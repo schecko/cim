@@ -1,6 +1,6 @@
 
-use base::array2::*;
-use base::extents::*;
+use base::array2::Array2;
+use base::point::Point;
 use crate::board_vis_tuning::*;
 use crate::layers;
 use crate::terrain_grid::CellType;
@@ -35,7 +35,8 @@ fn blur<T, const N: usize>(data: &mut Array2<T>, kernel: &[T; N], passes: u32)
             let mut acc = T::default();
             for d in -delta..=delta
             {
-                if let Some(&read) = data.get_by_index2(pos + Point::new(d, 0))
+                let new_pos = *pos + *Point::new(d, 0);
+                if let Some(&read) = data.get_by_index2(new_pos.into())
                 {
                     acc += read * kernel[(delta + d) as usize];
                 }
@@ -49,7 +50,8 @@ fn blur<T, const N: usize>(data: &mut Array2<T>, kernel: &[T; N], passes: u32)
             let mut acc = T::default();
             for d in -delta..=delta
             {
-                if let Some(&read) = temp.get_by_index2(pos + Point::new(0, d))
+                let new_pos = *pos + *Point::new(0, d);
+                if let Some(&read) = temp.get_by_index2(new_pos.into())
                 {
                     acc += read * kernel[(delta + d) as usize];
                 }
@@ -122,7 +124,8 @@ pub fn startup
 
         for pos in height_map.index2_space()
         {
-            height_map[pos] = if terrain_grid.grid[pos / HEIGHT_MAP_SCALE] == CellType::Land
+            let scaled_pos: Point = (*pos / HEIGHT_MAP_SCALE).into();
+            height_map[pos] = if terrain_grid.grid[scaled_pos] == CellType::Land
                 { 1.0 }
                 else
                 { 0.0 };
