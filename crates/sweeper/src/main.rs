@@ -89,7 +89,10 @@ fn main()
             {
                 render_creation: WgpuSettings
                 {
-                    //backends: Some(Backends::DX12),
+                    #[cfg(target_os = "windows")]
+                    backends: Some(Backends::DX12),
+                    #[cfg(not(target_os = "windows"))]
+                    backends: Some(Backends::PRIMARY),
                     features: bevy::render::render_resource::WgpuFeatures::POLYGON_MODE_LINE,
                     ..default()
                 }.into(),

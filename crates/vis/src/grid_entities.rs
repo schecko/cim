@@ -35,6 +35,15 @@ pub trait VisTag
 {
     fn include_state() -> CellState;
     fn exclude_state() -> CellState;
+    
+    fn should_show(state: &CellState) -> bool
+    {
+        let include_state = Self::include_state();
+        let exclude_state = Self::exclude_state();
+        let include = ( *state & include_state ) == include_state;
+        let exclude = ( *state & exclude_state ) == CellState::None;
+        include && exclude
+    }
 
     // TODO just spawn the whole bloody entity?
     fn layer() -> f32;
@@ -114,8 +123,20 @@ impl VisTag for Flag
     }
 }
 
-#[derive(Debug, Clone, Component)]
+#[derive(Debug, Clone, Component, Default)]
 pub struct Adjacency;
+
+impl VisTag for Adjacency
+{
+    fn include_state() -> CellState { CellState::Revealed }
+    fn exclude_state() -> CellState { CellState::NonPlayable | CellState::Mine }
+    fn layer() -> f32 { layers::ADJACENCY }
+
+    fn sprite(_vis_tuning: &BoardVisTuning, _handles: &VisHandles) -> Sprite
+    {
+        panic!("Manually handled, maybe split into another trait?");
+    }
+}
 
 #[derive(Debug, Clone, Resource)]
 pub struct GridVis
@@ -130,15 +151,21 @@ pub struct VisHandles
     mine: Handle<Image>,
     flag: Handle<Image>,
     cover: Handle<Image>,
+    adjacency: [Handle<Image>; 8],
 }
 
 pub fn init_handles
 (
     mut commands: Commands,
     asset_server: Res<AssetServer>,
-    _vis_tuning: Res<BoardVisTuning>,
+    vis_tuning: Res<BoardVisTuning>,
 )
 {
+    let mut adj_it = vis_tuning.adjacency_images
+        .iter()
+        .map( |path| asset_server.load(&**path) );
+    let adjacency = std::array::from_fn::<Handle<Image>, 8, _>( |_| adj_it.next().unwrap() );
+
     commands.insert_resource
     (
         VisHandles
@@ -146,6 +173,7 @@ pub fn init_handles
             mine: asset_server.load("textures/mine.png"),
             flag: asset_server.load("textures/flag.png"),
             cover: asset_server.load("textures/cover.png"),
+            adjacency,
         }
     );
 }
@@ -169,6 +197,10 @@ pub fn init_known
     (
         EntityGrid::<Cover>::new(size),
     );
+    commands.insert_resource
+    (
+        EntityGrid::<Adjacency>::new(size),
+    );
 }
 
 pub fn sync_grid_entities<Tag>
@@ -187,12 +219,7 @@ pub fn sync_grid_entities<Tag>
         let state = grid_vis.grid.states.get_by_index2(index2).unwrap();
         let vis = &mut entity_grid.known.get_by_index2_mut(index2).unwrap();
 
-        let include_state = Tag::include_state();
-        let exclude_state = Tag::exclude_state();
-        let include = ( *state & include_state ) == include_state;
-        let exclude = ( *state & exclude_state ) == CellState::None;
-
-        if ( include && exclude ) == vis.is_some()
+        if Tag::should_show(state) == vis.is_some()
         {
             continue;
         }
@@ -216,44 +243,54 @@ pub fn sync_grid_entities<Tag>
     }
 }
 
-pub fn spawn_adjacency
+pub fn sync_adjacency
 (
     mut commands: Commands,
-    asset_server: Res<AssetServer>,
     vis_tuning: Res<BoardVisTuning>,
     grid_vis: Res<GridVis>,
+    mut entity_grid: ResMut<EntityGrid<Adjacency>>,
+    handles: Res<VisHandles>,
 )
 {
-    let mut it = vis_tuning.adjacency_images
-        .iter()
-        .map( |path| asset_server.load(&**path) );
-    let images = std::array::from_fn::<Handle<Image>, 8, _>( |_| it.next().unwrap() );
-
-    for (index, (adj, state)) in grid_vis.grid.adjacency.raw_iter().zip(grid_vis.grid.states.raw_iter()).enumerate()
+    type Tag = Adjacency;
+    
+    let size = grid_vis.grid.states.size();
+    for index2 in size.index2_space()
     {
-        if state.intersects(CellState::NonPlayable | CellState::Mine) || *adj == 0
+        let adj = grid_vis.grid.adjacency.get_by_index2(index2).unwrap();
+        let state = grid_vis.grid.states.get_by_index2(index2).unwrap();
+        let vis = &mut entity_grid.known.get_by_index2_mut(index2).unwrap();
+
+        if ( Tag::should_show(state) && *adj != 0 ) == vis.is_some()
         {
             continue;
         }
 
+        if let Some(entity) = vis.take()
+        {
+            commands.entity(entity).despawn();
+            continue;
+        }
+        
         let adj_sprite = Sprite
         {
-            image: images[(adj - 1) as usize].clone(),
+            image: handles.adjacency[(adj - 1) as usize].clone(),
             custom_size: Some(vis_tuning.cell_size),
             anchor: Anchor::BottomLeft,
             ..default()
         };
 
-        let index2 =  grid_vis.grid.states.get_index2(index).unwrap();
+        let index = grid_vis.grid.states.get_index(index2).unwrap();
         let world_pos = index2.as_vec2() * vis_tuning.cell_size;
-        commands.spawn
+        let id = commands.spawn
         ((
-            Adjacency,
-            EntityIndex2(index2),
+            Tag::default(),
             EntityIndex(index),
+            EntityIndex2(index2),
             adj_sprite,
-            Transform::from_translation(world_pos.extend(layers::ADJACENCY))
-        ));
+            Transform::from_translation(world_pos.extend(Tag::layer()))
+        )).id();
+        **vis = Some(id);
     }
 }
 

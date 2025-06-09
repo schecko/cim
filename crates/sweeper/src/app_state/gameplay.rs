@@ -129,7 +129,6 @@ impl Plugin for GameplayAppState
                 OnEnter(AppState::Gameplay),
                 (
                     grid_entities::init_known,
-                    grid_entities::spawn_adjacency,
                     grid_lines::spawn_lines,
                     terrain_vis::startup
                 )
@@ -158,6 +157,7 @@ impl Plugin for GameplayAppState
                     grid_entities::sync_grid_entities::<grid_entities::Mine>,
                     grid_entities::sync_grid_entities::<grid_entities::Flag>,
                     grid_entities::sync_grid_entities::<grid_entities::Cover>,
+                    grid_entities::sync_adjacency,
                 )
                 .run_if(in_state(AppState::Gameplay))
                 .run_if(in_state(SubState::Playing))
