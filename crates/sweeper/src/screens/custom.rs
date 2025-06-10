@@ -5,136 +5,340 @@ use crate::app_state::gameplay::GameConfig;
 use crate::app_state::frontend::ScreenUpdate;
 
 use bevy::prelude::*;
-use lunex::*;
 use strum::EnumIter;
 
-#[derive(Component)]
-struct CustomScreen;
+const NORMAL_BUTTON: Color = Color::srgb(0.15, 0.15, 0.15);
+const HOVERED_BUTTON: Color = Color::srgb(0.25, 0.25, 0.25);
+const PRESSED_BUTTON: Color = Color::srgb(0.35, 0.75, 0.35);
 
-#[derive(Debug, Eq, PartialEq, EnumIter, strum::Display)]
-enum Buttons
+#[derive(Component)]
+pub struct CustomScreen;
+
+#[derive(Component, Debug, Eq, PartialEq, EnumIter, strum::Display)]
+enum DynamicText
 {
-    WidthInc,
-    WidthDec,
-    HeightInc,
-    HeightDec,
-    MinesInc,
-    MinesDec,
-    Play,
-    Return,
+    Width,
+    Height,
+    Mines
 }
 
-pub fn spawn(mut commands: Commands, asset_server: Res<AssetServer>)
+fn basic_button(txt: &str, _asset_server: &AssetServer) -> impl Bundle + use<>
 {
-    commands.spawn((
-        UiLayoutRoot::new_2d(),
-        UiFetchFromCamera::<{ layers::UI_LAYER }>,
+    (
+        Node
+        {
+            width: Val::Percent(100.0),
+            height: Val::Percent(100.0),
+            align_items: AlignItems::Center,
+            justify_content: JustifyContent::Center,
+            ..default()
+        },
         layers::UI_RENDER_LAYER,
-        CustomScreen,
-        Name::new("Custom"),
-    )).with_children(|ui|
-    {
-        ui.spawn
-        ((
-            Name::new("Background"),
-            UiLayout::solid().pack(),
-            UiColor::from(Color::srgb(0.0, 1.0, 1.0)),
-            Sprite::from_image(asset_server.load("textures/sample.png")),
+        children!
+        [(
+            Button,
+            Node
+            {
+                width: Val::Px(65.0),
+                height: Val::Px(65.0),
+                border: UiRect::all(Val::Px(5.0)),
+                justify_content: JustifyContent::Center,
+                align_items: AlignItems::Center,
+                ..default()
+            },
             layers::UI_RENDER_LAYER,
-            CustomScreen,
-        ));
+            children!
+            [(
+                Text::new(txt),
+                TextFont
+                {
+                    font_size: 33.0,
+                    ..default()
+                },
+                TextColor(Color::srgb(0.9, 0.9, 0.9)),
+                TextShadow::default(),
+                layers::UI_RENDER_LAYER,
+            )]
+        )],
+    )
+}
 
-        ui.spawn
+fn button_system
+(
+    mut interaction_query: Query
+    <
+        (
+            &Interaction,
+            &mut BackgroundColor,
+            &mut BorderColor
+        ),
+        (Changed<Interaction>, With<Button>),
+    >,
+) {
+    for (interaction, mut color, mut border_color) in &mut interaction_query
+    {
+        match *interaction
+        {
+            Interaction::Pressed =>
+            {
+                *color = PRESSED_BUTTON.into();
+                border_color.0 = bevy::color::palettes::basic::RED.into();
+            }
+            Interaction::Hovered =>
+            {
+                *color = HOVERED_BUTTON.into();
+                border_color.0 = Color::WHITE;
+            }
+            Interaction::None =>
+            {
+                *color = NORMAL_BUTTON.into();
+                border_color.0 = Color::BLACK;
+            }
+        }
+    }
+}
+
+fn dynamic_text_system
+(
+    mut text_query: Query<(&mut Text, &DynamicText)>,
+    config: Res<GameConfig>,
+) {
+    for (mut text, ty) in &mut text_query
+    {
+        match ty
+        {
+            DynamicText::Width =>
+            {
+                // TODO: Local
+                // text.0 = format!("width {}", config.width);
+                text.0 = config.width.to_string()
+            }
+            DynamicText::Height =>
+            {
+                // TODO: Local
+                text.0 = config.height.to_string();
+            }
+            DynamicText::Mines =>
+            {
+                // TODO: Local
+                text.0 = config.mine_count.to_string();
+            }
+        }
+    }
+}
+
+impl CustomScreen
+{
+    pub fn spawn(mut commands: Commands, asset_server: Res<AssetServer>)
+    {
+        commands.spawn
         ((
-            Name::new("ButtonContainer"),
-            UiLayout::solid().pack(),
+            Node
+            {
+                width: Val::Percent(100.0),
+                height: Val::Percent(100.0),
+                flex_direction: FlexDirection::Column,
+                align_items: AlignItems::Center,
+                ..default()
+            },
             layers::UI_RENDER_LAYER,
             CustomScreen,
         ))
-        .with_children(|ui|
+        .with_children(|builder|
         {
-            let gap = 3.0;
-            let size = 14.0;
-            let mut offset = 0.0;
-            let mut make_button = |button_type: Buttons|
+            builder.spawn
+            ((
+                Node
+                {
+                    flex_direction: FlexDirection::Row,
+                    ..default()
+                },
+                layers::UI_RENDER_LAYER,
+            ))
+            .with_children(|builder|
             {
-                let local_offset = offset;
-                offset += gap + size;
-                (
-                    Name::new(button_type.to_string()),
-                    UiLayout::window().y(Rl(local_offset)).size(Rl((25.0, size))).pack(),
-                    layers::UI_RENDER_LAYER,
-                    CustomScreen,
-                )
-            };
-
-            let make_button_child = |button_type: Buttons|
-            {
-                (
-                    Name::new("Button Text"),
-                    UiColor::new(vec![
-                        (UiBase::id(), Color::srgba(1.0, 0.0, 0.0, 1.0)),
-                        (UiHover::id(), Color::srgba(1.0, 0.0, 1.0, 1.0))
-                    ]),
-                    Text2d::new(button_type.to_string()),
-                    layers::UI_RENDER_LAYER,
-                    CustomScreen,
-                    Pickable::IGNORE,
-                )
-            };
-
-            ui.spawn(make_button(Buttons::WidthInc))
-                .with_children(|ui|
-                {
-                    ui.spawn(make_button_child(Buttons::WidthInc));
-                })
-                .observe(
-                |
-                     _: Trigger<Pointer<Click>>,
-                     mut config: ResMut<GameConfig>,
-                |
-                {
-                    config.width += 1;
-                    config.sanitize();
-                });
-
-            ui.spawn(make_button(Buttons::WidthInc))
-                .with_children(|ui|
-                {
-                    ui.spawn(make_button_child(Buttons::WidthInc));
-                })
-                .observe(
-                |
-                     _: Trigger<Pointer<Click>>,
-                     mut config: ResMut<GameConfig>,
-                |
-                {
-                    config.width += 1;
-                    config.sanitize();
-                })
-                .observe(
-                |
-                     trigger: Trigger<ScreenUpdate>,
-                     config: Res<GameConfig>,
-                     mut txts: Query<&mut Text2d>,
-                |
-                {
-                    if let Ok(mut txt) = txts.get_mut(trigger.target())
+                builder.spawn
+                ((
+                    Text::new("width"),
+                    TextFont
                     {
-                        txt.0 = config.width.to_string();
-                    }
-                });
+                        font_size: 33.0,
+                        ..default()
+                    },
+                    TextColor(Color::srgb(0.9, 0.9, 0.9)),
+                    TextShadow::default(),
+                    layers::UI_RENDER_LAYER,
+                ));
 
-            ui.spawn(make_button(Buttons::Play))
-                .with_children(|ui|
+                builder.spawn(basic_button("+", &asset_server))
+                    .observe(
+                    |
+                         _: Trigger<Pointer<Click>>,
+                         mut config: ResMut<GameConfig>,
+                    |
+                    {
+                        config.width += 1;
+                        config.sanitize();
+                    });
+
+                builder.spawn
+                ((
+                    DynamicText::Width,
+                    Text::default(),
+                    TextFont
+                    {
+                        font_size: 33.0,
+                        ..default()
+                    },
+                    TextColor(Color::srgb(0.9, 0.9, 0.9)),
+                    TextShadow::default(),
+                    layers::UI_RENDER_LAYER,
+                ));
+
+                builder.spawn(basic_button("-", &asset_server))
+                    .observe(
+                    |
+                         _: Trigger<Pointer<Click>>,
+                         mut config: ResMut<GameConfig>,
+                    |
+                    {
+                        config.width -= 1;
+                        config.sanitize();
+                    });
+            })
+            ;
+            
+            builder.spawn
+            ((
+                Node
                 {
-                    ui.spawn(make_button_child(Buttons::Play));
-                })
+                    flex_direction: FlexDirection::Row,
+                    ..default()
+                },
+                layers::UI_RENDER_LAYER,
+            ))
+            .with_children(|builder|
+            {
+                builder.spawn
+                ((
+                    Text::new("height"),
+                    TextFont
+                    {
+                        font_size: 33.0,
+                        ..default()
+                    },
+                    TextColor(Color::srgb(0.9, 0.9, 0.9)),
+                    TextShadow::default(),
+                    layers::UI_RENDER_LAYER,
+                ));
+
+                builder.spawn(basic_button("+", &asset_server))
+                    .observe(
+                    |
+                         _: Trigger<Pointer<Click>>,
+                         mut config: ResMut<GameConfig>,
+                    |
+                    {
+                        config.height += 1;
+                        config.sanitize();
+                    });
+
+                builder.spawn
+                ((
+                    DynamicText::Height,
+                    Text::default(),
+                    TextFont
+                    {
+                        font_size: 33.0,
+                        ..default()
+                    },
+                    TextColor(Color::srgb(0.9, 0.9, 0.9)),
+                    TextShadow::default(),
+                    layers::UI_RENDER_LAYER,
+                ));
+
+                builder.spawn(basic_button("-", &asset_server))
+                    .observe(
+                    |
+                         _: Trigger<Pointer<Click>>,
+                         mut config: ResMut<GameConfig>,
+                    |
+                    {
+                        config.height -= 1;
+                        config.sanitize();
+                    });
+            })
+            ;
+            
+            builder.spawn
+            ((
+                Node
+                {
+                    flex_direction: FlexDirection::Row,
+                    ..default()
+                },
+                layers::UI_RENDER_LAYER,
+            ))
+            .with_children(|builder|
+            {
+                builder.spawn
+                ((
+                    Text::new("mine_count"),
+                    TextFont
+                    {
+                        font_size: 33.0,
+                        ..default()
+                    },
+                    TextColor(Color::srgb(0.9, 0.9, 0.9)),
+                    TextShadow::default(),
+                    layers::UI_RENDER_LAYER,
+                ));
+
+                builder.spawn(basic_button("+", &asset_server))
+                    .observe(
+                    |
+                         _: Trigger<Pointer<Click>>,
+                         mut config: ResMut<GameConfig>,
+                    |
+                    {
+                        config.mine_count += 1;
+                        config.sanitize();
+                    });
+
+                builder.spawn
+                ((
+                    DynamicText::Mines,
+                    Text::new(""),
+                    TextFont
+                    {
+                        font_size: 33.0,
+                        ..default()
+                    },
+                    TextColor(Color::srgb(0.9, 0.9, 0.9)),
+                    TextShadow::default(),
+                    layers::UI_RENDER_LAYER,
+                ));
+
+                builder.spawn(basic_button("-", &asset_server))
+                    .observe(
+                    |
+                         _: Trigger<Pointer<Click>>,
+                         mut config: ResMut<GameConfig>,
+                    |
+                    {
+                        config.mine_count -= 1;
+                        config.sanitize();
+                    });
+            })
+            ;
+
+
+            builder.spawn(basic_button("play", &asset_server))
                 .observe(
                 |
                      _: Trigger<Pointer<Click>>,
                      mut next: ResMut<NextState<AppState>>,
-                     screen: Option<Single<Entity, (With<CustomScreen>, With<UiLayoutRoot>)>>,
+                     screen: Option<Single<Entity, With<CustomScreen>>>,
                      mut cmd: Commands,
                 |
                 {
@@ -146,15 +350,11 @@ pub fn spawn(mut commands: Commands, asset_server: Res<AssetServer>)
                     next.set(AppState::Gameplay);
                 });
 
-            ui.spawn(make_button(Buttons::Return))
-                .with_children(|ui|
-                {
-                    ui.spawn(make_button_child(Buttons::Return));
-                })
+            builder.spawn(basic_button("return", &asset_server))
                 .observe(
                 |
                     _: Trigger<Pointer<Click>>,
-                    screen: Option<Single<Entity, (With<CustomScreen>, With<UiLayoutRoot>)>>,
+                    screen: Option<Single<Entity, With<CustomScreen>>>,
                     mut cmd: Commands,
                     a_serv: Res<AssetServer>,
                 |
@@ -165,6 +365,19 @@ pub fn spawn(mut commands: Commands, asset_server: Res<AssetServer>)
 					}
                     screens::home::spawn(cmd, a_serv);
                 });
-        });
-    });
+
+        })
+        ;
+    }
+}
+
+impl Plugin for CustomScreen
+{
+    fn build(&self, app: &mut App)
+    {
+        app
+            .add_systems(Update, button_system)
+            .add_systems(Update, dynamic_text_system)
+        ;
+    }
 }

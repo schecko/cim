@@ -133,6 +133,7 @@ fn main()
         .add_plugins(app_state::splash::SplashAppState)
         .add_plugins(app_state::gameplay::GameplayAppState)
         .add_plugins(app_state::frontend::FrontendAppState)
+        .add_plugins(screens::custom::CustomScreen)
         .add_systems(Startup, setup)
         .run();
 }

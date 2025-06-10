@@ -117,7 +117,7 @@ pub fn spawn(mut commands: Commands, asset_server: Res<AssetServer>)
 					{
                     	cmd.entity(*entity).despawn();
 					}
-                    screens::custom::spawn(cmd, a_serv);
+                    screens::custom::CustomScreen::spawn(cmd, a_serv);
                 });
 
             ui.spawn(make_button(Buttons::Settings))
