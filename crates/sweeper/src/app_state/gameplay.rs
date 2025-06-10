@@ -42,6 +42,39 @@ pub enum SubState
     End,
 }
 
+#[derive(Resource, Debug, Clone)]
+pub struct GameConfig
+{
+    pub guessing: bool,
+    pub width: u32,
+    pub height: u32,
+    pub mine_count: u32,
+}
+
+impl GameConfig
+{
+    pub fn sanitize(&mut self)
+    {
+        self.width = self.width.clamp(1, 10000);
+        self.height = self.height.clamp(1, 10000);
+        self.mine_count = self.mine_count.clamp(1, self.width * self.height - 9);
+    }
+}
+
+impl Default for GameConfig
+{
+    fn default() -> Self
+    {
+        Self
+        {
+            guessing: false,
+            width: 20,
+            height: 20,
+            mine_count: 20 * 20 / 3,
+        }
+    }
+}
+
 #[derive(Component)]
 pub struct GameplayAppState;
 
@@ -49,20 +82,20 @@ impl GameplayAppState
 {
     fn on_enter(
         mut commands: Commands,
+        config: Res<GameConfig>,
         asset_server: Res<AssetServer>,
         mut next_state: ResMut<NextState<SubState>> )
     {
-        // TODO
-        let mut grid = Grid::new(5, 5);
+        let mut grid = Grid::new(config.width as i32, config.height as i32);
         *grid.states.get_by_index2_mut((1, 0).into()).unwrap() = CellState::NonPlayable;
         *grid.states.get_by_index2_mut((0, 1).into()).unwrap() = CellState::NonPlayable;
         *grid.states.get_by_index2_mut((2, 2).into()).unwrap() = CellState::NonPlayable;
         *grid.states.get_by_index2_mut((4, 3).into()).unwrap() = CellState::NonPlayable;
 
         let mut rand = RandomGenerator::new(1);
-        grid_gen::initial_mines(&mut grid, &mut rand, 3);
+        grid_gen::initial_mines(&mut grid, &mut rand, config.mine_count);
 
-        let size = Extents::new(5, 5);
+        let size = Extents::new(config.width as i32, config.height as i32);
         let mut terrain = TerrainGrid
         {
             grid: Array2::<CellType>::from_size(size),
