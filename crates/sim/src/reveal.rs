@@ -16,7 +16,14 @@ pub struct ClassicRevealLogic
 
 impl ClassicRevealLogic
 {
-    fn reveal_internal(&self, grid: &mut Grid, pos: Point, revealed: &mut Vec<Point>)
+    fn reveal_internal
+    (
+        &self,
+        grid: &mut Grid,
+        pos: Point,
+        revealed: &mut Vec<Point>,
+        pending: &mut Vec<Point>
+    )
     {
         let cell_state = grid.states.get_by_index2_mut(pos).unwrap();
         if cell_state.intersects(CellState::Mine | CellState::Revealed | CellState::NonPlayable | CellState::Flag)
@@ -35,7 +42,7 @@ impl ClassicRevealLogic
 
         for neighbour in grid.size().neighbours::<{ Neighbours::All.bits() }>(pos)
         {
-            self.reveal_internal(grid, neighbour, revealed);
+            pending.push(neighbour);
         }
     }
 }
@@ -45,7 +52,12 @@ impl RevealLogic for ClassicRevealLogic
     fn reveal(&self, grid: &mut Grid, pos: Point) -> Vec<Point>
     {
         let mut revealed = Vec::new();
-        self.reveal_internal(grid, pos, &mut revealed);
+        let mut pending = Vec::new();
+        pending.push(pos);
+        while let Some(point) = pending.pop()
+        {
+            self.reveal_internal(grid, point, &mut revealed, &mut pending);
+        }
         revealed
     }
 }
