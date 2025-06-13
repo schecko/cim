@@ -25,41 +25,29 @@ enum DynamicText
 fn basic_button(txt: &str, _asset_server: &AssetServer) -> impl Bundle + use<>
 {
     (
+        Button,
         Node
         {
-            width: Val::Percent(100.0),
-            height: Val::Percent(100.0),
-            align_items: AlignItems::Center,
+            width: Val::Px(65.0),
+            height: Val::Px(65.0),
+            border: UiRect::all(Val::Px(5.0)),
             justify_content: JustifyContent::Center,
+            align_items: AlignItems::Center,
             ..default()
         },
         layers::UI_RENDER_LAYER,
         children!
         [(
-            Button,
-            Node
+            Text::new(txt),
+            TextFont
             {
-                width: Val::Px(65.0),
-                height: Val::Px(65.0),
-                border: UiRect::all(Val::Px(5.0)),
-                justify_content: JustifyContent::Center,
-                align_items: AlignItems::Center,
+                font_size: 33.0,
                 ..default()
             },
+            TextColor(Color::srgb(0.9, 0.9, 0.9)),
+            TextShadow::default(),
             layers::UI_RENDER_LAYER,
-            children!
-            [(
-                Text::new(txt),
-                TextFont
-                {
-                    font_size: 33.0,
-                    ..default()
-                },
-                TextColor(Color::srgb(0.9, 0.9, 0.9)),
-                TextShadow::default(),
-                layers::UI_RENDER_LAYER,
-            )]
-        )],
+        )]
     )
 }
 
@@ -170,6 +158,17 @@ impl CustomScreen
                     layers::UI_RENDER_LAYER,
                 ));
 
+                builder.spawn(basic_button("+10", &asset_server))
+                    .observe(
+                    |
+                         _: Trigger<Pointer<Click>>,
+                         mut config: ResMut<GameConfig>,
+                    |
+                    {
+                        config.width += 10;
+                        config.sanitize();
+                    });
+
                 builder.spawn(basic_button("+", &asset_server))
                     .observe(
                     |
@@ -180,6 +179,7 @@ impl CustomScreen
                         config.width += 1;
                         config.sanitize();
                     });
+
 
                 builder.spawn
                 ((
@@ -203,6 +203,17 @@ impl CustomScreen
                     |
                     {
                         config.width -= 1;
+                        config.sanitize();
+                    });
+
+                builder.spawn(basic_button("-10", &asset_server))
+                    .observe(
+                    |
+                         _: Trigger<Pointer<Click>>,
+                         mut config: ResMut<GameConfig>,
+                    |
+                    {
+                        config.width -= 10;
                         config.sanitize();
                     });
             })
@@ -231,6 +242,17 @@ impl CustomScreen
                     TextShadow::default(),
                     layers::UI_RENDER_LAYER,
                 ));
+
+                builder.spawn(basic_button("+10", &asset_server))
+                    .observe(
+                    |
+                         _: Trigger<Pointer<Click>>,
+                         mut config: ResMut<GameConfig>,
+                    |
+                    {
+                        config.height += 10;
+                        config.sanitize();
+                    });
 
                 builder.spawn(basic_button("+", &asset_server))
                     .observe(
@@ -267,6 +289,17 @@ impl CustomScreen
                         config.height -= 1;
                         config.sanitize();
                     });
+
+                builder.spawn(basic_button("-10", &asset_server))
+                    .observe(
+                    |
+                         _: Trigger<Pointer<Click>>,
+                         mut config: ResMut<GameConfig>,
+                    |
+                    {
+                        config.height -= 10;
+                        config.sanitize();
+                    });
             })
             ;
             
@@ -294,6 +327,17 @@ impl CustomScreen
                     layers::UI_RENDER_LAYER,
                 ));
 
+                builder.spawn(basic_button("+10", &asset_server))
+                    .observe(
+                    |
+                         _: Trigger<Pointer<Click>>,
+                         mut config: ResMut<GameConfig>,
+                    |
+                    {
+                        config.mine_count += 10;
+                        config.sanitize();
+                    });
+
                 builder.spawn(basic_button("+", &asset_server))
                     .observe(
                     |
@@ -319,6 +363,17 @@ impl CustomScreen
                     layers::UI_RENDER_LAYER,
                 ));
 
+                builder.spawn(basic_button("-10", &asset_server))
+                    .observe(
+                    |
+                         _: Trigger<Pointer<Click>>,
+                         mut config: ResMut<GameConfig>,
+                    |
+                    {
+                        config.mine_count -= 10;
+                        config.sanitize();
+                    });
+
                 builder.spawn(basic_button("-", &asset_server))
                     .observe(
                     |
@@ -331,7 +386,6 @@ impl CustomScreen
                     });
             })
             ;
-
 
             builder.spawn(basic_button("play", &asset_server))
                 .observe(

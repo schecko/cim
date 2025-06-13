@@ -135,5 +135,10 @@ fn main()
         .add_plugins(app_state::frontend::FrontendAppState)
         .add_plugins(screens::custom::CustomScreen)
         .add_systems(Startup, setup)
+        .insert_resource(UiDebugOptions
+        {
+            enabled: true,
+            ..default()
+        })
         .run();
 }

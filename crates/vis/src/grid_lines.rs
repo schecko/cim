@@ -91,14 +91,6 @@ impl<Vert: PartialEq> GeoBuilder<Vert>
 {
     fn insert_vert(&mut self, vert: Vert) -> u32
     {
-        for (index, staged_vert) in self.staged.iter().enumerate()
-        {
-            if *staged_vert == vert
-            {
-                return index as u32;
-            }
-        }
-
         let index = self.staged.len() as u32;
         self.staged.push(vert);
         index

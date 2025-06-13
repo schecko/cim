@@ -20,7 +20,7 @@ version = "0.1.0"
 
 [workspace.dependencies]
 arrayvec = "0.7.6"
-bevy = { version = "0.16.0", features = ["default", "bevy_dev_tools"] }
+bevy = { version = "0.16.1", features = ["default", "bevy_dev_tools", "bevy_render", "bevy_ui", "bevy_picking", "bevy_ui_debug"] }
 bevy_egui = "0.34.0"
 bitflags = "2.6.0"
 bytemuck = "1.21.0"
