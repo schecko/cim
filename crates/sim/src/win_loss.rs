@@ -58,7 +58,9 @@ impl WinLossLogic for ClassicWinLossLogic
         for neighbour in grid.size().neighbours::<{ Neighbours::All.bits() }>(pos)
         {
             let neighbour = grid.states.get_by_index2(neighbour).unwrap();
-            success &= neighbour.contains(CellState::Flag) ^ neighbour.contains(CellState::Mine);
+            let has_flag = neighbour.contains(CellState::Flag);
+            let has_mine = neighbour.contains(CellState::Mine);
+            success &= has_flag == has_mine;
         }
 
         if success
@@ -67,7 +69,7 @@ impl WinLossLogic for ClassicWinLossLogic
         }
         else
         {
-            PreviewResult::Fail
+            PreviewResult::Nothing
         }
     }
 
