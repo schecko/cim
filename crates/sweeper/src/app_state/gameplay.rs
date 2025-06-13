@@ -16,7 +16,7 @@ use vis::terrain_grid::CellType;
 use vis::terrain_grid::TerrainGrid;
 use vis::terrain_vis;
 use sim::logic::WinStatus;
-use sim::grid_gen;
+use sim::mines;
 
 use lunex::UiLayoutRoot;
 use bevy::prelude::*;
@@ -93,7 +93,7 @@ impl GameplayAppState
         *grid.states.get_by_index2_mut((4, 3).into()).unwrap() = CellState::NonPlayable;
 
         let mut rand = RandomGenerator::new(1);
-        grid_gen::initial_mines(&mut grid, &mut rand, config.mine_count);
+        mines::initial_mines(&mut grid, &mut rand, config.mine_count);
 
         let size = Extents::new(config.width as i32, config.height as i32);
         let mut terrain = TerrainGrid
