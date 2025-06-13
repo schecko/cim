@@ -31,14 +31,26 @@ impl Interactor
 
     pub fn on_primary(&mut self, grid: &mut Grid, vis_tuning: &BoardVisTuning, world_pos: &Vec2)
     {
-        let pos = (world_pos / vis_tuning.cell_size).as_ivec2();
+        let grid_world_size = grid.size().as_vec2() * vis_tuning.cell_size;
+        if world_pos.cmplt(Vec2::new(0.0, 0.0)).any() || world_pos.cmpge(grid_world_size).any()
+        {
+            return;
+        }
+        let pos = world_pos / vis_tuning.cell_size;
+        let pos = pos.as_ivec2();
         let preview = self.logic.preview_guess(grid, pos.into());
         self.actualize_preview(grid, &preview);
     }
 
     pub fn on_secondary(&mut self, grid: &mut Grid, vis_tuning: &BoardVisTuning, world_pos: &Vec2)
     {
-        let pos = (world_pos / vis_tuning.cell_size).as_ivec2();
+        let grid_world_size = grid.size().as_vec2() * vis_tuning.cell_size;
+        if world_pos.cmplt(Vec2::new(0.0, 0.0)).any() || world_pos.cmpge(grid_world_size).any()
+        {
+            return;
+        }
+        let pos = world_pos / vis_tuning.cell_size;
+        let pos = pos.as_ivec2();
         let preview = self.logic.preview_flag(grid, pos.into());
         self.actualize_preview(grid, &preview);
     }

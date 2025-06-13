@@ -43,6 +43,11 @@ impl Extents
         Extents{ width, height }
     }
 
+    pub fn as_vec2(&self) -> glam::Vec2
+    {
+        glam::Vec2::new(self.width as f32, self.height as f32)
+    }
+
     pub fn num_elements(&self) -> usize
     {
         (self.width * self.height) as usize
