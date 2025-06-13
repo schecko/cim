@@ -4,11 +4,13 @@ use crate::logic::PreviewResult;
 use crate::logic::LogicPreview;
 use crate::logic::WinStatus;
 
+use base::extents::Neighbours;
 use base::point::Point;
 
 pub trait WinLossLogic
 {
-    fn check_guess(&self, _grid: &Grid, _pos: Point) -> PreviewResult;
+    fn check_chord(&self, grid: &Grid, pos: Point) -> PreviewResult;
+    fn check_guess(&self, grid: &Grid, pos: Point) -> PreviewResult;
     fn get_status(&self) -> WinStatus;
     fn handle_guess(&mut self, grid: &Grid, preview: &LogicPreview);
     fn post_reveal(&mut self, grid: &Grid);
@@ -41,6 +43,31 @@ impl WinLossLogic for ClassicWinLossLogic
         else
         {
             PreviewResult::Success
+        }
+    }
+
+    fn check_chord(&self, grid: &Grid, pos: Point) -> PreviewResult
+    {
+        let Some(cell_state) = grid.states.get_by_index2(pos) else
+        {
+            return PreviewResult::Nothing;
+        };
+
+        assert!(cell_state.contains(CellState::Revealed));
+        let mut success = true;
+        for neighbour in grid.size().neighbours::<{ Neighbours::All.bits() }>(pos)
+        {
+            let neighbour = grid.states.get_by_index2(neighbour).unwrap();
+            success &= neighbour.contains(CellState::Flag) ^ neighbour.contains(CellState::Mine);
+        }
+
+        if success
+        {
+            PreviewResult::Success
+        }
+        else
+        {
+            PreviewResult::Fail
         }
     }
 

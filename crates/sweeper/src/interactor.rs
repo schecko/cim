@@ -72,6 +72,10 @@ impl Interactor
             {
                 self.logic.do_flag(grid, preview);
             }
+            PreviewKind::Chord =>
+            {
+                self.logic.do_chord(grid, preview);
+            }
         }
     }
 }

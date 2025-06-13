@@ -8,6 +8,7 @@ use crate::win_loss::ClassicWinLossLogic;
 use crate::first_guess::FirstGuessLogic;
 use crate::first_guess::SafeFirstGuessLogic;
 
+use base::extents::Neighbours;
 use base::random::RandomGenerator;
 use base::point::Point;
 
@@ -26,6 +27,7 @@ pub enum PreviewKind
     FirstGuess,
     Guess,
     Flag,
+    Chord,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -83,15 +85,22 @@ impl Logic
 
     pub fn preview_guess(&self, grid: &Grid, pos: Point) -> LogicPreview
     {
-        let kind = if grid.first_guess
+        if grid.first_guess
         {
-            PreviewKind::FirstGuess
+            return LogicPreview{ pos, kind: PreviewKind::FirstGuess, result: self.win_loss.check_guess(grid, pos) };
         }
-        else
+
+        let Some(cell) = grid.states.get_by_index2(pos) else
         {
-            PreviewKind::Guess
+            return LogicPreview{ pos, kind: PreviewKind::Guess, result: PreviewResult::Nothing };
         };
-        return LogicPreview{ pos, kind, result: self.win_loss.check_guess(grid, pos) };
+
+        if cell.contains(CellState::Revealed)
+        {
+            return LogicPreview{ pos, kind: PreviewKind::Chord, result: self.win_loss.check_chord(grid, pos) };
+        }
+
+        LogicPreview{ pos, kind: PreviewKind::Guess, result: self.win_loss.check_guess(grid, pos) }
     }
 
     pub fn preview_flag(&self, grid: &Grid, pos: Point) -> LogicPreview
@@ -176,6 +185,39 @@ impl Logic
         FlagResult
         {
             pos: preview.pos,
+        }
+    }
+
+    pub fn do_chord(&mut self, grid: &mut Grid, preview: &LogicPreview) -> GuessResult
+    {
+        assert!(preview.kind == PreviewKind::Chord);
+        assert!(self.preview_guess(grid, preview.pos) == *preview);
+
+        if preview.result == PreviewResult::Nothing
+        {
+            return GuessResult{ pos: preview.pos, revealed: Vec::new() };
+        }
+
+        let mut revealed = Vec::new();
+        for neighbour in grid.size().neighbours::<{ Neighbours::All.bits() }>(preview.pos)
+        {
+            let neighbour_preview = self.preview_guess(grid, neighbour);
+            // TODO strict chording mode
+            if neighbour_preview.result != PreviewResult::Success
+            {
+                continue;
+            };
+            
+            self.win_loss.handle_guess(grid, &neighbour_preview);
+            let mut cells = self.reveal.reveal(grid, neighbour_preview.pos);
+            revealed.append(&mut cells);
+            self.win_loss.post_reveal(grid);
+        }
+
+        GuessResult
+        {
+            pos: preview.pos,
+            revealed,
         }
     }
 }
