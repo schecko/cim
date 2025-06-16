@@ -207,9 +207,14 @@ impl<T> Array2<T>
             .ok_or(Error::IndexOutOfBounds(index))
     }
 
-    pub fn raw_iter(&self) -> impl DoubleEndedIterator<Item = &T> + Clone
+    pub fn iter(&self) -> impl DoubleEndedIterator<Item = &T> + Clone
     {
         self.array.iter()
+    }
+
+    pub fn iter_mut(&mut self) -> impl DoubleEndedIterator<Item = &mut T>
+    {
+        self.array.iter_mut()
     }
 
     pub fn row_iter(&self, y: i32) -> Result<impl DoubleEndedIterator<Item = &T> + Clone, Error>
@@ -232,7 +237,7 @@ impl<T> Array2<T>
         })
     }
 
-    pub fn index_space(&self) -> impl DoubleEndedIterator<Item = usize> + Clone
+    pub fn index_space(&self) -> impl DoubleEndedIterator<Item = usize> + Clone + use<T>
     {
         self.size.index_space()
     }

@@ -17,6 +17,7 @@ use vis::terrain_grid::TerrainGrid;
 use vis::terrain_vis;
 use sim::logic::WinStatus;
 use sim::mines;
+use sim::grid_gen;
 
 use lunex::UiLayoutRoot;
 use bevy::prelude::*;
@@ -87,23 +88,26 @@ impl GameplayAppState
         mut next_state: ResMut<NextState<SubState>> )
     {
         let mut grid = Grid::new(config.width as i32, config.height as i32);
-        *grid.states.get_by_index2_mut((1, 0).into()).unwrap() = CellState::NonPlayable;
-        *grid.states.get_by_index2_mut((0, 1).into()).unwrap() = CellState::NonPlayable;
-        *grid.states.get_by_index2_mut((2, 2).into()).unwrap() = CellState::NonPlayable;
-        *grid.states.get_by_index2_mut((4, 3).into()).unwrap() = CellState::NonPlayable;
-
         let mut rand = RandomGenerator::new(1);
+
+        grid_gen::initial_terrain(&mut grid, &mut rand, 0.5);
         mines::initial_mines(&mut grid, &mut rand, config.mine_count);
 
-        let size = Extents::new(config.width as i32, config.height as i32);
         let mut terrain = TerrainGrid
         {
-            grid: Array2::<CellType>::from_size(size),
+            grid: Array2::<CellType>::from_size(grid.size()),
         };
-        *terrain.grid.get_by_index2_mut((1, 0).into()).unwrap() = CellType::Land;
-        *terrain.grid.get_by_index2_mut((0, 1).into()).unwrap() = CellType::Land;
-        *terrain.grid.get_by_index2_mut((2, 2).into()).unwrap() = CellType::Land;
-        *terrain.grid.get_by_index2_mut((4, 3).into()).unwrap() = CellType::Land;
+        for i in grid.size().index_space()
+        {
+            terrain.grid[i] = if grid.states[i].contains(CellState::NonPlayable)
+            {
+                CellType::Land
+            }
+            else
+            {
+                CellType::None
+            };
+        }
 
         commands.insert_resource(Interactor::new());
         commands.insert_resource(GridVis{ grid });

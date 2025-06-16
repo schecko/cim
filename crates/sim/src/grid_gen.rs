@@ -2,36 +2,25 @@
 use crate::grid::Grid;
 use crate::grid::CellState;
 
-use base::point::Point;
 use base::random::RandomGenerator;
-use base::extents::Neighbours;
 
-pub fn initial_terrain(grid: &mut Grid, rand: &mut RandomGenerator, land_percent: f32)
+use noise::Perlin;
+use noise::NoiseFn;
+
+pub fn initial_terrain(grid: &mut Grid, _rand: &mut RandomGenerator, water_level: f32)
 {
-	assert!(land_percent > 0.0);
+	assert!(water_level >= -1.0 && water_level <= 1.0);
 
-	let mut valid_locations = Vec::<u32>::new();
-	valid_locations.reserve(grid.size().num_elements());
-	for (i, cell) in grid.states.enumerate()
+	let perlin = Perlin::new(100);
+
+	let size = grid.size();
+	for p in grid.states.size().index2_space()
 	{
-		if cell.intersects(CellState::Mine | CellState::NonPlayable)
-		{
-			continue;
-		}
-
-		valid_locations.push(i as u32);
-	}
-
-	rand.shuffle(&mut valid_locations[..]);
-
-	let max_mines = std::cmp::min(valid_locations.len() as u32, count);
-	for i in 0..max_mines
-	{
-		let cell_index = valid_locations[i as usize];
-		let cell = grid.states.get_by_index_mut(cell_index as usize).unwrap();
-		assert!(!cell.contains(CellState::NonPlayable));
+		let height = perlin.get([p.x as f64 / size.width as f64, p.y as f64 / size.height as f64]);
+		let is_land = height as f32 > water_level;
+		
+		let cell = &mut grid.states[p];
 		assert!(!cell.contains(CellState::Mine));
-		*cell |= CellState::Mine;
+		cell.set(CellState::NonPlayable, is_land);
 	}
-	grid.update_adjacency();
 }

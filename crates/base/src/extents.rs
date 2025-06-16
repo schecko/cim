@@ -161,6 +161,28 @@ impl From<(i32, i32)> for Extents
     }
 }
 
+impl From<glam::UVec2> for Extents
+{
+    fn from(v: glam::UVec2) -> Self
+    {
+        Self {
+            width: v.x as i32,
+            height: v.y as i32,
+        }
+    }
+}
+
+impl From<glam::IVec2> for Extents
+{
+    fn from(v: glam::IVec2) -> Self
+    {
+        Self {
+            width: v.x,
+            height: v.y,
+        }
+    }
+}
+
 #[cfg(test)]
 mod tests
 {

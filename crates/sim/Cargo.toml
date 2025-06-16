@@ -8,3 +8,4 @@ edition = { workspace = true }
 base = { path = "../base" }
 
 bitflags = { workspace = true }
+noise = { workspace = true }

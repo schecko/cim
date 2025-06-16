@@ -38,15 +38,15 @@ pub fn initial_mines(grid: &mut Grid, rand: &mut RandomGenerator, count: u32)
 
 pub fn move_mines(grid: &mut Grid, rand: &mut RandomGenerator, safe_point: Point)
 {
-    let mut unsafe_mines: u32 = 0;
-    for neighbour in grid.size().neighbours_self::<{ Neighbours::All.bits() }>(safe_point)
-    {
-        if grid.states[neighbour].contains(CellState::Mine)
-        {
-        	unsafe_mines += 1;
-        }
-    	grid.states[neighbour].remove(CellState::Mine);
-    }
+	let mut unsafe_mines: u32 = 0;
+	for neighbour in grid.size().neighbours_self::<{ Neighbours::All.bits() }>(safe_point)
+	{
+		if grid.states[neighbour].contains(CellState::Mine)
+		{
+			unsafe_mines += 1;
+		}
+		grid.states[neighbour].remove(CellState::Mine);
+	}
 
 	let mut valid_locations = Vec::<Point>::new();
 	valid_locations.reserve(grid.size().num_elements());

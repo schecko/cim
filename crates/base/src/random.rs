@@ -5,6 +5,12 @@ pub trait RandomExtractor
 	fn extract(rand: &mut RandomGenerator) -> Self;
 }
 
+// not deterministic across devices or architectures
+pub trait RandomUnsafeExtractor
+{
+	unsafe fn extract(rand: &mut RandomGenerator) -> Self;
+}
+
 impl RandomExtractor for bool { fn extract(rand: &mut RandomGenerator) -> Self { rand.generate() & 1 != 0 } }
 
 impl RandomExtractor for u8 { fn extract(rand: &mut RandomGenerator) -> Self { rand.generate() as Self } }
@@ -16,13 +22,31 @@ impl RandomExtractor for i32 { fn extract(rand: &mut RandomGenerator) -> Self { 
 impl RandomExtractor for u64 { fn extract(rand: &mut RandomGenerator) -> Self { rand.generate() as Self } }
 impl RandomExtractor for i64 { fn extract(rand: &mut RandomGenerator) -> Self { rand.generate() as Self } }
 
-// not deterministic across devices, do not use u/isize
-impl RandomExtractor for usize { fn extract(_rand: &mut RandomGenerator) -> Self { panic!(); } }
-impl RandomExtractor for isize { fn extract(_rand: &mut RandomGenerator) -> Self { panic!(); } }
-
 impl RandomExtractor for u128 { fn extract(rand: &mut RandomGenerator) -> Self { (rand.generate() as Self) << 64 + rand.generate() as Self } }
 impl RandomExtractor for i128 { fn extract(rand: &mut RandomGenerator) -> Self { (rand.generate() as Self) << 64 + rand.generate() as Self } }
 
+impl RandomUnsafeExtractor for usize { unsafe fn extract(rand: &mut RandomGenerator) -> Self { rand.generate() as Self } }
+impl RandomUnsafeExtractor for isize { unsafe fn extract(rand: &mut RandomGenerator) -> Self { rand.generate() as Self } }
+
+// TODO test range is within -1 and 1
+impl RandomUnsafeExtractor for f32 { unsafe fn extract(rand: &mut RandomGenerator) -> Self { rand.generate() as Self / u64::MAX as Self } }
+impl RandomUnsafeExtractor for f64 { unsafe fn extract(rand: &mut RandomGenerator) -> Self { rand.generate() as Self / u64::MAX as Self } }
+
+impl RandomUnsafeExtractor for glam::Vec2
+{
+	unsafe fn extract(rand: &mut RandomGenerator) -> Self
+	{
+		unsafe { glam::Vec2::new(f32::extract(rand), f32::extract(rand)).normalize() }
+	}
+}
+
+impl RandomUnsafeExtractor for glam::Vec3
+{
+	unsafe fn extract(rand: &mut RandomGenerator) -> Self
+	{
+		unsafe { glam::Vec3::new(f32::extract(rand), f32::extract(rand), f32::extract(rand)).normalize() }
+	}
+}
 
 #[derive(Debug, Clone, Eq, PartialEq)]
 pub struct RandomGenerator
@@ -72,6 +96,12 @@ impl RandomGenerator
 		where T: RandomExtractor
 	{
 		T::extract(self)
+	}
+
+	pub unsafe fn random_unsafe<T>(&mut self) -> T
+		where T: RandomUnsafeExtractor
+	{
+		unsafe { T::extract(self) }
 	}
 
 	pub fn shuffle<T>(&mut self, container: &mut [T])
