@@ -90,7 +90,7 @@ impl GameplayAppState
         let mut grid = Grid::new(config.width as i32, config.height as i32);
         let mut rand = RandomGenerator::new(1);
 
-        grid_gen::initial_terrain(&mut grid, &mut rand, 0.5);
+        grid_gen::initial_terrain(&mut grid, &mut rand, 0.1);
         mines::initial_mines(&mut grid, &mut rand, config.mine_count);
 
         let mut terrain = TerrainGrid

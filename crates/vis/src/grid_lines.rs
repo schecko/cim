@@ -16,7 +16,11 @@ use bevy::sprite::*;
 pub struct GridMaterial
 {
     #[uniform(0)]
-    color: LinearRgba,
+    tint: LinearRgba,
+    
+    #[texture(1)]
+    #[sampler(2)]
+    base: Handle<Image>
 }
 
 #[derive(Component)]
@@ -106,11 +110,13 @@ impl<Vert: PartialEq> GeoBuilder<Vert>
         (self.staged, self.indices)
     }
 }
+
 pub fn spawn_lines
 (
     mut commands: Commands,
     mut meshes: ResMut<Assets<Mesh>>,
     mut materials: ResMut<Assets<GridMaterial>>,
+    asset_server: Res<AssetServer>,
     vis_tuning: Res<BoardVisTuning>,
     grid_vis: Res<GridVis>,
 )
@@ -120,105 +126,119 @@ pub fn spawn_lines
     (
         GridMaterial
         {
-            color: LinearRgba::BLACK.into(),
+            tint: LinearRgba::BLACK.into(),
+            base: asset_server.load("textures/line.png"),
         }
     );
 
-    let tl = GridVert
-    {
-        pos: Vec2::new(-0.5, -0.5),
-        color: LinearRgba::BLACK,
-        uv: Vec2::new(0.0, 1.0),
-        normal: Vec3::new(0.5, 0.5, 1.0),
-    };
-    let tr = GridVert
-    {
-        pos: Vec2::new(0.5, -0.5),
-        color: LinearRgba::BLACK,
-        uv: Vec2::new(1.0, 1.0),
-        normal: Vec3::new(-0.5, 0.5, 1.0),
-    };
-    let bl = GridVert
-    {
-        pos: Vec2::new(-0.5, 0.5),
-        color: LinearRgba::BLACK,
-        uv: Vec2::new(0.0, 0.0),
-        normal: Vec3::new(0.5, -0.5, 1.0),
-    };
-    let br = GridVert
-    {
-        pos: Vec2::new(0.5, 0.5),
-        color: LinearRgba::BLACK,
-        uv: Vec2::new(1.0, 0.0),
-        normal: Vec3::new(-0.5, -0.5, 1.0),
-    };
-
     let mut geo = GeoBuilder::default();
+    let line_width = vis_tuning.cell_size * 0.15;
 
-    let corner_size = vis_tuning.cell_size * 0.15;
-
-    // intersection points
-    for y in 0..=size.height
     {
-        for x in 0..=size.width
+        let tl = GridVert
         {
-            let cell_intersection = Vec2::new(x as f32, y as f32);
-            let tli = geo.insert_vert(tl.from_pos(cell_intersection * vis_tuning.cell_size + tl.pos * corner_size));
-            let tri = geo.insert_vert(tr.from_pos(cell_intersection * vis_tuning.cell_size + tr.pos * corner_size));
-            let bli = geo.insert_vert(bl.from_pos(cell_intersection * vis_tuning.cell_size + bl.pos * corner_size));
-            let bri = geo.insert_vert(br.from_pos(cell_intersection * vis_tuning.cell_size + br.pos * corner_size));
+            pos: Vec2::new(-0.5, -0.5),
+            color: LinearRgba::BLACK,
+            uv: Vec2::new(0.0, 1.0),
+            normal: Vec3::new(0.5, 0.5, 1.0),
+        };
+        let tr = GridVert
+        {
+            pos: Vec2::new(0.5, -0.5),
+            color: LinearRgba::BLACK,
+            uv: Vec2::new(0.0, 0.0),
+            normal: Vec3::new(-0.5, 0.5, 1.0),
+        };
+        let bl = GridVert
+        {
+            pos: Vec2::new(-0.5, 0.5),
+            color: LinearRgba::BLACK,
+            uv: Vec2::new(1.0, 1.0),
+            normal: Vec3::new(0.5, -0.5, 1.0),
+        };
+        let br = GridVert
+        {
+            pos: Vec2::new(0.5, 0.5),
+            color: LinearRgba::BLACK,
+            uv: Vec2::new(1.0, 0.0),
+            normal: Vec3::new(-0.5, -0.5, 1.0),
+        };
 
-            geo.insert_index(tli);
-            geo.insert_index(tri);
-            geo.insert_index(bli);
+        // horizontal grid-aligned lines 
+        let offset = Vec2::new(0.0, line_width.y / 2.0);
+        for y in 0..=size.height
+        {
+            for x in 0..size.width
+            {
+                let cell_intersection = Vec2::new(x as f32, y as f32);
+                let next_cell_intersection = Vec2::new((x + 1) as f32, y as f32);
+                let tli = geo.insert_vert(tl.from_pos(cell_intersection * vis_tuning.cell_size + offset));
+                let tri = geo.insert_vert(tr.from_pos(next_cell_intersection * vis_tuning.cell_size + offset));
+                let bli = geo.insert_vert(bl.from_pos(cell_intersection * vis_tuning.cell_size - offset));
+                let bri = geo.insert_vert(br.from_pos(next_cell_intersection * vis_tuning.cell_size - offset));
 
-            geo.insert_index(tri);
-            geo.insert_index(bri);
-            geo.insert_index(bli);
+                geo.insert_index(tli);
+                geo.insert_index(tri);
+                geo.insert_index(bli);
+
+                geo.insert_index(tri);
+                geo.insert_index(bri);
+                geo.insert_index(bli);
+            }
         }
     }
 
-    // horizontal grid-aligned lines 
-    for y in 0..=size.height
     {
-        for x in 0..size.width
+        let tl = GridVert
         {
-            let cell_intersection = Vec2::new(x as f32, y as f32);
-            let next_cell_intersection = Vec2::new((x + 1) as f32, y as f32);
-            let tli = geo.insert_vert(tr.from_pos(cell_intersection * vis_tuning.cell_size + tr.pos * corner_size));
-            let tri = geo.insert_vert(tl.from_pos(next_cell_intersection * vis_tuning.cell_size + tl.pos * corner_size));
-            let bli = geo.insert_vert(br.from_pos(cell_intersection * vis_tuning.cell_size + br.pos * corner_size));
-            let bri = geo.insert_vert(bl.from_pos(next_cell_intersection * vis_tuning.cell_size + bl.pos * corner_size));
-
-            geo.insert_index(tli);
-            geo.insert_index(tri);
-            geo.insert_index(bli);
-
-            geo.insert_index(tri);
-            geo.insert_index(bri);
-            geo.insert_index(bli);
-        }
-    }
-
-    // vertical grid-aligned lines 
-    for y in 0..size.height
-    {
-        for x in 0..=size.width
+            pos: Vec2::new(-0.5, -0.5),
+            color: LinearRgba::BLACK,
+            uv: Vec2::new(0.0, 1.0),
+            normal: Vec3::new(0.5, 0.5, 1.0),
+        };
+        let tr = GridVert
         {
-            let cell_intersection = Vec2::new(x as f32, y as f32);
-            let next_cell_intersection = Vec2::new(x as f32, (y + 1) as f32);
-            let tli = geo.insert_vert(bl.from_pos(cell_intersection * vis_tuning.cell_size + bl.pos * corner_size));
-            let tri = geo.insert_vert(br.from_pos(cell_intersection * vis_tuning.cell_size + br.pos * corner_size));
-            let bli = geo.insert_vert(tl.from_pos(next_cell_intersection * vis_tuning.cell_size + tl.pos * corner_size));
-            let bri = geo.insert_vert(tr.from_pos(next_cell_intersection * vis_tuning.cell_size + tr.pos * corner_size));
+            pos: Vec2::new(0.5, -0.5),
+            color: LinearRgba::BLACK,
+            uv: Vec2::new(1.0, 1.0),
+            normal: Vec3::new(-0.5, 0.5, 1.0),
+        };
+        let bl = GridVert
+        {
+            pos: Vec2::new(-0.5, 0.5),
+            color: LinearRgba::BLACK,
+            uv: Vec2::new(0.0, 0.0),
+            normal: Vec3::new(0.5, -0.5, 1.0),
+        };
+        let br = GridVert
+        {
+            pos: Vec2::new(0.5, 0.5),
+            color: LinearRgba::BLACK,
+            uv: Vec2::new(1.0, 0.0),
+            normal: Vec3::new(-0.5, -0.5, 1.0),
+        };
 
-            geo.insert_index(tli);
-            geo.insert_index(tri);
-            geo.insert_index(bli);
+        // vertical grid-aligned lines 
+        let offset = Vec2::new(line_width.x / 2.0, 0.0);
+        for y in 0..size.height
+        {
+            for x in 0..=size.width
+            {
+                let cell_intersection = Vec2::new(x as f32, y as f32);
+                let next_cell_intersection = Vec2::new(x as f32, (y + 1) as f32);
+                let tli = geo.insert_vert(bl.from_pos(cell_intersection * vis_tuning.cell_size - offset));
+                let tri = geo.insert_vert(br.from_pos(cell_intersection * vis_tuning.cell_size + offset));
+                let bli = geo.insert_vert(tl.from_pos(next_cell_intersection * vis_tuning.cell_size - offset));
+                let bri = geo.insert_vert(tr.from_pos(next_cell_intersection * vis_tuning.cell_size + offset));
 
-            geo.insert_index(tri);
-            geo.insert_index(bri);
-            geo.insert_index(bli);
+                geo.insert_index(tli);
+                geo.insert_index(tri);
+                geo.insert_index(bli);
+
+                geo.insert_index(tri);
+                geo.insert_index(bri);
+                geo.insert_index(bli);
+            }
         }
     }
 
