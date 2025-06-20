@@ -1,4 +1,6 @@
 [alias]
 assets = "run --bin assets --"
 asset = "run --bin assets --"
+app = "run --bin sweeper --"
+sweeper = "run --bin sweeper --"
 

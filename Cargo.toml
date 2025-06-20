@@ -12,7 +12,7 @@ members = [
 ]
 default-members = [
 	"crates/sweeper",
-	"crates/assets"
+	"crates/assets",
 ]
 
 [workspace.package]
