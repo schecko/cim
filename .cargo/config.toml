@@ -1,0 +1,4 @@
+[alias]
+assets = "run --bin assets --"
+asset = "run --bin assets --"
+

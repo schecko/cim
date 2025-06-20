@@ -52,9 +52,7 @@ impl Material2d for GridMaterial
 struct GridVert
 {
     pos: Vec2,
-    color: LinearRgba,
     uv: Vec2,
-    normal: Vec3
 }
 
 impl PartialEq for GridVert
@@ -77,26 +75,26 @@ impl GridVert
         Self
         {
             pos,
-            color: self.color,
             uv: self.uv,
-            normal: self.normal,
         }
     }
 }
 
 #[derive(Debug, Default)]
-struct GeoBuilder<Vert>
+struct GeoBuilder
 {
-    staged: Vec<Vert>,
+    pos: Vec<Vec2>,
+    uv: Vec<Vec2>,
     indices: Vec<u32>,
 }
 
-impl<Vert: PartialEq> GeoBuilder<Vert>
+impl GeoBuilder
 {
-    fn insert_vert(&mut self, vert: Vert) -> u32
+    fn insert_vert(&mut self, pos: Vec2, uv: Vec2) -> u32
     {
-        let index = self.staged.len() as u32;
-        self.staged.push(vert);
+        let index = self.pos.len() as u32;
+        self.pos.push(pos);
+        self.uv.push(uv);
         index
     }
 
@@ -105,9 +103,9 @@ impl<Vert: PartialEq> GeoBuilder<Vert>
         self.indices.push(index);
     }
 
-    fn drain(self) -> (Vec<Vert>, Vec<u32>)
+    fn drain(self) -> (Vec<Vec2>, Vec<Vec2>, Vec<u32>)
     {
-        (self.staged, self.indices)
+        (self.pos, self.uv, self.indices)
     }
 }
 
@@ -132,50 +130,32 @@ pub fn spawn_lines
     );
 
     let mut geo = GeoBuilder::default();
-    let line_width = vis_tuning.cell_size * 0.15;
+    let half_line_width = vis_tuning.cell_size * 0.15 * 0.5;
 
+    const POS_TL: Vec2 = Vec2::new(-1.0, -1.0);
+    const POS_TR: Vec2 = Vec2::new( 1.0, -1.0);
+    const POS_BL: Vec2 = Vec2::new(-1.0,  1.0);
+    const POS_BR: Vec2 = Vec2::new( 1.0,  1.0);
+    
+    const UV_TL: Vec2 = Vec2::new(0.0, 0.0);
+    const UV_TR: Vec2 = Vec2::new(1.0, 0.0);
+    const UV_BL: Vec2 = Vec2::new(0.0, 1.0);
+    const UV_BR: Vec2 = Vec2::new(1.0, 1.0);
+    
     {
-        let tl = GridVert
-        {
-            pos: Vec2::new(-0.5, -0.5),
-            color: LinearRgba::BLACK,
-            uv: Vec2::new(0.0, 1.0),
-            normal: Vec3::new(0.5, 0.5, 1.0),
-        };
-        let tr = GridVert
-        {
-            pos: Vec2::new(0.5, -0.5),
-            color: LinearRgba::BLACK,
-            uv: Vec2::new(0.0, 0.0),
-            normal: Vec3::new(-0.5, 0.5, 1.0),
-        };
-        let bl = GridVert
-        {
-            pos: Vec2::new(-0.5, 0.5),
-            color: LinearRgba::BLACK,
-            uv: Vec2::new(1.0, 1.0),
-            normal: Vec3::new(0.5, -0.5, 1.0),
-        };
-        let br = GridVert
-        {
-            pos: Vec2::new(0.5, 0.5),
-            color: LinearRgba::BLACK,
-            uv: Vec2::new(1.0, 0.0),
-            normal: Vec3::new(-0.5, -0.5, 1.0),
-        };
-
         // horizontal grid-aligned lines 
-        let offset = Vec2::new(0.0, line_width.y / 2.0);
+        let offset = Vec2::new(0.0, half_line_width.y);
         for y in 0..=size.height
         {
             for x in 0..size.width
             {
                 let cell_intersection = Vec2::new(x as f32, y as f32);
                 let next_cell_intersection = Vec2::new((x + 1) as f32, y as f32);
-                let tli = geo.insert_vert(tl.from_pos(cell_intersection * vis_tuning.cell_size + offset));
-                let tri = geo.insert_vert(tr.from_pos(next_cell_intersection * vis_tuning.cell_size + offset));
-                let bli = geo.insert_vert(bl.from_pos(cell_intersection * vis_tuning.cell_size - offset));
-                let bri = geo.insert_vert(br.from_pos(next_cell_intersection * vis_tuning.cell_size - offset));
+                // UVs are rotated clockwise 90 degrees
+                let tli = geo.insert_vert(cell_intersection * vis_tuning.cell_size + offset, UV_TR);
+                let tri = geo.insert_vert(next_cell_intersection * vis_tuning.cell_size + offset, UV_BR);
+                let bli = geo.insert_vert(cell_intersection * vis_tuning.cell_size - offset, UV_TL);
+                let bri = geo.insert_vert(next_cell_intersection * vis_tuning.cell_size - offset, UV_BL);
 
                 geo.insert_index(tli);
                 geo.insert_index(tri);
@@ -189,47 +169,18 @@ pub fn spawn_lines
     }
 
     {
-        let tl = GridVert
-        {
-            pos: Vec2::new(-0.5, -0.5),
-            color: LinearRgba::BLACK,
-            uv: Vec2::new(0.0, 1.0),
-            normal: Vec3::new(0.5, 0.5, 1.0),
-        };
-        let tr = GridVert
-        {
-            pos: Vec2::new(0.5, -0.5),
-            color: LinearRgba::BLACK,
-            uv: Vec2::new(1.0, 1.0),
-            normal: Vec3::new(-0.5, 0.5, 1.0),
-        };
-        let bl = GridVert
-        {
-            pos: Vec2::new(-0.5, 0.5),
-            color: LinearRgba::BLACK,
-            uv: Vec2::new(0.0, 0.0),
-            normal: Vec3::new(0.5, -0.5, 1.0),
-        };
-        let br = GridVert
-        {
-            pos: Vec2::new(0.5, 0.5),
-            color: LinearRgba::BLACK,
-            uv: Vec2::new(1.0, 0.0),
-            normal: Vec3::new(-0.5, -0.5, 1.0),
-        };
-
         // vertical grid-aligned lines 
-        let offset = Vec2::new(line_width.x / 2.0, 0.0);
+        let offset = Vec2::new(half_line_width.x, 0.0);
         for y in 0..size.height
         {
             for x in 0..=size.width
             {
                 let cell_intersection = Vec2::new(x as f32, y as f32);
                 let next_cell_intersection = Vec2::new(x as f32, (y + 1) as f32);
-                let tli = geo.insert_vert(bl.from_pos(cell_intersection * vis_tuning.cell_size - offset));
-                let tri = geo.insert_vert(br.from_pos(cell_intersection * vis_tuning.cell_size + offset));
-                let bli = geo.insert_vert(tl.from_pos(next_cell_intersection * vis_tuning.cell_size - offset));
-                let bri = geo.insert_vert(tr.from_pos(next_cell_intersection * vis_tuning.cell_size + offset));
+                let tli = geo.insert_vert(cell_intersection * vis_tuning.cell_size - offset, UV_TL);
+                let tri = geo.insert_vert(cell_intersection * vis_tuning.cell_size + offset, UV_TR);
+                let bli = geo.insert_vert(next_cell_intersection * vis_tuning.cell_size - offset, UV_BL);
+                let bri = geo.insert_vert(next_cell_intersection * vis_tuning.cell_size + offset, UV_BR);
 
                 geo.insert_index(tli);
                 geo.insert_index(tri);
@@ -247,13 +198,14 @@ pub fn spawn_lines
     let mut v_uv = vec![];
     let mut v_normal = vec![];
 
-    let (verts, indices) = geo.drain();
-    for vert in verts
+    let (poses, uvs, indices) = geo.drain();
+    const NORMAL: Vec3 = Vec3::new(0.0, 0.0, 0.0);
+    for (pos, uv) in poses.iter().zip(uvs)
     {
-        v_pos.push(vert.pos.extend(layers::GRID_LINE).to_array());
-        v_color.push(vert.color.to_f32_array());
-        v_uv.push(vert.uv.to_array());
-        v_normal.push(vert.normal.to_array());
+        v_pos.push(pos.extend(layers::GRID_LINE).to_array());
+        v_color.push(LinearRgba::BLACK.to_f32_array());
+        v_uv.push(uv.to_array());
+        v_normal.push(NORMAL.to_array());
     }
 
     let mut mesh = Mesh::new
