@@ -270,6 +270,7 @@ name = "assets"
 version = "0.1.0"
 dependencies = [
  "base",
+ "bevy",
  "bevyx",
  "glam",
  "ron",

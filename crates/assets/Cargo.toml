@@ -12,3 +12,4 @@ strum = { workspace = true }
 
 base = { workspace = true }
 bevyx = { workspace = true }
+bevy = { workspace = true }

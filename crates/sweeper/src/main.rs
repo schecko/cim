@@ -17,29 +17,6 @@ use bevy::render::settings::WgpuSettings;
 use bevy_egui::EguiPlugin;
 use lunex::*;
 
-fn find_assets_folder() -> Result<(), std::io::Error>
-{
-    let mut current_dir = std::env::current_dir()?;
-
-    while !current_dir.as_os_str().is_empty()
-    {
-        let assets_path = current_dir.join(base::assets::ASSETS_FOLDER);
-        if assets_path.is_dir()
-        {
-            std::env::set_current_dir(&current_dir)?;
-            unsafe{ std::env::set_var(bevyx::helper::ASSET_ROOT_ENV, &current_dir); }
-            return Ok(());
-        }
-        current_dir = match current_dir.parent()
-        {
-            Some(inner) => inner.to_path_buf(),
-            _ => break,
-        };
-    }
-
-    Err(std::io::Error::new(std::io::ErrorKind::Other, "Could not find assets folder"))
-}
-
 fn setup
 (
     mut commands: Commands,
@@ -76,7 +53,7 @@ fn main()
     let ext = base::extents::Extents{ width: 10, height: 10 };
     let _arr = ext.neighbours::<{ base::extents::Neighbours::Top.bits() }>(base::point::Point::new(0, 0));
     let _arr = ext.neighbours::<{ base::extents::Neighbours::Top.union(base::extents::Neighbours::Bottom).bits() }>(base::point::Point::new(0, 0));
-    let _ = find_assets_folder();
+    let assets_folder = base::assets::find_folder(base::assets::ASSETS_FOLDER).expect("Failed to find ASSETS_FOLDER");
 
     base::hello_base();
     bevyx::hello_bevyx();
@@ -109,6 +86,13 @@ fn main()
                 ..default()
              })
              // .disable::<bevy::render::pipelined_rendering::PipelinedRenderingPlugin>(), // for novsync
+            .set(AssetPlugin
+            {
+                mode: AssetMode::Unprocessed,
+                file_path: assets_folder.display().to_string(),
+                processed_file_path: assets_folder.display().to_string(),
+                ..default()
+            })
         )
         .add_plugins(FpsOverlayPlugin
         {
